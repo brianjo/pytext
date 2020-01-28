@@ -1,0 +1,27 @@
+MSELoss.Config
+==============
+
+
+
+**Component:** :class:`MSELoss  <pytext.loss.loss.MSELoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: MSELoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

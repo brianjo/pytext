@@ -1,0 +1,8 @@
+squad
+=====
+
+
+.. toctree::
+
+  pytext.data.sources.squad.SquadDataSource.Config
+  pytext.data.sources.squad.SquadDataSourceForKD.Config

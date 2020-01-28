@@ -1,0 +1,181 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.representations.bilstm_slot_attn</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders.mlp_decoder</span> <span class="kn">import</span> <span class="n">MLPDecoder</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.bilstm</span> <span class="kn">import</span> <span class="n">BiLSTM</span>
+
+<span class="kn">from</span> <span class="nn">.representation_base</span> <span class="kn">import</span> <span class="n">RepresentationBase</span>
+<span class="kn">from</span> <span class="nn">.slot_attention</span> <span class="kn">import</span> <span class="n">SlotAttention</span>
+
+
+<div class="viewcode-block" id="BiLSTMSlotAttention"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.bilstm_slot_attn.BiLSTMSlotAttention">[docs]</a><span class="k">class</span> <span class="nc">BiLSTMSlotAttention</span><span class="p">(</span><span class="n">RepresentationBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    `BiLSTMSlotAttention` implements a multi-layer bidirectional LSTM based</span>
+<span class="sd">    representation with attention over slots.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (Config): Configuration object of type BiLSTMSlotAttention.Config.</span>
+<span class="sd">        embed_dim (int): The number of expected features in the input.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        dropout (nn.Dropout): Dropout layer preceding the LSTM.</span>
+<span class="sd">        lstm (nn.Module): Module that implements the LSTM.</span>
+<span class="sd">        attention (nn.Module): Module that implements the attention.</span>
+<span class="sd">        dense (nn.Module): Module that implements the non-linear projection over</span>
+<span class="sd">            attended representation.</span>
+<span class="sd">        representation_dim (int): The calculated dimension of the output features</span>
+<span class="sd">            of the `SlotAttention` representation.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RepresentationBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>
+        <span class="n">lstm</span><span class="p">:</span> <span class="n">BiLSTM</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BiLSTM</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">slot_attention</span><span class="p">:</span> <span class="n">SlotAttention</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">SlotAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">mlp_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>
+
+        <span class="c1"># BiLSTM representation.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">lstm</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embed_dim</span><span class="p">)</span>
+
+        <span class="c1"># Slot attention.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attention</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">word_representation_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">representation_dim</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">slot_attention</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention</span> <span class="o">=</span> <span class="n">SlotAttention</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">slot_attention</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="bp">True</span>
+            <span class="p">)</span>
+            <span class="n">word_representation_dim</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">representation_dim</span>
+
+        <span class="c1"># Projection over attended representation.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">representation_dim</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">mlp_decoder</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">mlp_decoder</span><span class="p">,</span> <span class="n">in_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">representation_dim</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="o">.</span><span class="n">out_dim</span>
+
+<div class="viewcode-block" id="BiLSTMSlotAttention.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.bilstm_slot_attn.BiLSTMSlotAttention.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embedded_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">seq_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">states</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Given an input batch of sequential data such as word embeddings, produces</span>
+<span class="sd">        a bidirectional LSTM representation with or without Slot attention.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            embedded_tokens (torch.Tensor): Input tensor of shape</span>
+<span class="sd">                (bsize x seq_len x input_dim).</span>
+<span class="sd">            seq_lengths (torch.Tensor): List of sequences lengths of each batch</span>
+<span class="sd">                element.</span>
+<span class="sd">            states (Tuple[torch.Tensor, torch.Tensor]): Tuple of tensors containing</span>
+<span class="sd">                the initial hidden state and the cell state of each element in</span>
+<span class="sd">                the batch. Each of these tensors have a dimension of</span>
+<span class="sd">                (bsize x num_layers * num_directions x nhid). Defaults to `None`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Bidirectional LSTM representation of input with or</span>
+<span class="sd">                without slot attention.</span>
+
+<span class="sd">        """</span>
+        <span class="n">rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">embedded_tokens</span><span class="p">)</span>
+
+        <span class="c1"># LSTM representation</span>
+        <span class="n">rep</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">seq_lengths</span><span class="p">,</span> <span class="n">states</span><span class="p">)</span>
+
+        <span class="c1"># Attention</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">:</span>
+            <span class="n">rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">(</span><span class="n">rep</span><span class="p">)</span>
+        <span class="c1"># Non-linear projection</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">rep</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="k">else</span> <span class="n">rep</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

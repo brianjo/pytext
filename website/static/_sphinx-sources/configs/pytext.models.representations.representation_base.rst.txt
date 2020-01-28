@@ -1,0 +1,7 @@
+representation_base
+===================
+
+
+.. toctree::
+
+  pytext.models.representations.representation_base.RepresentationBase.Config

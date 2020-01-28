@@ -1,0 +1,271 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.torchscript.tokenizer.bpe</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.utils</span> <span class="kn">import</span> <span class="n">utf8_chars</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+
+
+<div class="viewcode-block" id="ScriptBPE"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tokenizer.html#pytext.torchscript.tokenizer.bpe.ScriptBPE">[docs]</a><span class="k">class</span> <span class="nc">ScriptBPE</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+    <span class="sd">"""Byte-pair encoding implementation in TorchScript.</span>
+
+<span class="sd">    vocab_file should be a file-like object separated by newlines, where each line</span>
+<span class="sd">    consists of a word and a count separated by whitespace. Words in the vocab</span>
+<span class="sd">    therefore can't contain space (according to python regex \\s). The vocab file</span>
+<span class="sd">    should be sorted according to the importance of each token, and they will be</span>
+<span class="sd">    merged in this priority; the actual score values are irrelevant.</span>
+
+<span class="sd">    eow_token should be a string that is appended to the last character and token,</span>
+<span class="sd">    and that token is used at each step in the process and returned at the end.</span>
+<span class="sd">    You should set this to be consistent with the EOW signature used however you</span>
+<span class="sd">    generated your ScriptBPE vocab file.</span>
+
+<span class="sd">    &gt;&gt;&gt; import io</span>
+<span class="sd">    &gt;&gt;&gt; vocab_file = io.StringIO('''</span>
+<span class="sd">    hello_EOW 20</span>
+<span class="sd">    world_EOW 18</span>
+<span class="sd">    th  17</span>
+<span class="sd">    is_EOW 16</span>
+<span class="sd">    bpe_EOW 15</span>
+<span class="sd">    ! 14</span>
+<span class="sd">    h 13</span>
+<span class="sd">    t 6</span>
+<span class="sd">    s_EOW 2</span>
+<span class="sd">    i -1</span>
+<span class="sd">    ii -2</span>
+<span class="sd">    ''')</span>
+<span class="sd">    &gt;&gt;&gt; bpe = ScriptBPE.from_vocab_file(vocab_file)</span>
+<span class="sd">    &gt;&gt;&gt; bpe.tokenize(["hello", "world", "this", "is", "bpe"])</span>
+<span class="sd">    ["hello_EOW", "world_EOW", "th", "is_EOW", "is_EOW", "bpe_EOW"]</span>
+<span class="sd">    &gt;&gt;&gt; bpe.tokenize(["iiiis"])</span>
+<span class="sd">    ["ii", "i", "is_EOW"]</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">eow</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"_EOW"</span><span class="p">):</span>
+        <span class="sd">"""vocab is a dictionary from BPE segments, including any EOW elements,</span>
+<span class="sd">        to their priority in joining. Priority must be an integer, should not be</span>
+<span class="sd">        negative, and should not contain ties. In the case of negative priorities,</span>
+<span class="sd">        segments with negative priorities will be ignored. In the case of ties,</span>
+<span class="sd">        ties will be broken according to left-to-right byte order precedence, but</span>
+<span class="sd">        this behavior isn't guaranteed and may change in the future.</span>
+
+<span class="sd">        eow should be a string which corresponds to the EOW used in the vocab</span>
+<span class="sd">        dictionary."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eow</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">eow</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ScriptBPE.from_vocab_file"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tokenizer.html#pytext.torchscript.tokenizer.bpe.ScriptBPE.from_vocab_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_vocab_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">vocab_file</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ScriptBPE"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">load_vocab</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ScriptBPE.from_vocab_filename"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tokenizer.html#pytext.torchscript.tokenizer.bpe.ScriptBPE.from_vocab_filename">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_vocab_filename</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">vocab_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ScriptBPE"</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">vocab_filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">vocab_file</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">load_vocab</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ScriptBPE.load_vocab"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tokenizer.html#pytext.torchscript.tokenizer.bpe.ScriptBPE.load_vocab">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load_vocab</span><span class="p">(</span><span class="nb">file</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">read_words</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                    <span class="k">continue</span>
+                <span class="k">yield</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">words</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">read_words</span><span class="p">(</span><span class="nb">file</span><span class="p">))</span>
+        <span class="n">num_words</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+
+        <span class="c1"># We don't care about counts, except that we want them to be</span>
+        <span class="c1"># non-negative and non-overlapping. We want to prioritize pairs</span>
+        <span class="c1"># which come first in the vocab file. So ignore counts in the file</span>
+        <span class="c1"># and score them according to reverse of their index in the file.</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">num_words</span> <span class="o">-</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">)}</span></div>
+
+    <span class="nd">@torch.jit.script_method</span>
+    <span class="k">def</span> <span class="nf">bpe_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="c1"># If full token is in vocab, we're done.</span>
+        <span class="n">full_token</span> <span class="o">=</span> <span class="n">token</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">eow</span>
+        <span class="c1"># `in` not implemented, this should be read `if full_token in self.vocab`</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">full_token</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">full_token</span><span class="p">]</span>
+
+        <span class="c1"># Split word into parts, with the last part having EOW attached.</span>
+        <span class="c1"># Any part (character or char + EOW) not in the vocab on its own</span>
+        <span class="c1"># should be removed. EOW should always be attached to the last remaining</span>
+        <span class="c1"># token.</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">utf8_chars</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+        <span class="c1"># parts and parts[-1] + self.eow not in self.vocab</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">eow</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="c1"># The word consisted entirely of unknown characters</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">eow</span><span class="p">]</span>
+        <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eow</span>
+
+        <span class="c1"># Remove any other obscure characters not in the vocab.</span>
+        <span class="c1"># No easy way to iterate backwards or create descending ranges,</span>
+        <span class="c1"># so using a while loop.</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">):</span>
+            <span class="c1"># parts[i] not in self.vocab</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># We compare vocab dict scores to this value, so this is where we assume</span>
+        <span class="c1"># vocab dict values are non-negative.</span>
+        <span class="n">NOT_IN_VOCAB</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="c1"># break not implemented</span>
+        <span class="n">should_break</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c1"># Keep going until no more part pairs are in the vocab.</span>
+        <span class="c1"># In obscure cases this could also get down to a single token, eg. if</span>
+        <span class="c1"># we filter out some character and rebuild up to a single token.</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">should_break</span><span class="p">:</span>
+            <span class="c1"># Create part pairs, join part pair with highest score in vocab.</span>
+            <span class="c1"># In pure python, this could be implemented as</span>
+            <span class="c1"># max(range(len(parts) - 1),</span>
+            <span class="c1">#     key=lambda i: self.vocab.get(parts[i] + parts[i+1], -1)))</span>
+            <span class="n">max_pair_index</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">max_pair_value</span> <span class="o">=</span> <span class="n">NOT_IN_VOCAB</span>
+            <span class="c1"># We structure the vocabulary to not have ties, but they can come up anyway,</span>
+            <span class="c1"># for instance in cases with repeated tokens or when passing in vocabs not</span>
+            <span class="c1"># created with BPE.load_vocab. In the case of a tie between the value of</span>
+            <span class="c1"># joined segments, they'll be joined proiritizing the first pair in the</span>
+            <span class="c1"># token according to byte order, ie. left in LTR and right in RTL languages.</span>
+            <span class="c1"># For instance, if the vocab contains "aa" but not "aaa", then</span>
+            <span class="c1"># bpe_tokens("aaa") -&gt; ["aa", "a"]. If the vocab contains "ab" and "bc"</span>
+            <span class="c1"># mapped to the same priority, but not "abc", then</span>
+            <span class="c1"># bpe_tokens("abc") -&gt; ["ab", "c"].</span>
+            <span class="k">for</span> <span class="n">pair_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">joined</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="n">pair_index</span><span class="p">]</span> <span class="o">+</span> <span class="n">parts</span><span class="p">[</span><span class="n">pair_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">pair_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">joined</span><span class="p">,</span> <span class="n">NOT_IN_VOCAB</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pair_value</span> <span class="o">&gt;</span> <span class="n">max_pair_value</span><span class="p">:</span>
+                    <span class="n">max_pair_value</span> <span class="o">=</span> <span class="n">pair_value</span>
+                    <span class="n">max_pair_index</span> <span class="o">=</span> <span class="n">pair_index</span>
+
+            <span class="k">if</span> <span class="n">max_pair_value</span> <span class="o">==</span> <span class="n">NOT_IN_VOCAB</span><span class="p">:</span>
+                <span class="c1"># No pairs found in vocab, we're done!</span>
+                <span class="n">should_break</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># break, continue not supported; only run this block if we wouldn't</span>
+                <span class="c1"># want to break out after the above step</span>
+
+                <span class="c1"># Combine parts pair with highest priority in vocab.</span>
+                <span class="c1"># len(parts) shrinks by 1 each iteration, so we should be bounded</span>
+                <span class="c1"># as linear in token length.</span>
+                <span class="c1"># Subscript assignment not implemented.</span>
+                <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="n">max_pair_index</span> <span class="p">:</span> <span class="n">max_pair_index</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[:</span><span class="n">max_pair_index</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">p1</span> <span class="o">+</span> <span class="n">p2</span><span class="p">]</span> <span class="o">+</span> <span class="n">parts</span><span class="p">[</span><span class="n">max_pair_index</span> <span class="o">+</span> <span class="mi">2</span> <span class="p">:]</span>
+
+        <span class="k">return</span> <span class="n">parts</span>
+
+    <span class="nd">@torch.jit.script_method</span>
+    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">bpe_tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="p">[])</span>
+
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="c1"># extend not implemented</span>
+            <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpe_token</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
+                <span class="n">bpe_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">bpe_tokens</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""These implement pickling for ScriptBPE modules.</span>
+
+<span class="sd">        TorchScript models can't be pickled normally. See</span>
+<span class="sd">        https://github.com/pytorch/pytorch/issues/15116 for more context; in the</span>
+<span class="sd">        meantime, for TorchScript modules that might want to be pickled</span>
+<span class="sd">        (this one is often included in say tensorizer/tokenizer state that we want</span>
+<span class="sd">        in snapshots) we need to implement a custom getstate and setstate for pickling.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"vocab"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span> <span class="s2">"eow"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eow</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">ScriptBPE</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="s2">"vocab"</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">"eow"</span><span class="p">])</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

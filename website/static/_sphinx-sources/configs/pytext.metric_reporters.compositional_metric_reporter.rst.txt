@@ -1,0 +1,7 @@
+compositional_metric_reporter
+=============================
+
+
+.. toctree::
+
+  pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.Config

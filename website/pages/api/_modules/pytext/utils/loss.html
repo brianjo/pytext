@@ -1,0 +1,284 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.loss</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">.cuda</span> <span class="kn">import</span> <span class="n">FloatTensor</span>
+
+
+<div class="viewcode-block" id="range_to_anchors_and_delta"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.range_to_anchors_and_delta">[docs]</a><span class="k">def</span> <span class="nf">range_to_anchors_and_delta</span><span class="p">(</span><span class="n">precision_range</span><span class="p">,</span> <span class="n">num_anchors</span><span class="p">):</span>
+    <span class="sd">"""Calculates anchor points from precision range.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            precision_range: an interval (a, b), where 0.0 &lt;= a &lt;= b &lt;= 1.0</span>
+<span class="sd">            num_anchors: int, number of equally spaced anchor points.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            precision_values: A `Tensor` of [num_anchors] equally spaced values</span>
+<span class="sd">                in the interval precision_range.</span>
+
+<span class="sd">            delta: The spacing between the values in precision_values.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If precision_range is invalid.</span>
+<span class="sd">    """</span>
+    <span class="c1"># Validate precision_range.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">precision_range</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"length of precision_range (</span><span class="si">%d</span><span class="s2">) must be 2"</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">precision_range</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">precision_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">precision_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"precision values must follow 0 &lt;= </span><span class="si">%f</span><span class="s2"> &lt;= </span><span class="si">%f</span><span class="s2"> &lt;= 1"</span>
+            <span class="o">%</span> <span class="p">(</span><span class="n">precision_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">precision_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Sets precision_values uniformly between min_precision and max_precision.</span>
+    <span class="n">precision_values</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">precision_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stop</span><span class="o">=</span><span class="n">precision_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="n">num_anchors</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">precision_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">precision_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">num_anchors</span>
+    <span class="k">return</span> <span class="n">FloatTensor</span><span class="p">(</span><span class="n">precision_values</span><span class="p">),</span> <span class="n">delta</span></div>
+
+
+<div class="viewcode-block" id="build_class_priors"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.build_class_priors">[docs]</a><span class="k">def</span> <span class="nf">build_class_priors</span><span class="p">(</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">class_priors</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">positive_pseudocount</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">negative_pseudocount</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">"""build class priors, if necessary.</span>
+<span class="sd">    For each class, the class priors are estimated as</span>
+<span class="sd">    (P + sum_i w_i y_i) / (P + N + sum_i w_i),</span>
+<span class="sd">    where y_i is the ith label, w_i is the ith weight, P is a pseudo-count of</span>
+<span class="sd">    positive labels, and N is a pseudo-count of negative labels.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        labels: A `Tensor` with shape [batch_size, num_classes].</span>
+<span class="sd">            Entries should be in [0, 1].</span>
+<span class="sd">        class_priors: None, or a floating point `Tensor` of shape [C]</span>
+<span class="sd">            containing the prior probability of each class (i.e. the fraction of the</span>
+<span class="sd">            training data consisting of positive examples). If None, the class</span>
+<span class="sd">            priors are computed from `targets` with a moving average.</span>
+<span class="sd">        weights: `Tensor` of shape broadcastable to labels, [N, 1] or [N, C],</span>
+<span class="sd">            where `N = batch_size`, C = num_classes`</span>
+<span class="sd">        positive_pseudocount: Number of positive labels used to initialize the class</span>
+<span class="sd">            priors.</span>
+<span class="sd">        negative_pseudocount: Number of negative labels used to initialize the class</span>
+<span class="sd">            priors.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        class_priors: A Tensor of shape [num_classes] consisting of the</span>
+<span class="sd">          weighted class priors, after updating with moving average ops if created.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">class_priors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">class_priors</span>
+
+    <span class="n">N</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+
+    <span class="n">weighted_label_counts</span> <span class="o">=</span> <span class="p">(</span><span class="n">weights</span> <span class="o">*</span> <span class="n">labels</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">weight_sum</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">class_priors</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span>
+        <span class="n">weighted_label_counts</span> <span class="o">+</span> <span class="n">positive_pseudocount</span><span class="p">,</span>
+        <span class="n">weight_sum</span> <span class="o">+</span> <span class="n">positive_pseudocount</span> <span class="o">+</span> <span class="n">negative_pseudocount</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">class_priors</span></div>
+
+
+<div class="viewcode-block" id="weighted_hinge_loss"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.weighted_hinge_loss">[docs]</a><span class="k">def</span> <span class="nf">weighted_hinge_loss</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">positive_weights</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">negative_weights</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Args:</span>
+<span class="sd">        labels: one-hot representation `Tensor` of shape broadcastable to logits</span>
+<span class="sd">        logits: A `Tensor` of shape [N, C] or [N, C, K]</span>
+<span class="sd">        positive_weights: Scalar or Tensor</span>
+<span class="sd">        negative_weights: same shape as positive_weights</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        3D Tensor of shape [N, C, K], where K is length of positive weights</span>
+<span class="sd">        or 2D Tensor of shape [N, C]</span>
+<span class="sd">    """</span>
+    <span class="n">positive_weights_is_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">positive_weights</span><span class="p">)</span>
+    <span class="n">negative_weights_is_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">negative_weights</span><span class="p">)</span>
+
+    <span class="c1"># Validate positive_weights and negative_weights</span>
+    <span class="k">if</span> <span class="n">positive_weights_is_tensor</span> <span class="o">^</span> <span class="n">negative_weights_is_tensor</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"positive_weights and negative_weights must be same shape Tensor "</span>
+            <span class="s2">"or both be scalars. But positive_weight_is_tensor: </span><span class="si">%r</span><span class="s2">, while "</span>
+            <span class="s2">"negative_weight_is_tensor: </span><span class="si">%r</span><span class="s2">"</span>
+            <span class="o">%</span> <span class="p">(</span><span class="n">positive_weights_is_tensor</span><span class="p">,</span> <span class="n">negative_weights_is_tensor</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">positive_weights_is_tensor</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">positive_weights</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">!=</span> <span class="n">negative_weights</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"shape of positive_weights and negative_weights "</span>
+            <span class="s2">"must be the same! "</span>
+            <span class="s2">"shape of positive_weights is {0}, "</span>
+            <span class="s2">"but shape of negative_weights is {1}"</span>
+            <span class="o">%</span> <span class="p">(</span><span class="n">positive_weights</span><span class="o">.</span><span class="n">size</span><span class="p">(),</span> <span class="n">negative_weights</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+        <span class="p">)</span>
+
+    <span class="c1"># positive_term: Tensor [N, C] or [N, C, K]</span>
+    <span class="n">positive_term</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">logits</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">labels</span>
+    <span class="n">negative_term</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">logits</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">labels</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">positive_weights_is_tensor</span> <span class="ow">and</span> <span class="n">positive_term</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">positive_term</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">positive_weights</span>
+            <span class="o">+</span> <span class="n">negative_term</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">negative_weights</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">positive_term</span> <span class="o">*</span> <span class="n">positive_weights</span> <span class="o">+</span> <span class="n">negative_term</span> <span class="o">*</span> <span class="n">negative_weights</span></div>
+
+
+<div class="viewcode-block" id="true_positives_lower_bound"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.true_positives_lower_bound">[docs]</a><span class="k">def</span> <span class="nf">true_positives_lower_bound</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    true_positives_lower_bound defined in paper:</span>
+<span class="sd">    "Scalable Learning of Non-Decomposable Objectives"</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        labels: A `Tensor` of shape broadcastable to logits.</span>
+<span class="sd">        logits: A `Tensor` of shape [N, C] or [N, C, K].</span>
+<span class="sd">            If the third dimension is present,</span>
+<span class="sd">            the lower bound is computed on each slice [:, :, k] independently.</span>
+<span class="sd">        weights: Per-example loss coefficients, with shape [N, 1] or [N, C]</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A `Tensor` of shape [C] or [C, K].</span>
+<span class="sd">    """</span>
+    <span class="c1"># A `Tensor` of shape [N, C] or [N, C, K]</span>
+    <span class="n">loss_on_positives</span> <span class="o">=</span> <span class="n">weighted_hinge_loss</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">negative_weights</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">weighted_loss_on_positives</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">weights</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">labels</span> <span class="o">-</span> <span class="n">loss_on_positives</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">loss_on_positives</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">weights</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span>
+        <span class="k">else</span> <span class="n">weights</span> <span class="o">*</span> <span class="p">(</span><span class="n">labels</span> <span class="o">-</span> <span class="n">loss_on_positives</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">weighted_loss_on_positives</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="false_postives_upper_bound"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.false_postives_upper_bound">[docs]</a><span class="k">def</span> <span class="nf">false_postives_upper_bound</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    false_positives_upper_bound defined in paper:</span>
+<span class="sd">    "Scalable Learning of Non-Decomposable Objectives"</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        labels: A `Tensor` of shape broadcastable to logits.</span>
+<span class="sd">        logits: A `Tensor` of shape [N, C] or [N, C, K].</span>
+<span class="sd">            If the third dimension is present,</span>
+<span class="sd">            the lower bound is computed on each slice [:, :, k] independently.</span>
+<span class="sd">        weights: Per-example loss coefficients, with shape broadcast-compatible with</span>
+<span class="sd">            that of `labels`. i.e. [N, 1] or [N, C]</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A `Tensor` of shape [C] or [C, K].</span>
+<span class="sd">    """</span>
+    <span class="n">loss_on_negatives</span> <span class="o">=</span> <span class="n">weighted_hinge_loss</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">positive_weights</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">weighted_loss_on_negatives</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">weights</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">loss_on_negatives</span>
+        <span class="k">if</span> <span class="n">loss_on_negatives</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">weights</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span>
+        <span class="k">else</span> <span class="n">weights</span> <span class="o">*</span> <span class="n">loss_on_negatives</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">weighted_loss_on_negatives</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LagrangeMultiplier"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.LagrangeMultiplier">[docs]</a><span class="k">class</span> <span class="nc">LagrangeMultiplier</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
+<div class="viewcode-block" id="LagrangeMultiplier.forward"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.LagrangeMultiplier.forward">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">input</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LagrangeMultiplier.backward"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.LagrangeMultiplier.backward">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">grad_output</span><span class="o">.</span><span class="n">neg</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="lagrange_multiplier"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.loss.lagrange_multiplier">[docs]</a><span class="k">def</span> <span class="nf">lagrange_multiplier</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">LagrangeMultiplier</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

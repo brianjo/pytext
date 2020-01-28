@@ -1,0 +1,9 @@
+attention
+=========
+
+
+.. toctree::
+
+  pytext.models.representations.attention.DotProductSelfAttention.Config
+  pytext.models.representations.attention.MultiplicativeAttention.Config
+  pytext.models.representations.attention.SequenceAlignedAttention.Config

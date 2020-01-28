@@ -1,0 +1,7 @@
+simple_featurizer
+=================
+
+
+.. toctree::
+
+  pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.Config

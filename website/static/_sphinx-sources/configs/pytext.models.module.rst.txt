@@ -1,0 +1,7 @@
+module
+======
+
+
+.. toctree::
+
+  pytext.models.module.Module.Config

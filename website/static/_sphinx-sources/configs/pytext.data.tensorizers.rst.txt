@@ -1,0 +1,27 @@
+tensorizers
+===========
+
+
+.. toctree::
+
+  pytext.data.tensorizers.AnnotationNumberizer.Config
+  pytext.data.tensorizers.ByteTensorizer.Config
+  pytext.data.tensorizers.ByteTokenTensorizer.Config
+  pytext.data.tensorizers.CharacterTokenTensorizer.Config
+  pytext.data.tensorizers.FloatListTensorizer.Config
+  pytext.data.tensorizers.FloatTensorizer.Config
+  pytext.data.tensorizers.GazetteerTensorizer.Config
+  pytext.data.tensorizers.LabelListTensorizer.Config
+  pytext.data.tensorizers.LabelTensorizer.Config
+  pytext.data.tensorizers.MetricTensorizer.Config
+  pytext.data.tensorizers.NtokensTensorizer.Config
+  pytext.data.tensorizers.NumericLabelTensorizer.Config
+  pytext.data.tensorizers.SeqTokenTensorizer.Config
+  pytext.data.tensorizers.SlotLabelTensorizer.Config
+  pytext.data.tensorizers.SlotLabelTensorizerExpansible.Config
+  pytext.data.tensorizers.SoftLabelTensorizer.Config
+  pytext.data.tensorizers.Tensorizer.Config
+  pytext.data.tensorizers.TokenTensorizer.Config
+  pytext.data.tensorizers.UidTensorizer.Config
+  pytext.data.tensorizers.VocabConfig
+  pytext.data.tensorizers.VocabFileConfig

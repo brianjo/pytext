@@ -1,0 +1,9 @@
+trainer
+=======
+
+
+.. toctree::
+
+  pytext.trainers.trainer.TaskTrainer.Config
+  pytext.trainers.trainer.Trainer.Config
+  pytext.trainers.trainer.TrainerBase.Config

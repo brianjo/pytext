@@ -1,0 +1,59 @@
+BaseModel.Config
+================
+
+
+
+**Component:** :class:`BaseModel  <pytext.models.model.BaseModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.model
+.. py:class:: BaseModel.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.model.ModelInput>` = :doc:`ModelInput <pytext.models.model.ModelInput>`\ ()
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BertPairwiseModel.Config <pytext.models.bert_classification_models.BertPairwiseModel.Config>`\ 
+  - :class:`NewBertModel.Config <pytext.models.bert_classification_models.NewBertModel.Config>`\ 
+  - :class:`NewBertRegressionModel.Config <pytext.models.bert_regression_model.NewBertRegressionModel.Config>`\ 
+  - :class:`DisjointMultitaskModel.Config <pytext.models.disjoint_multitask_model.DisjointMultitaskModel.Config>`\ 
+  - :class:`NewDisjointMultitaskModel.Config <pytext.models.disjoint_multitask_model.NewDisjointMultitaskModel.Config>`\ 
+  - :class:`ByteTokensDocumentModel.Config <pytext.models.doc_model.ByteTokensDocumentModel.Config>`\ 
+  - :class:`DocModel.Config <pytext.models.doc_model.DocModel.Config>`\ 
+  - :class:`DocRegressionModel.Config <pytext.models.doc_model.DocRegressionModel.Config>`\ 
+  - :class:`PersonalizedDocModel.Config <pytext.models.doc_model.PersonalizedDocModel.Config>`\ 
+  - :class:`IntentSlotModel.Config <pytext.models.joint_model.IntentSlotModel.Config>`\ 
+  - :class:`LMLSTM.Config <pytext.models.language_models.lmlstm.LMLSTM.Config>`\ 
+  - :class:`MaskedLanguageModel.Config <pytext.models.masked_lm.MaskedLanguageModel.Config>`\ 
+  - :class:`Model.Config <pytext.models.model.Model.Config>`\ 
+  - :class:`BasePairwiseModel.Config <pytext.models.pair_classification_model.BasePairwiseModel.Config>`\ 
+  - :class:`PairwiseModel.Config <pytext.models.pair_classification_model.PairwiseModel.Config>`\ 
+  - :class:`BertSquadQAModel.Config <pytext.models.qna.bert_squad_qa.BertSquadQAModel.Config>`\ 
+  - :class:`DrQAModel.Config <pytext.models.qna.dr_qa.DrQAModel.Config>`\ 
+  - :class:`QueryDocPairwiseRankingModel.Config <pytext.models.query_document_pairwise_ranking_model.QueryDocPairwiseRankingModel.Config>`\ 
+  - :class:`RoBERTa.Config <pytext.models.roberta.RoBERTa.Config>`\ 
+  - :class:`RoBERTaWordTaggingModel.Config <pytext.models.roberta.RoBERTaWordTaggingModel.Config>`\ 
+  - :class:`ContextualIntentSlotModel.Config <pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.Config>`\ 
+  - :class:`SeqNNModel.Config <pytext.models.seq_models.seqnn.SeqNNModel.Config>`\ 
+  - :class:`WordTaggingLiteModel.Config <pytext.models.word_model.WordTaggingLiteModel.Config>`\ 
+  - :class:`WordTaggingModel.Config <pytext.models.word_model.WordTaggingModel.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {}
+  }

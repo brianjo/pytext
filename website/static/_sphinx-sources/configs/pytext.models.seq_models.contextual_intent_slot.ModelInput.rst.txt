@@ -1,0 +1,103 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.seq_models.contextual_intent_slot
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.joint_model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ ()
+    \ 
+
+  **word_labels**: :doc:`SlotLabelTensorizer.Config <pytext.data.tensorizers.SlotLabelTensorizer.Config>` = :doc:`SlotLabelTensorizer.Config <pytext.data.tensorizers.SlotLabelTensorizer.Config>`\ (allow_unknown=\ ``True``\ )
+    \ 
+
+  **doc_labels**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ (allow_unknown=\ ``True``\ )
+    \ 
+
+  **doc_weight**: Optional[:doc:`FloatTensorizer.Config <pytext.data.tensorizers.FloatTensorizer.Config>`] = ``None``
+    \ 
+
+  **word_weight**: Optional[:doc:`FloatTensorizer.Config <pytext.data.tensorizers.FloatTensorizer.Config>`] = ``None``
+    \ 
+
+  **seq_tokens**: Optional[:doc:`SeqTokenTensorizer.Config <pytext.data.tensorizers.SeqTokenTensorizer.Config>`] = :doc:`SeqTokenTensorizer.Config <pytext.data.tensorizers.SeqTokenTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      },
+      "word_labels": {
+          "is_input": false,
+          "slot_column": "slots",
+          "text_column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "allow_unknown": true
+      },
+      "doc_labels": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "label",
+              "allow_unknown": true,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      },
+      "doc_weight": null,
+      "word_weight": null,
+      "seq_tokens": {
+          "is_input": true,
+          "column": "text_seq",
+          "max_seq_len": null,
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "add_bol_token": false,
+          "add_eol_token": false,
+          "use_eol_token_for_bol": false,
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          }
+      }
+  }

@@ -1,0 +1,16 @@
+metric_reporters
+================
+
+
+.. toctree::
+
+  pytext.metric_reporters.classification_metric_reporter
+  pytext.metric_reporters.compositional_metric_reporter
+  pytext.metric_reporters.disjoint_multitask_metric_reporter
+  pytext.metric_reporters.intent_slot_detection_metric_reporter
+  pytext.metric_reporters.language_model_metric_reporter
+  pytext.metric_reporters.metric_reporter
+  pytext.metric_reporters.pairwise_ranking_metric_reporter
+  pytext.metric_reporters.regression_metric_reporter
+  pytext.metric_reporters.squad_metric_reporter
+  pytext.metric_reporters.word_tagging_metric_reporter

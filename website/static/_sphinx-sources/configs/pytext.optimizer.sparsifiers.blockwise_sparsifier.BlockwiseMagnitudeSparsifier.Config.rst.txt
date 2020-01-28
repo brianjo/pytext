@@ -1,0 +1,56 @@
+BlockwiseMagnitudeSparsifier.Config
+===================================
+
+
+
+**Component:** :class:`BlockwiseMagnitudeSparsifier  <pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.sparsifiers.blockwise_sparsifier
+.. py:class:: BlockwiseMagnitudeSparsifier.Config
+  :noindex:
+
+  **Bases:** :class:`L0_projection_sparsifier.Config <pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **sparsity**: float = ``0.9``
+    \ 
+
+  **starting_epoch**: int = ``2``
+    \ 
+
+  **frequency**: int = ``1``
+    \ 
+
+  **layerwise_pruning**: bool = ``True``
+    \ 
+
+  **accumulate_mask**: bool = ``False``
+    \ 
+
+  **block_size**: int = ``16``
+    \ 
+
+  **columnwise_blocking**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "sparsity": 0.9,
+      "starting_epoch": 2,
+      "frequency": 1,
+      "layerwise_pruning": true,
+      "accumulate_mask": false,
+      "block_size": 16,
+      "columnwise_blocking": false
+  }

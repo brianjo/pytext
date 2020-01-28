@@ -1,0 +1,38 @@
+pytext.metrics package
+======================
+
+Submodules
+----------
+
+pytext.metrics.intent\_slot\_metrics module
+-------------------------------------------
+
+.. automodule:: pytext.metrics.intent_slot_metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.metrics.language\_model\_metrics module
+----------------------------------------------
+
+.. automodule:: pytext.metrics.language_model_metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.metrics.squad\_metrics module
+------------------------------------
+
+.. automodule:: pytext.metrics.squad_metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,19 @@
+loss
+====
+
+
+.. toctree::
+
+  pytext.loss.loss.AUCPRHingeLoss.Config
+  pytext.loss.loss.BinaryCrossEntropyLoss.Config
+  pytext.loss.loss.CosineEmbeddingLoss.Config
+  pytext.loss.loss.CrossEntropyLoss.Config
+  pytext.loss.loss.KLDivergenceBCELoss.Config
+  pytext.loss.loss.KLDivergenceCELoss.Config
+  pytext.loss.loss.LabelSmoothedCrossEntropyLoss.Config
+  pytext.loss.loss.Loss.Config
+  pytext.loss.loss.MAELoss.Config
+  pytext.loss.loss.MSELoss.Config
+  pytext.loss.loss.MultiLabelSoftMarginLoss.Config
+  pytext.loss.loss.NLLLoss.Config
+  pytext.loss.loss.PairwiseRankingLoss.Config

@@ -1,0 +1,7 @@
+pairwise_ranking_output_layer
+=============================
+
+
+.. toctree::
+
+  pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer.Config

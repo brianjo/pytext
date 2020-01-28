@@ -1,0 +1,268 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.embeddings.char_embedding</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="kn">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">CharFeatConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.fields</span> <span class="kn">import</span> <span class="n">FieldMeta</span>
+
+<span class="kn">from</span> <span class="nn">.embedding_base</span> <span class="kn">import</span> <span class="n">EmbeddingBase</span>
+
+
+<div class="viewcode-block" id="CharacterEmbedding"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.char_embedding.CharacterEmbedding">[docs]</a><span class="k">class</span> <span class="nc">CharacterEmbedding</span><span class="p">(</span><span class="n">EmbeddingBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Module for character aware CNN embeddings for tokens. It uses convolution</span>
+<span class="sd">    followed by max-pooling over character embeddings to obtain an embedding</span>
+<span class="sd">    vector for each token.</span>
+
+<span class="sd">    Implementation is loosely based on https://arxiv.org/abs/1508.06615.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num_embeddings (int): Total number of characters (vocabulary size).</span>
+<span class="sd">        embed_dim (int): Size of character embeddings to be passed to convolutions.</span>
+<span class="sd">        out_channels (int): Number of output channels.</span>
+<span class="sd">        kernel_sizes (List[int]): Dimension of input Tensor passed to MLP.</span>
+<span class="sd">        highway_layers (int): Number of highway layers applied to pooled output.</span>
+<span class="sd">        projection_dim (int): If specified, size of output embedding for token, via</span>
+<span class="sd">            a linear projection from convolution output.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        char_embed (nn.Embedding): Character embedding table.</span>
+<span class="sd">        convs (nn.ModuleList): Convolution layers that operate on character</span>
+<span class="sd">        embeddings.</span>
+<span class="sd">        highway_layers (nn.Module): Highway layers on top of convolution output.</span>
+<span class="sd">        projection (nn.Module): Final linear layer to token embedding.</span>
+<span class="sd">        embedding_dim (int): Dimension of the final token embedding produced.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">Config</span> <span class="o">=</span> <span class="n">CharFeatConfig</span>
+
+<div class="viewcode-block" id="CharacterEmbedding.from_config"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.char_embedding.CharacterEmbedding.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">CharFeatConfig</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FieldMeta</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">vocab_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""Factory method to construct an instance of CharacterEmbedding from</span>
+<span class="sd">        the module's config object and the field's metadata object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config (CharFeatConfig): Configuration object specifying all the</span>
+<span class="sd">                parameters of CharacterEmbedding.</span>
+<span class="sd">            metadata (FieldMeta): Object containing this field's metadata.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            type: An instance of CharacterEmbedding.</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">vocab_size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">vocab_size</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">vocab_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">kernel_num</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">kernel_sizes</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">highway_layers</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">projection_dim</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_embeddings</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">kernel_sizes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">highway_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">projection_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">conv_out_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">kernel_sizes</span><span class="p">)</span> <span class="o">*</span> <span class="n">out_channels</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="n">projection_dim</span> <span class="ow">or</span> <span class="n">conv_out_dim</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">char_embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">num_embeddings</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convs</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="c1"># in_channels = embed_dim because input is treated as sequence</span>
+                <span class="c1"># of dim [max_word_length] with embed_dim channels</span>
+                <span class="c1"># Adding padding to provide robustness in cases where input</span>
+                <span class="c1"># length is less than conv filter width</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span><span class="n">embed_dim</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">K</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">K</span> <span class="ow">in</span> <span class="n">kernel_sizes</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">highway</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">highway_layers</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">highway</span> <span class="o">=</span> <span class="n">Highway</span><span class="p">(</span><span class="n">conv_out_dim</span><span class="p">,</span> <span class="n">highway_layers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">projection_dim</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">conv_out_dim</span><span class="p">,</span> <span class="n">projection_dim</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CharacterEmbedding.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.char_embedding.CharacterEmbedding.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chars</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Given a batch of sentences such that tokens are broken into character ids,</span>
+<span class="sd">        produce token embedding vectors for each sentence in the batch.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            chars (torch.Tensor): Batch of sentences where each token is broken</span>
+<span class="sd">            into characters.</span>
+<span class="sd">            Dimension: batch size X maximum sentence length X maximum word length</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Embedded batch of sentences. Dimension:</span>
+<span class="sd">            batch size X maximum sentence length, token embedding size.</span>
+<span class="sd">            Token embedding size = `out_channels * len(self.convs))`</span>
+
+<span class="sd">        """</span>
+        <span class="n">batch_size</span><span class="p">,</span> <span class="n">max_sent_length</span><span class="p">,</span> <span class="n">max_word_length</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">chars</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+        <span class="n">chars</span> <span class="o">=</span> <span class="n">chars</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span> <span class="o">*</span> <span class="n">max_sent_length</span><span class="p">,</span> <span class="n">max_word_length</span><span class="p">)</span>
+
+        <span class="c1"># char_embedding: (bsize * max_sent_length, max_word_length, embed_dim)</span>
+        <span class="n">char_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_embed</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
+
+        <span class="c1"># conv_inp dim: (bsize * max_sent_length, emb_size, max_word_length)</span>
+        <span class="n">conv_inp</span> <span class="o">=</span> <span class="n">char_embedding</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">char_conv_outs</span> <span class="o">=</span> <span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">conv</span><span class="p">(</span><span class="n">conv_inp</span><span class="p">))</span> <span class="k">for</span> <span class="n">conv</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">convs</span><span class="p">]</span>
+
+        <span class="c1"># Apply max pooling</span>
+        <span class="c1"># char_pool_out[i] dims: (bsize * max_sent_length, out_channels)</span>
+        <span class="n">char_pool_outs</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">char_conv_outs</span><span class="p">]</span>
+
+        <span class="c1"># Concat different feature maps together</span>
+        <span class="c1"># char_pool_out dim: (bsize * max_sent_length, out_channel * num_kernels)</span>
+        <span class="n">char_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">char_pool_outs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Highway layers, preserves dims</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">highway</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">char_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">highway</span><span class="p">(</span><span class="n">char_out</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c1"># Linear map back to final embedding size:</span>
+            <span class="c1"># (bsize * max_sent_length, projection_dim)</span>
+            <span class="n">char_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">(</span><span class="n">char_out</span><span class="p">)</span>
+
+        <span class="c1"># Reshape to (bsize, max_sent_length, "output_dim")</span>
+        <span class="k">return</span> <span class="n">char_out</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">max_sent_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Highway"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.char_embedding.Highway">[docs]</a><span class="k">class</span> <span class="nc">Highway</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    A `Highway layer &lt;https://arxiv.org/abs/1505.00387&gt;`.</span>
+<span class="sd">    Adopted from the AllenNLP implementation.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">input_dim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span><span class="p">)]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Highway.reset_parameters"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.char_embedding.Highway.reset_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="c1"># As per comment in AllenNLP:</span>
+            <span class="c1"># We should bias the highway layer to just carry its input forward. We do</span>
+            <span class="c1"># that by setting the bias on `B(x)` to be positive, because that means `g`</span>
+            <span class="c1"># will be biased to be high, so we will carry the input forward. The bias</span>
+            <span class="c1"># on `B(x)` is the second half of the bias vector in each Linear layer.</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">bias</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="p">:],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">bias</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_normal_</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Highway.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.char_embedding.Highway.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">projection</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">proj_x</span><span class="p">,</span> <span class="n">gate</span> <span class="o">=</span> <span class="n">projection</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">proj_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="n">proj_x</span><span class="p">)</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">gate</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">new_tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">gate</span><span class="p">)</span> <span class="o">*</span> <span class="n">proj_x</span>
+        <span class="k">return</span> <span class="n">x</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

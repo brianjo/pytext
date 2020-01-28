@@ -1,0 +1,57 @@
+ByteTensorizer.Config
+=====================
+
+
+
+**Component:** :class:`ByteTensorizer  <pytext.data.tensorizers.ByteTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: ByteTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str = ``'text'``
+    The name of the text column to parse from the data source.
+    
+
+  **lower**: bool = ``True``
+    \ 
+
+  **max_seq_len**: Optional[int] = ``None``
+    \ 
+
+  **add_bos_token**: Optional[bool] = ``False``
+    \ 
+
+  **add_eos_token**: Optional[bool] = ``False``
+    \ 
+
+  **use_eos_token_for_bos**: Optional[bool] = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "column": "text",
+      "lower": true,
+      "max_seq_len": null,
+      "add_bos_token": false,
+      "add_eos_token": false,
+      "use_eos_token_for_bos": false
+  }

@@ -1,0 +1,7 @@
+ensemble_trainer
+================
+
+
+.. toctree::
+
+  pytext.trainers.ensemble_trainer.EnsembleTrainer.Config

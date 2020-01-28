@@ -1,0 +1,416 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metric_reporters.channel</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">torch.utils.tensorboard</span> <span class="kn">import</span> <span class="n">SummaryWriter</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">torch.utils.tensorboard.fb.profile</span> <span class="kn">import</span> <span class="n">profile_graph</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">profile_graph</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="Channel"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.Channel">[docs]</a><span class="k">class</span> <span class="nc">Channel</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Channel defines how to format and report the result of a PyText job to an output</span>
+<span class="sd">    stream.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        stages: in which stages the report will be triggered, default is all</span>
+<span class="sd">            stages, which includes train, eval, test</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">stages</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Stage</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">,</span> <span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">,</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stages</span> <span class="o">=</span> <span class="n">stages</span>
+
+<div class="viewcode-block" id="Channel.report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.Channel.report">[docs]</a>    <span class="k">def</span> <span class="nf">report</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">,</span>
+        <span class="n">epoch</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="p">,</span>
+        <span class="n">model_select_metric</span><span class="p">,</span>
+        <span class="n">loss</span><span class="p">,</span>
+        <span class="n">preds</span><span class="p">,</span>
+        <span class="n">targets</span><span class="p">,</span>
+        <span class="n">scores</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Defines how to format and report data to the output channel.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stage (Stage): train, eval or test</span>
+<span class="sd">            epoch (int): current epoch</span>
+<span class="sd">            metrics (Any): all metrics</span>
+<span class="sd">            model_select_metric (double): a single numeric metric to pick best model</span>
+<span class="sd">            loss (double): average loss</span>
+<span class="sd">            preds (List[Any]): list of predictions</span>
+<span class="sd">            targets (List[Any]): list of targets</span>
+<span class="sd">            scores (List[Any]): list of scores</span>
+<span class="sd">            context (Dict[str, List[Any]]): dict of any additional context data,</span>
+<span class="sd">                each context is a list of data that maps to each example</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Channel.close"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.Channel.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Channel.export"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.Channel.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">input_to_model</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="ConsoleChannel"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.ConsoleChannel">[docs]</a><span class="k">class</span> <span class="nc">ConsoleChannel</span><span class="p">(</span><span class="n">Channel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Simple Channel that prints results to console.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="ConsoleChannel.report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.ConsoleChannel.report">[docs]</a>    <span class="k">def</span> <span class="nf">report</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">,</span>
+        <span class="n">epoch</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="p">,</span>
+        <span class="n">model_select_metric</span><span class="p">,</span>
+        <span class="n">loss</span><span class="p">,</span>
+        <span class="n">preds</span><span class="p">,</span>
+        <span class="n">targets</span><span class="p">,</span>
+        <span class="n">scores</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">{stage}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Epoch:{epoch}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"loss: {loss:.6f}"</span><span class="p">)</span>
+        <span class="c1"># TODO change print_metrics function to __str__ T33522209</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="s2">"print_metrics"</span><span class="p">):</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">print_metrics</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="FileChannel"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.FileChannel">[docs]</a><span class="k">class</span> <span class="nc">FileChannel</span><span class="p">(</span><span class="n">Channel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Simple Channel that writes results to a TSV file.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">stages</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span>
+
+<div class="viewcode-block" id="FileChannel.report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.FileChannel.report">[docs]</a>    <span class="k">def</span> <span class="nf">report</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">,</span>
+        <span class="n">epoch</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="p">,</span>
+        <span class="n">model_select_metric</span><span class="p">,</span>
+        <span class="n">loss</span><span class="p">,</span>
+        <span class="n">preds</span><span class="p">,</span>
+        <span class="n">targets</span><span class="p">,</span>
+        <span class="n">scores</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"saving result to file {self.file_path}"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">of</span><span class="p">:</span>
+            <span class="n">tsv_writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span>
+                <span class="n">of</span><span class="p">,</span>
+                <span class="n">delimiter</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">quotechar</span><span class="o">=</span><span class="s1">'"'</span><span class="p">,</span>
+                <span class="n">doublequote</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">lineterminator</span><span class="o">=</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">quoting</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">QUOTE_MINIMAL</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">tsv_writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_title</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_content</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+                <span class="n">tsv_writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FileChannel.get_title"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.FileChannel.get_title">[docs]</a>    <span class="k">def</span> <span class="nf">get_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context_keys</span><span class="o">=</span><span class="p">()):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">"prediction"</span><span class="p">,</span> <span class="s2">"target"</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">)</span> <span class="o">+</span> <span class="n">context_keys</span></div>
+
+<div class="viewcode-block" id="FileChannel.gen_content"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.FileChannel.gen_content">[docs]</a>    <span class="k">def</span> <span class="nf">gen_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">context_values</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">)):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="n">preds</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">targets</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">scores</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">v_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">v_list</span> <span class="ow">in</span> <span class="n">context_values</span><span class="p">])</span>
+            <span class="k">yield</span> <span class="n">res</span></div></div>
+
+
+<div class="viewcode-block" id="TensorBoardChannel"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.TensorBoardChannel">[docs]</a><span class="k">class</span> <span class="nc">TensorBoardChannel</span><span class="p">(</span><span class="n">Channel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    TensorBoardChannel defines how to format and report the result of a PyText</span>
+<span class="sd">    job to TensorBoard.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        summary_writer: An instance of the TensorBoard SummaryWriter class, or</span>
+<span class="sd">            an object that implements the same interface.</span>
+<span class="sd">            https://pytorch.org/docs/stable/tensorboard.html</span>
+<span class="sd">        metric_name: The name of the default metric to display on the</span>
+<span class="sd">            TensorBoard dashboard, defaults to "accuracy"</span>
+<span class="sd">        train_step: The training step count</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">summary_writer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">metric_name</span><span class="o">=</span><span class="s2">"accuracy"</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span> <span class="o">=</span> <span class="n">summary_writer</span> <span class="ow">or</span> <span class="n">SummaryWriter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_name</span> <span class="o">=</span> <span class="n">metric_name</span>
+
+<div class="viewcode-block" id="TensorBoardChannel.report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.TensorBoardChannel.report">[docs]</a>    <span class="k">def</span> <span class="nf">report</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">,</span>
+        <span class="n">epoch</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="p">,</span>
+        <span class="n">model_select_metric</span><span class="p">,</span>
+        <span class="n">loss</span><span class="p">,</span>
+        <span class="n">preds</span><span class="p">,</span>
+        <span class="n">targets</span><span class="p">,</span>
+        <span class="n">scores</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Defines how to format and report data to TensorBoard using the summary</span>
+<span class="sd">        writer. In the current implementation, during the train/eval phase we</span>
+<span class="sd">        recursively report each metric field as scalars, and during the test</span>
+<span class="sd">        phase we report the final metrics to be displayed as texts.</span>
+
+<span class="sd">        Also visualizes the internal model states (weights, biases) as</span>
+<span class="sd">        histograms in TensorBoard.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stage (Stage): train, eval or test</span>
+<span class="sd">            epoch (int): current epoch</span>
+<span class="sd">            metrics (Any): all metrics</span>
+<span class="sd">            model_select_metric (double): a single numeric metric to pick best model</span>
+<span class="sd">            loss (double): average loss</span>
+<span class="sd">            preds (List[Any]): list of predictions</span>
+<span class="sd">            targets (List[Any]): list of targets</span>
+<span class="sd">            scores (List[Any]): list of scores</span>
+<span class="sd">            context (Dict[str, List[Any]]): dict of any additional context data,</span>
+<span class="sd">                each context is a list of data that maps to each example</span>
+<span class="sd">            meta (Dict[str, Any]): global metadata, such as target names</span>
+<span class="sd">            model (nn.Module): the PyTorch neural network model</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="s2">"test"</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_text</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">f</span><span class="s2">"loss={loss}"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_text</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">f</span><span class="s2">"{self.metric_name}={metrics}"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_texts</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s2">"train"</span> <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span> <span class="k">else</span> <span class="s2">"eval"</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span><span class="n">f</span><span class="s2">"{prefix}/loss"</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"{prefix}/{self.metric_name}"</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_scalars</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">optimizer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">param_group</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span>
+                        <span class="n">f</span><span class="s2">"optimizer.lr.param_group.{idx}"</span><span class="p">,</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">"lr"</span><span class="p">],</span> <span class="n">epoch</span>
+                    <span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">val</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                    <span class="n">limit</span> <span class="o">=</span> <span class="mf">9.9e19</span>
+                    <span class="n">grad</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">grad</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="o">-</span><span class="n">limit</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_histogram</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span>
+                            <span class="n">f</span><span class="s2">"WARNING: Param {key} cannot be sent to Tensorboard"</span><span class="p">,</span>
+                            <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">(</span><span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">grad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">grad</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                        <span class="n">grad</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">grad</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="o">-</span><span class="n">limit</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_histogram</span><span class="p">(</span>
+                                <span class="n">key</span> <span class="o">+</span> <span class="s2">"_gradients"</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="n">epoch</span>
+                            <span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                            <span class="k">print</span><span class="p">(</span>
+                                <span class="n">f</span><span class="s2">"WARNING: Grad for param {key} "</span>
+                                <span class="s2">"cannot be sent to Tensorboard"</span><span class="p">,</span>
+                                <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+                            <span class="p">)</span>
+                            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">(</span><span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TensorBoardChannel.add_texts"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.TensorBoardChannel.add_texts">[docs]</a>    <span class="k">def</span> <span class="nf">add_texts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Recursively flattens the metrics object and adds each field name and</span>
+<span class="sd">        value as a text using the summary writer. For example, if tag = "test",</span>
+<span class="sd">        and metrics = { accuracy: 0.7, scores: { precision: 0.8, recall: 0.6 } },</span>
+<span class="sd">        then under "tag=test" we will display "accuracy=0.7", and under</span>
+<span class="sd">        "tag=test/scores" we will display "precision=0.8" and "recall=0.6" in</span>
+<span class="sd">        TensorBoard.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tag (str): The tag name for the metric. If a field needs to be</span>
+<span class="sd">                flattened further, it will be prepended as a prefix to the field</span>
+<span class="sd">                name.</span>
+<span class="sd">            metrics (Any): The metrics object.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_value</span> <span class="ow">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_text</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">f</span><span class="s2">"{field_name}={field_value}"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">field_value</span><span class="p">,</span> <span class="s2">"_asdict"</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_texts</span><span class="p">(</span><span class="n">f</span><span class="s2">"{tag}/{field_name}"</span><span class="p">,</span> <span class="n">field_value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TensorBoardChannel.add_scalars"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.TensorBoardChannel.add_scalars">[docs]</a>    <span class="k">def</span> <span class="nf">add_scalars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Recursively flattens the metrics object and adds each field name and</span>
+<span class="sd">        value as a scalar for the corresponding epoch using the summary writer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prefix (str): The tag prefix for the metric. Each field name in the</span>
+<span class="sd">                metrics object will be prepended with the prefix.</span>
+<span class="sd">            metrics (Any): The metrics object.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_value</span> <span class="ow">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"{prefix}/{field_name}"</span><span class="p">,</span> <span class="n">field_value</span><span class="p">,</span> <span class="n">epoch</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">field_value</span><span class="p">,</span> <span class="s2">"_asdict"</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_scalars</span><span class="p">(</span><span class="n">f</span><span class="s2">"{prefix}/{field_name}"</span><span class="p">,</span> <span class="n">field_value</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TensorBoardChannel.close"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.TensorBoardChannel.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Closes the summary writer.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TensorBoardChannel.export"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.channel.TensorBoardChannel.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">input_to_model</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Draws the neural network representation graph in TensorBoard.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (Any): the model object.</span>
+<span class="sd">            input_to_model (Any): the input to the model (required for PyTorch</span>
+<span class="sd">                models, since its execution graph is defined by run).</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="o">.</span><span class="n">add_graph</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">input_to_model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="s2">"WARNING: Unable to export neural network graph to TensorBoard."</span><span class="p">,</span>
+                <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">(</span><span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">profile_graph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">profile_graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">input_to_model</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="s2">"WARNING: Unable to export performance graph to Tensor Board."</span><span class="p">,</span>
+                <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">(</span><span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">embedding</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="s2">"WARNING: Unable to visualize embedding space in TensorBoard."</span><span class="p">,</span>
+                <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">(</span><span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

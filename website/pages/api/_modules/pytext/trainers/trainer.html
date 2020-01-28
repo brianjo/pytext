@@ -1,0 +1,724 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.trainers.trainer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">ExitStack</span> <span class="k">as</span> <span class="n">contextlib_ExitStack</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">BatchContext</span><span class="p">,</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">PyTextConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Component</span><span class="p">,</span>
+    <span class="n">ComponentType</span><span class="p">,</span>
+    <span class="n">create_optimizer</span><span class="p">,</span>
+    <span class="n">create_scheduler</span><span class="p">,</span>
+    <span class="n">create_sparsifier</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.config.pytext_config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.data.data_handler</span> <span class="kn">import</span> <span class="n">BatchIterator</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+<span class="kn">from</span> <span class="nn">pytext.models.distributed_model</span> <span class="kn">import</span> <span class="n">DistributedModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer</span> <span class="kn">import</span> <span class="n">Adam</span><span class="p">,</span> <span class="n">Optimizer</span><span class="p">,</span> <span class="n">learning_rates</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.fp16_optimizer</span> <span class="kn">import</span> <span class="n">FP16Optimizer</span><span class="p">,</span> <span class="n">FP16OptimizerFairseq</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.scheduler</span> <span class="kn">import</span> <span class="n">Scheduler</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.sparsifiers.sparsifier</span> <span class="kn">import</span> <span class="n">Sparsifier</span>
+<span class="kn">from</span> <span class="nn">pytext.task.serialize</span> <span class="kn">import</span> <span class="n">save</span>
+<span class="kn">from</span> <span class="nn">pytext.trainers.training_state</span> <span class="kn">import</span> <span class="n">TrainingState</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span><span class="p">,</span> <span class="n">distributed</span><span class="p">,</span> <span class="n">precision</span><span class="p">,</span> <span class="n">timing</span>
+
+
+<span class="k">class</span> <span class="nc">TrainerBase</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">TRAINER</span>
+
+
+<span class="k">def</span> <span class="nf">cycle</span><span class="p">(</span><span class="n">iterator</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">"""Like itertools.cycle, but will call iter on the original iterable instead.</span>
+<span class="sd">    This limits it to not be able to run on say raw generators, but also doesn't</span>
+<span class="sd">    store a copy of the iterable in memory for repetition."""</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">iterator</span>
+
+
+<span class="k">def</span> <span class="nf">maybe_accumulate_gradients</span><span class="p">(</span><span class="n">exit_stack</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">):</span>
+    <span class="c1"># index == sample_size - 1 represents the last backward pass</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">cuda</span><span class="o">.</span><span class="n">DISTRIBUTED_WORLD_SIZE</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">"no_sync"</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">sample_size</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Whenever *samples* contains more than one mini-batch (e.g sample_size &gt; 1),</span>
+<span class="sd">        we want to accumulate gradients locally and only call all-reduce in the</span>
+<span class="sd">        last backwards pass.</span>
+<span class="sd">        """</span>
+        <span class="n">exit_stack</span><span class="o">.</span><span class="n">enter_context</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">no_sync</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">precision</span><span class="o">.</span><span class="n">FP16_ENABLED</span> <span class="ow">and</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">sample_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Whenever *samples* contains more than one mini-batch (e.g sample_size &gt; 1),</span>
+<span class="sd">        we want to accumulate gradients in FP16 parameters (e.g delay unscale)</span>
+<span class="sd">        and only unscale to FP32 parameters after the last backward pass.</span>
+<span class="sd">        """</span>
+        <span class="n">exit_stack</span><span class="o">.</span><span class="n">enter_context</span><span class="p">(</span><span class="n">precision</span><span class="o">.</span><span class="n">delay_unscale</span><span class="p">())</span>
+
+
+<span class="k">class</span> <span class="nc">Trainer</span><span class="p">(</span><span class="n">TrainerBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Base Trainer class that provide ways to</span>
+<span class="sd">        1 Train model, compute metrics against eval set and use the metrics for</span>
+<span class="sd">        model selection.</span>
+<span class="sd">        2 Test trained model, compute and publish metrics against a blind test set.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        epochs (int): Training epochs</span>
+<span class="sd">        early_stop_after (int): Stop after how many epochs when the eval metric</span>
+<span class="sd">            is not improving</span>
+<span class="sd">        max_clip_norm (Optional[float]): Clip gradient norm if set</span>
+<span class="sd">        report_train_metrics (bool): Whether metrics on training data should be</span>
+<span class="sd">            computed and reported.</span>
+<span class="sd">        target_time_limit_seconds (float): Target time limit for training in seconds. If</span>
+<span class="sd">            the expected time to train another epoch exceeds this limit, stop training.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="Trainer.Config"><a class="viewcode-back" href="../../../configs/pytext.trainers.trainer.Trainer.Config.html#pytext.trainers.trainer.Trainer.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="c1">#: Training epochs</span>
+        <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="c1">#: Stop after how many epochs when the eval metric is not improving</span>
+        <span class="n">early_stop_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Clip gradient norm if set</span>
+        <span class="n">max_clip_norm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1">#: Whether metrics on training data should be computed and reported.</span>
+        <span class="n">report_train_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1">#: Target time limit for training, default (None) to no time limit.</span>
+        <span class="n">target_time_limit_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1">#: Whether to do evaluation and model selection based on it.</span>
+        <span class="n">do_eval</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1">#: if do_eval, do we load the best model state dict after training or just</span>
+        <span class="c1"># use the latest model state</span>
+        <span class="n">load_best_model_after_train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1">#: Number of samples for logging training progress.</span>
+        <span class="n">num_samples_to_log_progress</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="c1">#: Number of forward &amp; backward per batch before update gradients, the</span>
+        <span class="c1">#: actual_batch_size = batch_size x num_accumulated_batches</span>
+        <span class="n">num_accumulated_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1">#: Define epoch as a fixed number of batches. Subsequent epochs will continue</span>
+        <span class="c1">#: to iterate through the data, cycling through it when they reach the end.</span>
+        <span class="c1">#: If not set, use exactly one pass through the dataset as one epoch.</span>
+        <span class="c1">#: This configuration only affects the train epochs, test and eval</span>
+        <span class="c1">#: will always test their entire datasets.</span>
+        <span class="n">num_batches_per_epoch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1">#: config for optimizer, used in parameter update</span>
+        <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">Adam</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">scheduler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">sparsifier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sparsifier</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1">#: Define arguments for fp16 training. A fp16_optimizer will be created</span>
+        <span class="c1">#: and wraps the original optimizer, which will scale loss during</span>
+        <span class="c1">#: backward and master weight will be maintained on original optimizer.</span>
+        <span class="c1">#: https://arxiv.org/abs/1710.03740</span>
+        <span class="n">fp16_args</span><span class="p">:</span> <span class="n">FP16Optimizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">FP16OptimizerFairseq</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">early_stop_after</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">do_eval</span><span class="p">,</span> <span class="s2">"can't do early stopping when not running evalution"</span>
+
+        <span class="k">if</span> <span class="n">precision</span><span class="o">.</span><span class="n">FP16_ENABLED</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span> <span class="o">=</span> <span class="n">create_optimizer</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">fp16_args</span><span class="p">,</span>
+                <span class="n">model</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">num_accumulated_batches</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span> <span class="o">=</span> <span class="n">create_optimizer</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">model</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">create_scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">scheduler</span>
+            <span class="k">else</span> <span class="n">Scheduler</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparsifier</span><span class="p">:</span> <span class="n">Sparsifier</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">create_sparsifier</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sparsifier</span><span class="p">)</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">sparsifier</span> <span class="k">else</span> <span class="n">Sparsifier</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"Trainer.test"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_iter</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">TrainingState</span><span class="p">(</span><span class="n">stage</span><span class="o">=</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">test_iter</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">)</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"pre-training"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">set_up_training</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span> <span class="n">training_data</span><span class="p">:</span> <span class="n">BatchIterator</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">training_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">epochs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">DISTRIBUTED_WORLD_SIZE</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">device_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">DistributedModel</span><span class="p">(</span>
+                <span class="n">module</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="n">device_ids</span><span class="o">=</span><span class="p">[</span><span class="n">device_id</span><span class="p">],</span>
+                <span class="n">output_device</span><span class="o">=</span><span class="n">device_id</span><span class="p">,</span>
+                <span class="n">broadcast_buffers</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">find_unused_parameters</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">find_unused_parameters</span><span class="p">,</span>
+                <span class="n">process_group</span><span class="o">=</span><span class="n">distributed</span><span class="o">.</span><span class="n">_round_robin_process_group</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_batches_per_epoch</span><span class="p">:</span>
+            <span class="c1"># Set the training_data iterator to cycle, so it will never run out,</span>
+            <span class="c1"># but rather after reaching the end will loop back to the beginning.</span>
+            <span class="n">training_data</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">training_data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">training_data</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"zero gradients"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">zero_grads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"backprop"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">backprop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"loss.backward"</span><span class="p">):</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"optimizer"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">optimizer_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">grad_norm</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">clip_grad_norm</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_clip_norm</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OverflowError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Gradient overflow. Skipping step, {e}"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">state</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">step_batch</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"optimizer.step"</span><span class="p">):</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+        <span class="n">state</span><span class="o">.</span><span class="n">step_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># grad_norm could be used to check grads sync in distributed training</span>
+        <span class="k">return</span> <span class="n">grad_norm</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"sparsifier"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sparsification_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="c1"># sparsification only if sparifier is used</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">sparsifier</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparsifier</span><span class="o">.</span><span class="n">sparsify</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">current_sparsity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparsifier</span><span class="o">.</span><span class="n">get_current_sparsity</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"sparsity in the model: {current_sparsity}"</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">continue_training</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># Are we done?</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">epoch</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">epochs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c1"># Check whether the model has improved recently enough</span>
+        <span class="c1"># Only do this if we're bothering to evaluate the model</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">do_eval</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">epochs_since_last_improvement</span> <span class="o">&gt;=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">early_stop_after</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"Worker {state.rank}: Eval metric hasn't changed for "</span>
+                <span class="o">+</span> <span class="n">f</span><span class="s2">"{state.epochs_since_last_improvement} epochs. Stopping now."</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c1"># Check whether we think the next epoch will put us over the configured</span>
+        <span class="c1"># time limit.</span>
+        <span class="n">epochs_run</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">epoch</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">time_elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">state</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="n">mean_epoch_time</span> <span class="o">=</span> <span class="n">time_elapsed</span> <span class="o">/</span> <span class="n">epochs_run</span>
+        <span class="n">expected_next_epoch_time</span> <span class="o">=</span> <span class="n">time_elapsed</span> <span class="o">+</span> <span class="n">mean_epoch_time</span>
+        <span class="n">target_time_limit</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">target_time_limit_seconds</span> <span class="ow">is</span> <span class="bp">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">target_time_limit_seconds</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">expected_next_epoch_time</span> <span class="o">&gt;</span> <span class="n">target_time_limit</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"Worker {state.rank}: Stopping training after {epochs_run} epochs "</span>
+                <span class="n">f</span><span class="s2">"and {int(time_elapsed)} seconds, due to the target max training "</span>
+                <span class="n">f</span><span class="s2">"time of {self.config.target_time_limit_seconds} seconds."</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">update_best_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span> <span class="n">train_config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">eval_metric</span>
+    <span class="p">):</span>
+        <span class="c1"># This should be updated by all workers so they agree on when to stop training</span>
+        <span class="c1"># when `early_stop_after` is specified.</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">epochs_since_last_improvement</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">best_model_metric</span> <span class="o">=</span> <span class="n">eval_metric</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Found a better model!"</span><span class="p">)</span>
+
+        <span class="c1"># Only one worker should save checkpoints</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rank</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">model_state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+        <span class="c1"># save to cpu to avoid multiple model copies in gpu memory</span>
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">model_state</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">model_state</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameter</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">best_model_state</span> <span class="o">=</span> <span class="n">model_state</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"save checkpoint"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span> <span class="n">train_config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Only one worker should save checkpoints</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rank</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">train_config</span><span class="o">.</span><span class="n">save_module_checkpoints</span> <span class="ow">or</span> <span class="n">train_config</span><span class="o">.</span><span class="n">save_all_checkpoints</span><span class="p">:</span>
+            <span class="c1"># saves per-epoch sub-modules when save_all_checkpoints or</span>
+            <span class="c1"># save_module_checkpoints is enabled</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save_modules</span><span class="p">(</span>
+                <span class="n">base_path</span><span class="o">=</span><span class="n">train_config</span><span class="o">.</span><span class="n">modules_save_dir</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">f</span><span class="s2">"-ep{state.epoch}"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">epochs_since_last_improvement</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># state.epochs_since_last_improvement == 0 means found a better</span>
+            <span class="c1"># model in current epoch, thus update best model's sub-modules</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save_modules</span><span class="p">(</span><span class="n">base_path</span><span class="o">=</span><span class="n">train_config</span><span class="o">.</span><span class="n">modules_save_dir</span><span class="p">)</span>
+
+        <span class="c1"># next to add new config and implementation of frequency on checkpointing</span>
+        <span class="k">if</span> <span class="n">train_config</span><span class="o">.</span><span class="n">save_all_checkpoints</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">save</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">train_config</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="n">meta</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">training_state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+                <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">epoch</span><span class="p">),</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">load_best_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="c1"># Move current model to CPU to avoid multiple models in GPU memory</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">best_model_state</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="p">)</span>
+            <span class="c1"># Move model back to GPU</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">best_model_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">training_data</span><span class="p">:</span> <span class="n">BatchIterator</span><span class="p">,</span>
+        <span class="n">eval_data</span><span class="p">:</span> <span class="n">BatchIterator</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span><span class="p">,</span>
+        <span class="n">train_config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Train and eval a model, the model states will be modified.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            train_iter (BatchIterator): batch iterator of training data</span>
+<span class="sd">            eval_iter (BatchIterator): batch iterator of evaluation data</span>
+<span class="sd">            model (Model): model to be trained</span>
+<span class="sd">            metric_reporter (MetricReporter): compute metric based on training</span>
+<span class="sd">            output and report results to console, file.. etc</span>
+<span class="sd">            train_config (PyTextConfig): training config</span>
+<span class="sd">            training_result (Optional): only meaningful for Hogwild training. default</span>
+<span class="sd">            is None</span>
+<span class="sd">            rank (int): only used in distributed training, the rank of the current</span>
+<span class="sd">            training thread, evaluation will only be done in rank 0</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            model, best_metric: the trained model together with the best metric</span>
+<span class="sd">        """</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">TrainingState</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">optimizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">scheduler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span>
+            <span class="n">sparsifier</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sparsifier</span><span class="p">,</span>
+            <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_from_state</span><span class="p">(</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">training_data</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">,</span> <span class="n">train_config</span>
+        <span class="p">)</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"Trainer.train_from_state"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">train_from_state</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span>
+        <span class="n">training_data</span><span class="p">:</span> <span class="n">BatchIterator</span><span class="p">,</span>
+        <span class="n">eval_data</span><span class="p">:</span> <span class="n">BatchIterator</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span><span class="p">,</span>
+        <span class="n">train_config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Train and eval a model from a given training state will be modified.</span>
+<span class="sd">        This function iterates epochs specified in config, and for each epoch do:</span>
+
+<span class="sd">            1. Train model using training data, aggregate and report training results</span>
+<span class="sd">            2. Adjust learning rate if scheduler is specified</span>
+<span class="sd">            3. Evaluate model using evaluation data</span>
+<span class="sd">            4. Calculate metrics based on evaluation results and select best model</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            training_state (TrainingState): contrains stateful information to be</span>
+<span class="sd">            able to restore a training job</span>
+<span class="sd">            train_iter (BatchIterator): batch iterator of training data</span>
+<span class="sd">            eval_iter (BatchIterator): batch iterator of evaluation data</span>
+<span class="sd">            model (Model): model to be trained</span>
+<span class="sd">            metric_reporter (MetricReporter): compute metric based on training</span>
+<span class="sd">                output and report results to console, file.. etc</span>
+<span class="sd">            train_config (PyTextConfig): training config</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            model, best_metric: the trained model together with the best metric</span>
+<span class="sd">        """</span>
+        <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_up_training</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">training_data</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rank</span>
+        <span class="n">trainable_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span>
+        <span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Model :{model}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Num trainable parameters: {trainable_params}"</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_training</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">epoch</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">epochs_since_last_improvement</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">lrs</span> <span class="o">=</span> <span class="n">learning_rates</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">optimizer</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Worker {state.rank} starting epoch {state.epoch}"</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Learning rate(s): {', '.join(map(str, lrs))}"</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"train epoch"</span><span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"start training epoch {state.epoch}"</span><span class="p">)</span>
+                <span class="n">epoch_data</span> <span class="o">=</span> <span class="n">training_data</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_batches_per_epoch</span><span class="p">:</span>
+                    <span class="c1"># We want to limit the number of batches in the epoch;</span>
+                    <span class="c1"># equivalent to epoch_data[:num_batches_per_epoch] for iterators.</span>
+                    <span class="c1"># In this case we set the training data iterator to cycle earlier</span>
+                    <span class="c1"># in the training process, so when it reaches the end it will</span>
+                    <span class="c1"># loop back to the beginning.</span>
+                    <span class="n">epoch_data</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span>
+                        <span class="n">epoch_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_batches_per_epoch</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">run_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">epoch_data</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">do_eval</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"eval epoch"</span><span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"start evaluating epoch {state.epoch}"</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                    <span class="n">eval_metric</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">)</span>
+
+            <span class="c1"># Step the learning rate scheduler(s)</span>
+            <span class="k">assert</span> <span class="n">eval_metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">step_epoch</span><span class="p">(</span>
+                <span class="n">metrics</span><span class="o">=</span><span class="n">metric_reporter</span><span class="o">.</span><span class="n">get_model_select_metric</span><span class="p">(</span><span class="n">eval_metric</span><span class="p">),</span>
+                <span class="n">epoch</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Did we train a better model?</span>
+            <span class="n">better_model</span> <span class="o">=</span> <span class="n">metric_reporter</span><span class="o">.</span><span class="n">compare_metric</span><span class="p">(</span>
+                <span class="n">eval_metric</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">best_model_metric</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">better_model</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_best_model</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">train_config</span><span class="p">,</span> <span class="n">eval_metric</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">better_model</span> <span class="ow">or</span> <span class="n">train_config</span><span class="o">.</span><span class="n">save_all_checkpoints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">finalize</span><span class="p">():</span>
+            <span class="n">should_update_model</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">eval_metric</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">do_eval</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"start evaluating finalized state"</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                    <span class="n">eval_metric</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">)</span>
+                <span class="n">should_update_model</span> <span class="o">=</span> <span class="n">metric_reporter</span><span class="o">.</span><span class="n">compare_metric</span><span class="p">(</span>
+                    <span class="n">eval_metric</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">best_model_metric</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">should_update_model</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_best_model</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">train_config</span><span class="p">,</span> <span class="n">eval_metric</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">should_update_model</span> <span class="ow">or</span> <span class="n">train_config</span><span class="o">.</span><span class="n">save_all_checkpoints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
+        <span class="c1"># Only bother loading the best model for master worker</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">best_model_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">load_best_model_after_train</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_best_model</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">best_model_metric</span>
+
+    <span class="nd">@timing.report_snapshot</span>
+    <span class="k">def</span> <span class="nf">run_epoch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">BatchIterator</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span>
+    <span class="p">):</span>
+        <span class="c1"># This method is due for some refactoring, pushing it off because it interacts</span>
+        <span class="c1"># with the metric reporter too much. Much of the logic here either changes in</span>
+        <span class="c1"># the NewTaskTrainer or should change with a better metric reporter design.</span>
+        <span class="n">report_metric</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">report_train_metrics</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="sd">"""</span>
+<span class="sd">        Sometimes, a batch of inputs is too large to fit into GPU, which has to</span>
+<span class="sd">        be split into several micro-batches. However, to improve efficiency,</span>
+<span class="sd">        it would be helpful to only apply params/gradients sync at original batch</span>
+<span class="sd">        boundaries instead of micro-batch boundaries.</span>
+<span class="sd">        num_accumulated_batches specified the number of accumulating gradients</span>
+<span class="sd">        locally before sync gradients, total training_batch_size =</span>
+<span class="sd">        train_batch_size x num_accumulated_batches and it will improve the system</span>
+<span class="sd">        performance by reduce the total network transfer bytes.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span>
+                <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_accumulated_batches</span>
+            <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">run_step</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">,</span> <span class="n">report_metric</span><span class="p">)</span>
+                <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">samples</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_step</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">,</span> <span class="n">report_metric</span><span class="p">)</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">report_metric</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"report metrics"</span><span class="p">):</span>
+                <span class="n">metrics</span> <span class="o">=</span> <span class="n">metric_reporter</span><span class="o">.</span><span class="n">report_metric</span><span class="p">(</span>
+                    <span class="n">model</span><span class="p">,</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+                    <span class="n">print_to_channels</span><span class="o">=</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="n">optimizer</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span>
+                        <span class="n">state</span><span class="p">,</span> <span class="s2">"optimizer"</span><span class="p">,</span> <span class="bp">None</span>
+                    <span class="p">),</span>  <span class="c1"># optimizer is not present during test</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">metric_reporter</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">metrics</span>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"run_step"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">run_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">samples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span><span class="p">,</span>
+        <span class="n">report_metric</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">sample_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">sample_size</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_accumulated_batches</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zero_grads</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_id</span><span class="p">,</span> <span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">context</span><span class="p">))</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">contextlib_ExitStack</span><span class="p">()</span> <span class="k">as</span> <span class="n">exit_stack</span><span class="p">:</span>
+                <span class="n">maybe_accumulate_gradients</span><span class="p">(</span><span class="n">exit_stack</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">)</span>
+                <span class="c1"># pass context to model to use in forward call if needed</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">contextualize</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"model.forward"</span><span class="p">):</span>
+                    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+
+                <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"compute loss"</span><span class="p">):</span>
+                    <span class="n">loss</span> <span class="o">=</span> <span class="n">precision</span><span class="o">.</span><span class="n">maybe_float</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">.</span><span class="n">get_loss</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">BatchContext</span><span class="o">.</span><span class="n">IGNORE_LOSS</span> <span class="ow">in</span> <span class="n">context</span><span class="p">:</span>
+                        <span class="n">loss</span> <span class="o">*=</span> <span class="mi">0</span>
+                    <span class="k">elif</span> <span class="n">sample_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># gradients averaged per batch and accumulated across samples.</span>
+                        <span class="c1"># divide sample_size to let gradients averaged per example</span>
+                        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">/</span> <span class="n">sample_size</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">backprop</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">report_metric</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"get pred"</span><span class="p">):</span>
+                    <span class="n">preds</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_pred</span><span class="p">(</span>
+                        <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span>
+                    <span class="p">)</span>
+
+                <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"add metrics"</span><span class="p">):</span>
+                    <span class="n">metric_reporter</span><span class="o">.</span><span class="n">add_batch_stats</span><span class="p">(</span>
+                        <span class="n">batch_id</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span>
+                    <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">batch_id</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples_to_log_progress</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"Running batch {batch_id} for epoch {state.epoch} in {state.stage} stage"</span><span class="p">,</span>
+                    <span class="n">flush</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="c1"># update gradients after len(samples) forward &amp; backward</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_step</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparsification_step</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">TaskTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="TaskTrainer.Config"><a class="viewcode-back" href="../../../configs/pytext.trainers.trainer.TaskTrainer.Config.html#pytext.trainers.trainer.TaskTrainer.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Trainer</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="sd">"""Make mypy happy"""</span></div>
+
+    <span class="nd">@timing.time</span><span class="p">(</span><span class="s2">"run_step"</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">run_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">samples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">TrainingState</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span><span class="p">,</span>
+        <span class="n">report_metric</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""Our run_step is a bit different, because we're wrapping the model forward</span>
+<span class="sd">        call with model.train_batch, which arranges tensors and gets loss, etc.</span>
+
+<span class="sd">        Whenever "samples" contains more than one mini-batch (sample_size &gt; 1),</span>
+<span class="sd">        we want to accumulate gradients locally and only call all-reduce in the</span>
+<span class="sd">        last backwards pass.</span>
+<span class="sd">        """</span>
+        <span class="n">sample_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">sample_size</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_accumulated_batches</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zero_grads</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_id</span><span class="p">,</span> <span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">))</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">contextlib_ExitStack</span><span class="p">()</span> <span class="k">as</span> <span class="n">exit_stack</span><span class="p">:</span>
+                <span class="c1"># enter ddp no_sync context and fp16 delay_scale context if needed</span>
+                <span class="n">maybe_accumulate_gradients</span><span class="p">(</span><span class="n">exit_stack</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"model.train_batch"</span><span class="p">):</span>
+                    <span class="n">loss</span><span class="p">,</span> <span class="n">metric_data</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">train_batch</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">sample_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># gradients averaged per batch and accumulated across samples.</span>
+                        <span class="c1"># divide sample_size to let gradients averaged per example</span>
+                        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">/</span> <span class="n">sample_size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">backprop</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">report_metric</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">timing</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="s2">"add metrics"</span><span class="p">):</span>
+                    <span class="n">metric_reporter</span><span class="o">.</span><span class="n">add_batch_stats</span><span class="p">(</span>
+                        <span class="n">batch_id</span><span class="p">,</span>
+                        <span class="o">*</span><span class="n">metric_data</span><span class="p">,</span>
+                        <span class="c1"># TODO merge this step into add_batch_stats once all data</span>
+                        <span class="c1"># migration is done</span>
+                        <span class="o">**</span><span class="n">metric_reporter</span><span class="o">.</span><span class="n">batch_context</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="n">batch_id</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples_to_log_progress</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">metric_reporter</span><span class="o">.</span><span class="n">report_realtime_metric</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">stage</span><span class="p">)</span>
+        <span class="c1"># update gradients after #len(samples) forward &amp; backward</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_step</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparsification_step</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_scheduler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">training_batches</span><span class="p">,</span> <span class="n">scheduler</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""Batch based schedulers require knowing the number of batches in</span>
+<span class="sd">        the data. We're not supporting that yet with the Data api, need to figure out</span>
+<span class="sd">        how to expose this info or restructure batch-based schedulers to not need it."""</span>
+        <span class="k">if</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">batch_based_schedulers</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"New tasks don't yet support batch-based scheduling"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scheduler</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

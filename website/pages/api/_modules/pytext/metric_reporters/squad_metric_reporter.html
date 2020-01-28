@@ -1,0 +1,463 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metric_reporters.squad_metric_reporter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters.channel</span> <span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">ConsoleChannel</span><span class="p">,</span> <span class="n">FileChannel</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters.metric_reporter</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+<span class="kn">from</span> <span class="nn">pytext.metrics.squad_metrics</span> <span class="kn">import</span> <span class="n">SquadMetrics</span>
+
+
+<div class="viewcode-block" id="SquadFileChannel"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadFileChannel">[docs]</a><span class="k">class</span> <span class="nc">SquadFileChannel</span><span class="p">(</span><span class="n">FileChannel</span><span class="p">):</span>
+<div class="viewcode-block" id="SquadFileChannel.get_title"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadFileChannel.get_title">[docs]</a>    <span class="k">def</span> <span class="nf">get_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context_keys</span><span class="o">=</span><span class="p">()):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"index"</span><span class="p">,</span>
+            <span class="s2">"ques"</span><span class="p">,</span>
+            <span class="s2">"doc"</span><span class="p">,</span>
+            <span class="s2">"predicted_answer"</span><span class="p">,</span>
+            <span class="s2">"true_answers"</span><span class="p">,</span>
+            <span class="s2">"predicted_start_pos"</span><span class="p">,</span>
+            <span class="s2">"predicted_end_pos"</span><span class="p">,</span>
+            <span class="s2">"true_start_pos"</span><span class="p">,</span>
+            <span class="s2">"true_end_pos"</span><span class="p">,</span>
+            <span class="s2">"start_pos_scores"</span><span class="p">,</span>
+            <span class="s2">"end_pos_scores"</span><span class="p">,</span>
+            <span class="s2">"predicted_has_answer"</span><span class="p">,</span>
+            <span class="s2">"true_has_answer"</span><span class="p">,</span>
+            <span class="s2">"has_answer_scores"</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SquadFileChannel.gen_content"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadFileChannel.gen_content">[docs]</a>    <span class="k">def</span> <span class="nf">gen_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">contexts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">pred_answers</span><span class="p">,</span> <span class="n">pred_start_pos</span><span class="p">,</span> <span class="n">pred_end_pos</span><span class="p">,</span> <span class="n">pred_has_answer</span> <span class="o">=</span> <span class="n">preds</span>
+        <span class="n">true_answers</span><span class="p">,</span> <span class="n">true_start_pos</span><span class="p">,</span> <span class="n">true_end_pos</span><span class="p">,</span> <span class="n">true_has_answer</span> <span class="o">=</span> <span class="n">targets</span>
+        <span class="n">start_pos_scores</span><span class="p">,</span> <span class="n">end_pos_scores</span><span class="p">,</span> <span class="n">has_answer_scores</span> <span class="o">=</span> <span class="n">scores</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pred_answers</span><span class="p">)):</span>
+            <span class="k">yield</span> <span class="p">[</span>
+                <span class="n">contexts</span><span class="p">[</span><span class="n">SquadMetricReporter</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">contexts</span><span class="p">[</span><span class="n">SquadMetricReporter</span><span class="o">.</span><span class="n">QUES_COLUMN</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">contexts</span><span class="p">[</span><span class="n">SquadMetricReporter</span><span class="o">.</span><span class="n">DOC_COLUMN</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">pred_answers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">true_answers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">pred_start_pos</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">pred_end_pos</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">true_start_pos</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">true_end_pos</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">start_pos_scores</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">end_pos_scores</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">pred_has_answer</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">true_has_answer</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">has_answer_scores</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+            <span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="SquadMetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter">[docs]</a><span class="k">class</span> <span class="nc">SquadMetricReporter</span><span class="p">(</span><span class="n">MetricReporter</span><span class="p">):</span>
+    <span class="n">QUES_COLUMN</span> <span class="o">=</span> <span class="s2">"question"</span>
+    <span class="n">ANSWERS_COLUMN</span> <span class="o">=</span> <span class="s2">"answers"</span>
+    <span class="n">DOC_COLUMN</span> <span class="o">=</span> <span class="s2">"doc"</span>
+    <span class="n">ROW_INDEX</span> <span class="o">=</span> <span class="s2">"id"</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">MetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">n_best_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">max_answer_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span>
+        <span class="n">ignore_impossible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">false_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"False"</span>
+
+<div class="viewcode-block" id="SquadMetricReporter.from_config"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">channels</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">ConsoleChannel</span><span class="p">(),</span>
+                <span class="n">SquadFileChannel</span><span class="p">((</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,),</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">),</span>
+            <span class="p">],</span>
+            <span class="n">n_best_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">n_best_size</span><span class="p">,</span>
+            <span class="n">max_answer_length</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_answer_length</span><span class="p">,</span>
+            <span class="n">ignore_impossible</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">ignore_impossible</span><span class="p">,</span>
+            <span class="n">has_answer_labels</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"has_answer"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">_vocab</span><span class="p">,</span>
+            <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"squad_input"</span><span class="p">],</span>
+            <span class="n">false_label</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">false_label</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">channels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Channel</span><span class="p">],</span>
+        <span class="n">n_best_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">max_answer_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ignore_impossible</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">has_answer_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">tensorizer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">false_label</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">false_label</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="n">channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensorizer</span> <span class="o">=</span> <span class="n">tensorizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_impossible</span> <span class="o">=</span> <span class="n">ignore_impossible</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_answer_labels</span> <span class="o">=</span> <span class="n">has_answer_labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">false_label</span> <span class="o">=</span> <span class="n">false_label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">false_idx</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">has_answer_labels</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">false_label</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">true_idx</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">false_idx</span>
+
+    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_preds</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_targets</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_scores</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_preds</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_targets</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_scores</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_scores</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_scores</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_loss</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># self.all_true_answers: List = []</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_batches</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">_add_decoded_answer_batch_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m_input</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="o">**</span><span class="n">contexts</span><span class="p">):</span>
+        <span class="c1"># For BERT, doc_tokens = concatenated tokens from question and document.</span>
+        <span class="n">doc_tokens</span> <span class="o">=</span> <span class="n">m_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">,</span> <span class="n">has_answers</span> <span class="o">=</span> <span class="n">preds</span>
+        <span class="n">pred_answers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_unnumberize</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">doc_str</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">doc_str</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">doc_tokens</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">,</span> <span class="n">contexts</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DOC_COLUMN</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">,</span> <span class="n">pred_answers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SquadMetricReporter.add_batch_stats"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.add_batch_stats">[docs]</a>    <span class="k">def</span> <span class="nf">add_batch_stats</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_batches</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">m_input</span><span class="p">,</span> <span class="o">**</span><span class="n">contexts</span>
+    <span class="p">):</span>  <span class="c1"># contexts object is the dict returned by self.batch_context().</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_batch_stats</span><span class="p">(</span>
+            <span class="n">n_batches</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">m_input</span><span class="p">,</span> <span class="o">**</span><span class="n">contexts</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_decoded_answer_batch_stats</span><span class="p">(</span><span class="n">m_input</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="o">**</span><span class="n">contexts</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SquadMetricReporter.aggregate_preds"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.aggregate_preds">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_preds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_preds</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_preds</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="SquadMetricReporter.aggregate_targets"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.aggregate_targets">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_targets</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_targets</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="SquadMetricReporter.aggregate_scores"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.aggregate_scores">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_scores</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_scores</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_scores</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="SquadMetricReporter.batch_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.batch_context">[docs]</a>    <span class="k">def</span> <span class="nf">batch_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">batch_context</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+        <span class="n">context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span><span class="p">]</span>
+        <span class="n">context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">QUES_COLUMN</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">QUES_COLUMN</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span><span class="p">]</span>
+        <span class="n">context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span><span class="p">]</span>
+        <span class="n">context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DOC_COLUMN</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DOC_COLUMN</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="SquadMetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">all_rows</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">QUES_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DOC_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_scores</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">all_rows_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">all_rows</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">all_rows_dict</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">all_rows_dict</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">]</span>
+
+        <span class="n">all_rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rows</span> <span class="ow">in</span> <span class="n">all_rows_dict</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">argmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="n">row</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">])</span>
+            <span class="n">all_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">argmax</span><span class="p">])</span>
+
+        <span class="nb">sorted</span><span class="p">(</span><span class="n">all_rows</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">QUES_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DOC_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_scores</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">all_rows</span><span class="p">)</span>
+
+        <span class="n">exact_matches</span><span class="p">,</span> <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_exact_matches</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">f1_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_f1_score</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_pred_answers</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_preds</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_preds</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ANSWERS_COLUMN</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_targets</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_targets</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_start_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_end_pos_scores</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_has_answer_scores</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">SquadMetrics</span><span class="p">(</span>
+            <span class="n">exact_matches</span><span class="o">=</span><span class="mf">100.0</span> <span class="o">*</span> <span class="n">exact_matches</span> <span class="o">/</span> <span class="n">count</span><span class="p">,</span>
+            <span class="n">f1_score</span><span class="o">=</span><span class="n">f1_score</span><span class="p">,</span>
+            <span class="n">num_examples</span><span class="o">=</span><span class="n">count</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">metrics</span></div>
+
+<div class="viewcode-block" id="SquadMetricReporter.get_model_select_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.get_model_select_metric">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_select_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="n">SquadMetrics</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">f1_score</span></div>
+
+    <span class="k">def</span> <span class="nf">_compute_exact_matches</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pred_answer_list</span><span class="p">,</span>
+        <span class="n">target_answers_list</span><span class="p">,</span>
+        <span class="n">pred_has_answer_list</span><span class="p">,</span>
+        <span class="n">target_has_answer_list</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">exact_matches</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">pred_answer</span><span class="p">,</span> <span class="n">target_answers</span><span class="p">,</span> <span class="n">pred_has_answer</span><span class="p">,</span> <span class="n">target_has_answer</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">pred_answer_list</span><span class="p">,</span>
+            <span class="n">target_answers_list</span><span class="p">,</span>
+            <span class="n">pred_has_answer_list</span><span class="p">,</span>
+            <span class="n">target_has_answer_list</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_impossible</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pred_has_answer</span> <span class="o">!=</span> <span class="n">target_has_answer</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">pred_has_answer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">false_idx</span><span class="p">:</span>
+                    <span class="n">exact_matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+            <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_answer</span><span class="p">(</span><span class="n">pred_answer</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">answer</span> <span class="ow">in</span> <span class="n">target_answers</span><span class="p">:</span>
+                <span class="n">true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_answer</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pred</span> <span class="o">==</span> <span class="n">true</span><span class="p">:</span>
+                    <span class="n">exact_matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="n">exact_matches</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_answer_list</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute_f1_score</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pred_answer_list</span><span class="p">,</span>
+        <span class="n">target_answers_list</span><span class="p">,</span>
+        <span class="n">pred_has_answer_list</span><span class="p">,</span>
+        <span class="n">target_has_answer_list</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">f1_scores_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">pred_answer</span><span class="p">,</span> <span class="n">target_answers</span><span class="p">,</span> <span class="n">pred_has_answer</span><span class="p">,</span> <span class="n">target_has_answer</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">pred_answer_list</span><span class="p">,</span>
+            <span class="n">target_answers_list</span><span class="p">,</span>
+            <span class="n">pred_has_answer_list</span><span class="p">,</span>
+            <span class="n">target_has_answer_list</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_impossible</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pred_has_answer</span> <span class="o">!=</span> <span class="n">target_has_answer</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">pred_has_answer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">false_idx</span><span class="p">:</span>
+                    <span class="n">f1_scores_sum</span> <span class="o">+=</span> <span class="mf">1.0</span>
+                    <span class="k">continue</span>
+            <span class="n">f1_scores_sum</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_compute_f1_per_answer</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="n">pred_answer</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">answer</span> <span class="ow">in</span> <span class="n">target_answers</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="n">f1_scores_sum</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_answer_list</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_unnumberize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ans_tokens</span><span class="p">,</span> <span class="n">doc_str</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Tokens is the span of token ids that the model predicted. We re-tokenize</span>
+<span class="sd">        and re-numberize the raw context (doc_str) here to get doc_tokens to get</span>
+<span class="sd">        access to start_idx and end_idx mappings.  At this point, ans_tokens is</span>
+<span class="sd">        a sub-list of doc_tokens (hopefully, if the model predicted a span in</span>
+<span class="sd">        the context). Then we find tokens inside doc_tokens, and return the</span>
+<span class="sd">        corresponding span in the raw text using the idx mapping.</span>
+<span class="sd">        """</span>
+        <span class="c1"># start_idx and end_idx are lists of char start and end positions in doc_str.</span>
+        <span class="n">doc_tokens</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorizer</span><span class="o">.</span><span class="n">_lookup_tokens</span><span class="p">(</span><span class="n">doc_str</span><span class="p">)</span>
+        <span class="n">doc_tokens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">doc_tokens</span><span class="p">)</span>
+        <span class="n">num_ans_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ans_tokens</span><span class="p">)</span>
+        <span class="n">answer_str</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">for</span> <span class="n">doc_token_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">doc_tokens</span><span class="p">)</span> <span class="o">-</span> <span class="n">num_ans_tokens</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">doc_tokens</span><span class="p">[</span><span class="n">doc_token_idx</span> <span class="p">:</span> <span class="n">doc_token_idx</span> <span class="o">+</span> <span class="n">num_ans_tokens</span><span class="p">]</span> <span class="o">==</span> <span class="n">ans_tokens</span><span class="p">:</span>
+                <span class="n">start_char_idx</span> <span class="o">=</span> <span class="n">start_idx</span><span class="p">[</span><span class="n">doc_token_idx</span><span class="p">]</span>
+                <span class="n">end_char_idx</span> <span class="o">=</span> <span class="n">end_idx</span><span class="p">[</span><span class="n">doc_token_idx</span> <span class="o">+</span> <span class="n">num_ans_tokens</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">answer_str</span> <span class="o">=</span> <span class="n">doc_str</span><span class="p">[</span><span class="n">start_char_idx</span><span class="p">:</span><span class="n">end_char_idx</span><span class="p">]</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="n">answer_str</span>
+
+    <span class="c1"># The following three functions are copied from Squad's evaluation script.</span>
+    <span class="c1"># https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/</span>
+
+    <span class="k">def</span> <span class="nf">_normalize_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="sd">"""Lower text and remove punctuation, articles and extra whitespace."""</span>
+
+        <span class="k">def</span> <span class="nf">white_space_fix</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+        <span class="k">def</span> <span class="nf">remove_articles</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\b(a|an|the)\b"</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">UNICODE</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="s2">" "</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">remove_punc</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="n">exclude</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">punctuation</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">text</span> <span class="k">if</span> <span class="n">ch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">lower</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">white_space_fix</span><span class="p">(</span><span class="n">remove_articles</span><span class="p">(</span><span class="n">remove_punc</span><span class="p">(</span><span class="n">lower</span><span class="p">(</span><span class="n">s</span><span class="p">))))</span>
+
+    <span class="k">def</span> <span class="nf">_get_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_answer</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compute_f1_per_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_gold</span><span class="p">,</span> <span class="n">a_pred</span><span class="p">):</span>
+        <span class="n">gold_toks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_tokens</span><span class="p">(</span><span class="n">a_gold</span><span class="p">)</span>
+        <span class="n">pred_toks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_tokens</span><span class="p">(</span><span class="n">a_pred</span><span class="p">)</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">gold_toks</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">Counter</span><span class="p">(</span><span class="n">pred_toks</span><span class="p">)</span>
+        <span class="n">num_same</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">common</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gold_toks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_toks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># If either is no-answer, then F1 is 1 if they agree, 0 otherwise</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">gold_toks</span> <span class="o">==</span> <span class="n">pred_toks</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_same</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">precision</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">num_same</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_toks</span><span class="p">)</span>
+        <span class="n">recall</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">num_same</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">gold_toks</span><span class="p">)</span>
+        <span class="n">f1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">precision</span> <span class="o">*</span> <span class="n">recall</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">precision</span> <span class="o">+</span> <span class="n">recall</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f1</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

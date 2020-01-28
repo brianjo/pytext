@@ -1,0 +1,33 @@
+FP16Optimizer.Config
+====================
+
+
+
+**Component:** :class:`FP16Optimizer  <pytext.optimizer.fp16_optimizer.FP16Optimizer>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: FP16Optimizer.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`FP16OptimizerApex.Config <pytext.optimizer.fp16_optimizer.FP16OptimizerApex.Config>`\ 
+  - :class:`FP16OptimizerFairseq.Config <pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.Config>`\ 
+  - :class:`MemoryEfficientFP16OptimizerFairseq.Config <pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

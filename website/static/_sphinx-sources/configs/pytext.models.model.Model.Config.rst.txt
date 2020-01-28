@@ -1,0 +1,46 @@
+Model.Config
+============
+
+
+
+**Component:** :class:`Model  <pytext.models.model.Model>`\ 
+
+
+.. py:currentmodule:: pytext.models.model
+.. py:class:: Model.Config
+  :noindex:
+
+  **Bases:** :class:`BaseModel.Config <pytext.models.model.BaseModel.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.model.ModelInput>` = :doc:`ModelInput <pytext.models.model.ModelInput>`\ ()
+    \ 
+
+
+
+**Subclasses**
+  - :class:`DisjointMultitaskModel.Config <pytext.models.disjoint_multitask_model.DisjointMultitaskModel.Config>`\ 
+  - :class:`NewDisjointMultitaskModel.Config <pytext.models.disjoint_multitask_model.NewDisjointMultitaskModel.Config>`\ 
+  - :class:`ByteTokensDocumentModel.Config <pytext.models.doc_model.ByteTokensDocumentModel.Config>`\ 
+  - :class:`DocModel.Config <pytext.models.doc_model.DocModel.Config>`\ 
+  - :class:`DocRegressionModel.Config <pytext.models.doc_model.DocRegressionModel.Config>`\ 
+  - :class:`PersonalizedDocModel.Config <pytext.models.doc_model.PersonalizedDocModel.Config>`\ 
+  - :class:`IntentSlotModel.Config <pytext.models.joint_model.IntentSlotModel.Config>`\ 
+  - :class:`ContextualIntentSlotModel.Config <pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.Config>`\ 
+  - :class:`SeqNNModel.Config <pytext.models.seq_models.seqnn.SeqNNModel.Config>`\ 
+  - :class:`WordTaggingLiteModel.Config <pytext.models.word_model.WordTaggingLiteModel.Config>`\ 
+  - :class:`WordTaggingModel.Config <pytext.models.word_model.WordTaggingModel.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {}
+  }

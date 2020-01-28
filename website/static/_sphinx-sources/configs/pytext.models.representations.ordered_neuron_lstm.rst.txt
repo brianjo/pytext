@@ -1,0 +1,8 @@
+ordered_neuron_lstm
+===================
+
+
+.. toctree::
+
+  pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTM.Config
+  pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTMLayer.Config

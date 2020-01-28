@@ -1,0 +1,36 @@
+GPT2BPETokenizer.Config
+=======================
+
+
+
+**Component:** :class:`GPT2BPETokenizer  <pytext.data.tokenizers.tokenizer.GPT2BPETokenizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tokenizers.tokenizer
+.. py:class:: GPT2BPETokenizer.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **bpe_encoder_path**: str = ``'manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json'``
+    \ 
+
+  **bpe_vocab_path**: str = ``'manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "bpe_encoder_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json",
+      "bpe_vocab_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe"
+  }

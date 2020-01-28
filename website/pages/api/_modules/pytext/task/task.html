@@ -1,0 +1,324 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.task.task</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">BatchContext</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Component</span><span class="p">,</span>
+    <span class="n">ComponentType</span><span class="p">,</span>
+    <span class="n">create_component</span><span class="p">,</span>
+    <span class="n">create_data_handler</span><span class="p">,</span>
+    <span class="n">create_exporter</span><span class="p">,</span>
+    <span class="n">create_featurizer</span><span class="p">,</span>
+    <span class="n">create_metric_reporter</span><span class="p">,</span>
+    <span class="n">create_model</span><span class="p">,</span>
+    <span class="n">create_trainer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">FeatureConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">DataHandler</span>
+<span class="kn">from</span> <span class="nn">pytext.data.featurizer</span> <span class="kn">import</span> <span class="n">Featurizer</span><span class="p">,</span> <span class="n">SimpleFeaturizer</span>
+<span class="kn">from</span> <span class="nn">pytext.exporters</span> <span class="kn">import</span> <span class="n">ModelExporter</span>
+<span class="kn">from</span> <span class="nn">pytext.loss</span> <span class="kn">import</span> <span class="n">KLDivergenceBCELoss</span><span class="p">,</span> <span class="n">KLDivergenceCELoss</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+<span class="kn">from</span> <span class="nn">pytext.models</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">pytext.trainers</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span>
+
+
+<div class="viewcode-block" id="create_task"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.create_task">[docs]</a><span class="k">def</span> <span class="nf">create_task</span><span class="p">(</span>
+    <span class="n">task_config</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">model_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Create a task by finding task class in registry and invoking the from_config</span>
+<span class="sd">    function of the class, see :meth:`~Task.from_config` for more details</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">TASK</span><span class="p">,</span>
+        <span class="n">task_config</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">,</span>
+        <span class="n">model_state</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TaskBase"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase">[docs]</a><span class="k">class</span> <span class="nc">TaskBase</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Task is the central place to define and wire up components for data processing,</span>
+<span class="sd">    model training, metric reporting, etc. Task class has a Config class containing</span>
+<span class="sd">    the config of each component in a descriptive way.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">TASK</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">features</span><span class="p">:</span> <span class="n">FeatureConfig</span> <span class="o">=</span> <span class="n">FeatureConfig</span><span class="p">()</span>
+        <span class="n">featurizer</span><span class="p">:</span> <span class="n">Featurizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">SimpleFeaturizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">data_handler</span><span class="p">:</span> <span class="n">DataHandler</span><span class="o">.</span><span class="n">Config</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">Trainer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">exporter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelExporter</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="TaskBase.from_config"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">task_config</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">model_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Create the task from config, and optionally load metadata/model_state</span>
+<span class="sd">        This function will create components including :class:`~DataHandler`,</span>
+<span class="sd">        :class:`~Trainer`, :class:`~MetricReporter`,</span>
+<span class="sd">        :class:`~Exporter`, and wire them up.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            task_config (Task.Config): the config of the current task</span>
+<span class="sd">            metadata: saved global context of this task, e.g: vocabulary, will be</span>
+<span class="sd">                generated by :class:`~DataHandler` if it's None</span>
+<span class="sd">            model_state: saved model parameters, will be loaded into model when given</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="s2">"target_prob"</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">task_config</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">target_prob</span> <span class="o">==</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">KLDivergenceBCELoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">KLDivergenceCELoss</span><span class="o">.</span><span class="n">Config</span><span class="p">),</span>
+            <span class="p">),</span> <span class="s2">"target_prob must be set to True for KD losses"</span>
+        <span class="n">featurizer</span> <span class="o">=</span> <span class="n">create_featurizer</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">featurizer</span><span class="p">,</span> <span class="n">task_config</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+        <span class="c1"># load data</span>
+        <span class="n">data_handler</span> <span class="o">=</span> <span class="n">create_data_handler</span><span class="p">(</span>
+            <span class="n">task_config</span><span class="o">.</span><span class="n">data_handler</span><span class="p">,</span>
+            <span class="n">task_config</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+            <span class="n">task_config</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+            <span class="n">featurizer</span><span class="o">=</span><span class="n">featurizer</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Loading data..."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">metadata</span><span class="p">:</span>
+            <span class="n">data_handler</span><span class="o">.</span><span class="n">load_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_handler</span><span class="o">.</span><span class="n">init_metadata</span><span class="p">()</span>
+
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">data_handler</span><span class="o">.</span><span class="n">metadata</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">task_config</span><span class="o">.</span><span class="n">features</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_state</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_state</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="n">metric_reporter</span> <span class="o">=</span> <span class="n">create_metric_reporter</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
+        <span class="n">exporter</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">create_exporter</span><span class="p">(</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">exporter</span><span class="p">,</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+                <span class="n">data_handler</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">featurizer</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">task_config</span><span class="o">.</span><span class="n">exporter</span>
+            <span class="k">else</span> <span class="bp">None</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">trainer</span><span class="o">=</span><span class="n">create_trainer</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+            <span class="n">data_handler</span><span class="o">=</span><span class="n">data_handler</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">metric_reporter</span><span class="o">=</span><span class="n">metric_reporter</span><span class="p">,</span>
+            <span class="n">exporter</span><span class="o">=</span><span class="n">exporter</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span>
+        <span class="n">data_handler</span><span class="p">:</span> <span class="n">DataHandler</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span><span class="p">,</span>
+        <span class="n">exporter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelExporter</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span> <span class="o">=</span> <span class="n">trainer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="p">:</span> <span class="n">DataHandler</span> <span class="o">=</span> <span class="n">data_handler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MetricReporter</span> <span class="o">=</span> <span class="n">metric_reporter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exporter</span> <span class="o">=</span> <span class="n">exporter</span>
+
+<div class="viewcode-block" id="TaskBase.train"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_config</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">training_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Wrapper method to train the model using :class:`~Trainer` object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            train_config (PyTextConfig): config for training</span>
+<span class="sd">            rank (int): for distributed training only, rank of the gpu, default is 0</span>
+<span class="sd">            world_size (int): for distributed training only, total gpu to use, default</span>
+<span class="sd">                is 1</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">training_state</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">train_from_state</span><span class="p">(</span>
+                <span class="n">training_state</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">get_train_iter</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">get_eval_iter</span><span class="p">(),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+                <span class="n">train_config</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">get_train_iter</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">get_eval_iter</span><span class="p">(),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+                <span class="n">train_config</span><span class="p">,</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="TaskBase.test"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase.test">[docs]</a>    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_path</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Wrapper method to compute test metrics on holdout blind test dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            test_path (str): test data file path</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">test_path</span> <span class="o">=</span> <span class="n">test_path</span>
+        <span class="n">test_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">get_test_iter</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">test</span><span class="p">(</span><span class="n">test_iter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskBase.export"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">metric_channels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Wrapper method to export PyTorch model to Caffe2 model using :class:`~Exporter`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            export_path (str): file path of exported caffe2 model</span>
+<span class="sd">            metric_channels (List[Channel]): outputs of model's execution graph</span>
+<span class="sd">            export_onnx_path (str):file path of exported onnx model</span>
+<span class="sd">        """</span>
+        <span class="c1"># Make sure to put the model on CPU and disable CUDA before exporting to</span>
+        <span class="c1"># ONNX to disable any data_parallel pieces</span>
+        <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">pre_export</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exporter</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">metric_channels</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">"Exporting metrics"</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exporter</span><span class="o">.</span><span class="n">export_to_metrics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">metric_channels</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"Saving caffe2 model to: "</span> <span class="o">+</span> <span class="n">export_path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exporter</span><span class="o">.</span><span class="n">export_to_caffe2</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskBase.format_prediction"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase.format_prediction">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">format_prediction</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">target_meta</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Format the prediction and score from model output, by default just return</span>
+<span class="sd">        them in a dict</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="p">{</span><span class="s2">"prediction"</span><span class="p">:</span> <span class="n">prediction</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">:</span> <span class="n">score</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="TaskBase.predict"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.TaskBase.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">examples</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generates predictions using PyTorch model. The difference with `test()` is</span>
+<span class="sd">        that this should be used when the the examples do not have any true</span>
+<span class="sd">        label/target.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            examples: json format examples, input names should match the names specified</span>
+<span class="sd">                in this task's features config</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">model_inputs</span><span class="p">,</span> <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">get_predict_iter</span><span class="p">(</span><span class="n">examples</span><span class="p">)</span>
+        <span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_pred</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">*</span><span class="n">model_inputs</span><span class="p">))</span>
+        <span class="n">results</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="c1"># rearrange to orignal order</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">context</span><span class="p">[</span><span class="n">BatchContext</span><span class="o">.</span><span class="n">INDEX</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">format_prediction</span><span class="p">(</span>
+                <span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_handler</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span>
+            <span class="p">),</span>
+        <span class="p">):</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">results</span></div></div>
+
+
+<div class="viewcode-block" id="Task_Deprecated"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.task.Task_Deprecated">[docs]</a><span class="k">class</span> <span class="nc">Task_Deprecated</span><span class="p">(</span><span class="n">TaskBase</span><span class="p">):</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

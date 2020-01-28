@@ -1,0 +1,94 @@
+pytext.data.test package
+========================
+
+Submodules
+----------
+
+pytext.data.test.batch\_sampler\_test module
+--------------------------------------------
+
+.. automodule:: pytext.data.test.batch_sampler_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.data\_test module
+----------------------------------
+
+.. automodule:: pytext.data.test.data_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.dynamic\_pooling\_batcher\_test module
+-------------------------------------------------------
+
+.. automodule:: pytext.data.test.dynamic_pooling_batcher_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.pandas\_data\_source\_test module
+--------------------------------------------------
+
+.. automodule:: pytext.data.test.pandas_data_source_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.round\_robin\_batchiterator\_test module
+---------------------------------------------------------
+
+.. automodule:: pytext.data.test.round_robin_batchiterator_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.simple\_featurizer\_test module
+------------------------------------------------
+
+.. automodule:: pytext.data.test.simple_featurizer_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.tensorizers\_test module
+-----------------------------------------
+
+.. automodule:: pytext.data.test.tensorizers_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.tokenizers\_test module
+----------------------------------------
+
+.. automodule:: pytext.data.test.tokenizers_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.tsv\_data\_source\_test module
+-----------------------------------------------
+
+.. automodule:: pytext.data.test.tsv_data_source_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.test.utils\_test module
+-----------------------------------
+
+.. automodule:: pytext.data.test.utils_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.data.test
+   :members:
+   :undoc-members:
+   :show-inheritance:

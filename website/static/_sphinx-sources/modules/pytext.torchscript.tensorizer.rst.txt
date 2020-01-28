@@ -1,0 +1,54 @@
+pytext.torchscript.tensorizer package
+=====================================
+
+Submodules
+----------
+
+pytext.torchscript.tensorizer.bert module
+-----------------------------------------
+
+.. automodule:: pytext.torchscript.tensorizer.bert
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.tensorizer.normalizer module
+-----------------------------------------------
+
+.. automodule:: pytext.torchscript.tensorizer.normalizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.tensorizer.roberta module
+--------------------------------------------
+
+.. automodule:: pytext.torchscript.tensorizer.roberta
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.tensorizer.tensorizer module
+-----------------------------------------------
+
+.. automodule:: pytext.torchscript.tensorizer.tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.tensorizer.xlm module
+----------------------------------------
+
+.. automodule:: pytext.torchscript.tensorizer.xlm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.torchscript.tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,197 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.representations.attention</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="kn">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">Module</span>
+
+
+<div class="viewcode-block" id="DotProductSelfAttention"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.DotProductSelfAttention">[docs]</a><span class="k">class</span> <span class="nc">DotProductSelfAttention</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given vector w and token vectors = {t1, t2, ..., t_n}, compute self attention</span>
+<span class="sd">    weights to weighs the tokens</span>
+<span class="sd">    * a_j = softmax(w . t_j)</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Module</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+
+<div class="viewcode-block" id="DotProductSelfAttention.from_config"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.DotProductSelfAttention.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DotProductSelfAttention.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.DotProductSelfAttention.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">tokens_mask</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Input:</span>
+<span class="sd">            x: batch_size * seq_len * input_dim</span>
+<span class="sd">            x_mask: batch_size * seq_len (1 for padding, 0 for true)</span>
+<span class="sd">        Output:</span>
+<span class="sd">            alpha: batch_size * seq_len</span>
+<span class="sd">        """</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">masked_fill_</span><span class="p">(</span><span class="n">tokens_mask</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SequenceAlignedAttention"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.SequenceAlignedAttention">[docs]</a><span class="k">class</span> <span class="nc">SequenceAlignedAttention</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given sequences P and Q, computes attention weights for each element in P by</span>
+<span class="sd">    matching Q with each element in P.</span>
+<span class="sd">    * a_i_j = softmax(p_i . q_j) where softmax is computed by summing over q_j</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Module</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">proj_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+
+<div class="viewcode-block" id="SequenceAlignedAttention.from_config"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.SequenceAlignedAttention.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">proj_dim</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proj_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">proj_dim</span><span class="p">,</span> <span class="n">proj_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_dim</span> <span class="o">=</span> <span class="n">proj_dim</span>
+
+<div class="viewcode-block" id="SequenceAlignedAttention.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.SequenceAlignedAttention.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">q_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Input:</span>
+<span class="sd">            p: batch_size * p_seq_len * dim</span>
+<span class="sd">            q: batch_size * q_seq_len * dim</span>
+<span class="sd">            q_mask: batch_size * q_seq_len (1 for padding, 0 for true)</span>
+<span class="sd">        Output:</span>
+<span class="sd">            matched_seq: batch_size * doc_seq_len * dim</span>
+<span class="sd">        """</span>
+        <span class="n">p_transform</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+        <span class="n">q_transform</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
+
+        <span class="c1"># Compute scores s_ij: bsz * doc_seq_len * ques_seq_len</span>
+        <span class="n">attn_scores</span> <span class="o">=</span> <span class="n">p_transform</span><span class="o">.</span><span class="n">bmm</span><span class="p">(</span><span class="n">q_transform</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># Mask padding: set a very low score for ques tokens that are pads.</span>
+        <span class="n">q_mask</span> <span class="o">=</span> <span class="n">q_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">attn_scores</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+        <span class="n">attn_scores</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">masked_fill_</span><span class="p">(</span><span class="n">q_mask</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">))</span>
+
+        <span class="c1"># Normalize with softmax: bsz * doc_seq_len * ques_seq_len</span>
+        <span class="n">attn_scores_flattened</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn_scores</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">attn_scores_flattened</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="MultiplicativeAttention"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.MultiplicativeAttention">[docs]</a><span class="k">class</span> <span class="nc">MultiplicativeAttention</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given sequence P and vector q, computes attention weights for each element</span>
+<span class="sd">    in P by matching q with each element in P using multiplicative attention.</span>
+<span class="sd">    * a_i = softmax(p_i . W . q)</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Module</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">p_hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+        <span class="n">q_hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="MultiplicativeAttention.from_config"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.MultiplicativeAttention.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">p_hidden_dim</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">q_hidden_dim</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">normalize</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_hidden_dim</span><span class="p">,</span> <span class="n">q_hidden_dim</span><span class="p">,</span> <span class="n">normalize</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="n">normalize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">p_hidden_dim</span><span class="p">,</span> <span class="n">q_hidden_dim</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MultiplicativeAttention.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.attention.MultiplicativeAttention.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_seq</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">p_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Input:</span>
+<span class="sd">            p_seq: batch_size * p_seq_len * p_hidden_dim</span>
+<span class="sd">            q: batch_size * q_hidden_dim</span>
+<span class="sd">            p_mask: batch_size * p_seq_len (1 for padding, 0 for true)</span>
+<span class="sd">        Output:</span>
+<span class="sd">            attn_scores: batch_size * p_seq_len</span>
+<span class="sd">        """</span>
+        <span class="n">Wq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">q</span>
+        <span class="n">pWq</span> <span class="o">=</span> <span class="n">p_seq</span><span class="o">.</span><span class="n">bmm</span><span class="p">(</span><span class="n">Wq</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">pWq</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">masked_fill_</span><span class="p">(</span><span class="n">p_mask</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">))</span>
+        <span class="n">attn_scores</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">pWq</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="k">else</span> <span class="n">pWq</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">attn_scores</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

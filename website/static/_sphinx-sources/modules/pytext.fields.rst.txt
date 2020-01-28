@@ -1,0 +1,54 @@
+pytext.fields package
+=====================
+
+Submodules
+----------
+
+pytext.fields.char\_field module
+--------------------------------
+
+.. automodule:: pytext.fields.char_field
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.fields.contextual\_token\_embedding\_field module
+--------------------------------------------------------
+
+.. automodule:: pytext.fields.contextual_token_embedding_field
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.fields.dict\_field module
+--------------------------------
+
+.. automodule:: pytext.fields.dict_field
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.fields.field module
+--------------------------
+
+.. automodule:: pytext.fields.field
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.fields.text\_field\_with\_special\_unk module
+----------------------------------------------------
+
+.. automodule:: pytext.fields.text_field_with_special_unk
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.fields
+   :members:
+   :undoc-members:
+   :show-inheritance:

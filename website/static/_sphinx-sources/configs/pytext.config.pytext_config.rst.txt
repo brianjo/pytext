@@ -1,0 +1,7 @@
+pytext_config
+=============
+
+
+.. toctree::
+
+  pytext.config.pytext_config.PyTextConfig

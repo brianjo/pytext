@@ -1,0 +1,30 @@
+pytext.models.qna package
+=========================
+
+Submodules
+----------
+
+pytext.models.qna.bert\_squad\_qa module
+----------------------------------------
+
+.. automodule:: pytext.models.qna.bert_squad_qa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.qna.dr\_qa module
+-------------------------------
+
+.. automodule:: pytext.models.qna.dr_qa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.qna
+   :members:
+   :undoc-members:
+   :show-inheritance:

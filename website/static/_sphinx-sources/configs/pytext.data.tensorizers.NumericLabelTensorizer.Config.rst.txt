@@ -1,0 +1,43 @@
+NumericLabelTensorizer.Config
+=============================
+
+
+
+**Component:** :class:`NumericLabelTensorizer  <pytext.data.tensorizers.NumericLabelTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: NumericLabelTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``False``
+    \ 
+
+  **column**: str = ``'label'``
+    The name of the label column to parse from the data source.
+    
+
+  **rescale_range**: Optional[list[float]] = ``None``
+    If provided, the range of values the raw label can be. Will rescale the
+    label values to be within [0, 1].
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": false,
+      "column": "label",
+      "rescale_range": null
+  }

@@ -1,0 +1,30 @@
+pytext.torchscript.tokenizer package
+====================================
+
+Submodules
+----------
+
+pytext.torchscript.tokenizer.bpe module
+---------------------------------------
+
+.. automodule:: pytext.torchscript.tokenizer.bpe
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.tokenizer.tokenizer module
+---------------------------------------------
+
+.. automodule:: pytext.torchscript.tokenizer.tokenizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.torchscript.tokenizer
+   :members:
+   :undoc-members:
+   :show-inheritance:

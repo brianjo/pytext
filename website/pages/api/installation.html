@@ -1,0 +1,211 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p><em>PyText requires Python 3.6+</em></p>
+<p>PyText is available in the Python Package Index via</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install pytext-nlp
+</pre></div>
+</div>
+<p>The easiest way to get started on most systems is to create a <cite>virtualenv</cite></p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> python3 -m venv pytext_venv
+<span class="gp">$</span> <span class="nb">source</span> pytext_venv/bin/activate
+<span class="gp">(pytext_venv) $</span> pip install pytext-nlp
+</pre></div>
+</div>
+<p>This will install a version of PyTorch depending on your system. See <a class="reference external" href="https://pytorch.org">PyTorch</a> for more information. If you are using MacOS or Windows, this likely will not include GPU support by default; if you are using Linux, you should automatically get a version of PyTorch compatible with CUDA 9.0.</p>
+<p>If you need a different version of PyTorch, follow the instructions on the <a class="reference external" href="https://pytorch.org">PyTorch website</a> to install the appropriate version of PyTorch before installing PyText</p>
+<div class="section" id="os-dependencies">
+<h2>OS Dependencies<a class="headerlink" href="#os-dependencies" title="Permalink to this headline">¶</a></h2>
+<p><em>if you’re having issues getting things to run, these guides might help</em></p>
+<div class="section" id="on-macos">
+<h3>On MacOS<a class="headerlink" href="#on-macos" title="Permalink to this headline">¶</a></h3>
+<p>Install <a class="reference external" href="https://brew.sh">brew</a>, then run the command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> brew install cmake protobuf
+</pre></div>
+</div>
+</div>
+<div class="section" id="on-windows">
+<h3>On Windows<a class="headerlink" href="#on-windows" title="Permalink to this headline">¶</a></h3>
+<p>Coming Soon!</p>
+</div>
+<div class="section" id="on-linux">
+<h3>On Linux<a class="headerlink" href="#on-linux" title="Permalink to this headline">¶</a></h3>
+<p>For Ubuntu/Debian distros, you might need to run the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo apt-get install protobuf-compiler libprotoc-dev
+</pre></div>
+</div>
+<p>For rpm-based distros, you might need to run the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo yum install protobuf-devel
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="install-from-source">
+<h2>Install From Source<a class="headerlink" href="#install-from-source" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone git@github.com:facebookresearch/pytext.git
+<span class="gp">$</span> <span class="nb">cd</span> pytext
+<span class="gp">$</span> <span class="nb">source</span> activation_venv
+<span class="gp">(pytext_venv) $</span> pip install torch <span class="c1"># go to https://pytorch.org for platform specific installs</span>
+<span class="gp">(pytext_venv) $</span> ./install_deps
+</pre></div>
+</div>
+<p>Once that is installed, you can run the unit tests. We recommend using pytest as a runner.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext_venv) $</span> pip install -U pytest
+<span class="gp">(pytext_venv) $</span> pytest
+<span class="gp">#</span> If you want to measure <span class="nb">test</span> coverage, we recommend <span class="sb">`</span>pytest-cov<span class="sb">`</span>
+<span class="gp">(pytext_venv) $</span> pip install -U pytest-cov
+<span class="gp">(pytext_venv) $</span> pytest --cov<span class="o">=</span>pytext
+</pre></div>
+</div>
+<p>To resume development in an already checked-out repo:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> pytext
+<span class="gp">$</span> <span class="nb">source</span> activation_venv
+</pre></div>
+</div>
+<p>To exit the virtual environment:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext_venv) $</span> deactivate
+</pre></div>
+</div>
+</div>
+<div class="section" id="cloud-vm-setup">
+<h2>Cloud VM Setup<a class="headerlink" href="#cloud-vm-setup" title="Permalink to this headline">¶</a></h2>
+<p>This guide will cover all the setup work you have to do in order to be able to easily install PyText on a cloud VM
+.
+<em>Note that while these instructions worked when they were written, they may become incorrect or out of date. If they do, please send us a Pull Request!</em></p>
+<p>After following these instructions, you should be good to either follow the <a class="reference internal" href="#installation">Installation</a> instructions or the <a class="reference internal" href="#install-from-source">Install From Source</a> instructions</p>
+<div class="section" id="amazon-web-services">
+<h3>Amazon Web Services<a class="headerlink" href="#amazon-web-services" title="Permalink to this headline">¶</a></h3>
+<p><strong>Coming Soon</strong></p>
+</div>
+<div class="section" id="google-cloud-engine">
+<h3>Google Cloud Engine<a class="headerlink" href="#google-cloud-engine" title="Permalink to this headline">¶</a></h3>
+<p><em>If you have problems launching your VM, make sure you have a non-zero gpu quota,</em> <a class="reference external" href="https://cloud.google.com/compute/quotas#requesting_additional_quota">click here to learn about quotas</a></p>
+<p>This guide uses <a class="reference external" href="https://console.cloud.google.com/marketplace/details/click-to-deploy-images/deeplearning">Google’s Deep Learning VM</a> as a base.</p>
+<p><strong>Setting Up Your VM</strong></p>
+<ul class="simple">
+<li><p>Click “Launch on Compute Engine”</p></li>
+<li><p>Configure the VM:</p>
+<ul>
+<li><p>The default 2CPU K80 setup is fine for most tutorials, if you need more, change it here.</p></li>
+<li><p>For Framework, select one of the Base images, rather than one with a framework pre-installed. Note which version of CUDA you choose for later.</p></li>
+<li><p>When you’re ready, click “Deploy”</p></li>
+<li><p>When your VM is done loading, you can SSH into it from the GCE Console</p></li>
+</ul>
+</li>
+<li><p>Install Python 3.6 (based on <a class="reference external" href="https://www.rosehosting.com/blog/how-to-install-python-3-6-4-on-debian-9/">this RoseHosting blog post</a> ):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">sudo</span> <span class="pre">nano</span> <span class="pre">/etc/apt/sources.list</span></code></p></li>
+<li><p>add <code class="docutils literal notranslate"><span class="pre">deb</span> <span class="pre">http://ftp.de.debian.org/debian</span> <span class="pre">testing</span> <span class="pre">main</span></code> to the list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">echo</span> <span class="pre">'APT::Default-Release</span> <span class="pre">"stable";'</span> <span class="pre">|</span> <span class="pre">sudo</span> <span class="pre">tee</span> <span class="pre">-a</span> <span class="pre">/etc/apt/apt.conf.d/00local</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">update</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">-t</span> <span class="pre">testing</span> <span class="pre">install</span> <span class="pre">python3.6</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">python3.6-venv</span> <span class="pre">protobuf-compiler</span> <span class="pre">libprotoc-dev</span></code></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="microsoft-azure">
+<h3>Microsoft Azure<a class="headerlink" href="#microsoft-azure" title="Permalink to this headline">¶</a></h3>
+<p>This guide uses the Azure Ubuntu Server 18.04 LTS image as a base</p>
+<p><strong>Setting Up Your VM</strong></p>
+<ul class="simple">
+<li><p>From the Azure Dashboard, select “Virtual Machines” and then click “add”</p></li>
+<li><p>Give your VM a name and select the region you want it in, keeping in mind that GPU servers are not present in all regions</p></li>
+<li><p>For this tutorial, you should select “Ubuntu Server 18.04 LTS” as your image</p></li>
+<li><p>Click “Change size” in order to select a GPU server.</p>
+<ul>
+<li><p>Note that the default filters won’t show GPU servers, we recommend clearing all filters except “family” and setting “family” to GPU</p></li>
+<li><p>For this tutorial, we will use the NC6 VM Size, but this should work on the larger and faster VMs as well</p></li>
+</ul>
+</li>
+<li><p>Make sure you set up SSH access, we recommend using a public key rather than a password.
+* don’t forget to “allow selected ports” and select SSH</p></li>
+<li><p>install Nvidia driver and CUDA, (based on  <a class="reference external" href="https://askubuntu.com/a/1036265">https://askubuntu.com/a/1036265</a>)</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">add-apt-repository</span> <span class="pre">ppa:graphics-drivers/ppa</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt</span> <span class="pre">update</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">ubuntu-drivers-common</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">ubuntu-drivers</span> <span class="pre">autoinstall</span></code></p></li>
+<li><p>reboot: <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">shutdown</span> <span class="pre">-r</span> <span class="pre">now</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt</span> <span class="pre">install</span> <span class="pre">nvidia-cuda-toolkit</span> <span class="pre">gcc-6</span></code></p></li>
+</ul>
+</li>
+<li><p>install OS dependencies: <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">python3-venv</span> <span class="pre">protobuf-compiler</span> <span class="pre">libprotoc-dev</span></code></p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="index.html" title="previous chapter">PyText Documentation</a></li>
+<li>Next: <a href="train_your_first_model.html" title="next chapter">Train your first model</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

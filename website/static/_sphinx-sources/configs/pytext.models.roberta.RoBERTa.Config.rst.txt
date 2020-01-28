@@ -1,0 +1,105 @@
+RoBERTa.Config
+==============
+
+
+
+**Component:** :class:`RoBERTa  <pytext.models.roberta.RoBERTa>`\ 
+
+
+.. py:currentmodule:: pytext.models.roberta
+.. py:class:: RoBERTa.Config
+  :noindex:
+
+  **Bases:** :class:`NewBertModel.Config <pytext.models.bert_classification_models.NewBertModel.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`InputConfig <pytext.models.roberta.InputConfig>` = :doc:`InputConfig <pytext.models.roberta.InputConfig>`\ ()
+    \ 
+
+  **encoder**: :doc:`RoBERTaEncoderBase.Config <pytext.models.roberta.RoBERTaEncoderBase.Config>` = :doc:`RoBERTaEncoderJit.Config <pytext.models.roberta.RoBERTaEncoderJit.Config>`\ ()
+    \ 
+
+  **decoder**: :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>` = :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`\ ()
+    \ 
+
+  **output_layer**: :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>` = :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {
+          "tokens": {
+              "is_input": true,
+              "columns": [
+                  "text"
+              ],
+              "tokenizer": {
+                  "GPT2BPETokenizer": {
+                      "bpe_encoder_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json",
+                      "bpe_vocab_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe"
+                  }
+              },
+              "base_tokenizer": null,
+              "vocab_file": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/dict.txt",
+              "max_seq_len": 256
+          },
+          "labels": {
+              "LabelTensorizer": {
+                  "is_input": false,
+                  "column": "label",
+                  "allow_unknown": false,
+                  "pad_in_vocab": false,
+                  "label_vocab": null
+              }
+          }
+      },
+      "encoder": {
+          "RoBERTaEncoderJit": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "output_dropout": 0.4,
+              "embedding_dim": 768,
+              "pooling": "cls_token",
+              "export": false,
+              "pretrained_encoder": {
+                  "load_path": "manifold://pytext_training/tree/static/models/roberta_public.pt1",
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null
+              }
+          }
+      },
+      "decoder": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_dims": [],
+          "out_dim": null,
+          "layer_norm": false,
+          "dropout": 0.0,
+          "activation": "relu"
+      },
+      "output_layer": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "loss": {
+              "CrossEntropyLoss": {}
+          },
+          "label_weights": null
+      }
+  }

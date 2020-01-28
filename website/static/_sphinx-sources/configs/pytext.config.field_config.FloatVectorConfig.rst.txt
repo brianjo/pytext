@@ -1,0 +1,39 @@
+FloatVectorConfig
+=================
+
+
+
+.. py:currentmodule:: pytext.config.field_config
+.. py:class:: FloatVectorConfig
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **dim**: int = ``0``
+    \ 
+
+  **export_input_names**: list[str] = ``['float_vec_vals']``
+    \ 
+
+  **dim_error_check**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "dim": 0,
+      "export_input_names": [
+          "float_vec_vals"
+      ],
+      "dim_error_check": false
+  }

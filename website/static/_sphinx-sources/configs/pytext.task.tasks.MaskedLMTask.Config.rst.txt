@@ -1,0 +1,179 @@
+MaskedLMTask.Config
+===================
+
+
+
+**Component:** :class:`MaskedLMTask  <pytext.task.tasks.MaskedLMTask>`\ 
+
+
+.. py:currentmodule:: pytext.task.tasks
+.. py:class:: MaskedLMTask.Config
+  :noindex:
+
+  **Bases:** :class:`NewTask.Config <pytext.task.new_task.NewTask.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`Data.Config <pytext.data.data.Data.Config>` = :doc:`PackedLMData.Config <pytext.data.packed_lm_data.PackedLMData.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>` = :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ ()
+    \ 
+
+  **model**: :doc:`MaskedLanguageModel.Config <pytext.models.masked_lm.MaskedLanguageModel.Config>` = :doc:`MaskedLanguageModel.Config <pytext.models.masked_lm.MaskedLanguageModel.Config>`\ ()
+    \ 
+
+  **metric_reporter**: :doc:`MaskedLMMetricReporter.Config <pytext.metric_reporters.language_model_metric_reporter.MaskedLMMetricReporter.Config>` = :doc:`MaskedLMMetricReporter.Config <pytext.metric_reporters.language_model_metric_reporter.MaskedLMMetricReporter.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "data": {
+          "PackedLMData": {
+              "source": {
+                  "TSVDataSource": {
+                      "column_mapping": {},
+                      "train_filename": null,
+                      "test_filename": null,
+                      "eval_filename": null,
+                      "field_names": null,
+                      "delimiter": "\t",
+                      "quoted": false,
+                      "drop_incomplete_rows": false
+                  }
+              },
+              "batcher": {
+                  "PoolingBatcher": {
+                      "train_batch_size": 16,
+                      "eval_batch_size": 16,
+                      "test_batch_size": 16,
+                      "pool_num_batches": 10000,
+                      "num_shuffled_pools": 1
+                  }
+              },
+              "sort_key": null,
+              "in_memory": true,
+              "max_seq_len": 128
+          }
+      },
+      "trainer": {
+          "TaskTrainer": {
+              "epochs": 10,
+              "early_stop_after": 0,
+              "max_clip_norm": null,
+              "report_train_metrics": true,
+              "target_time_limit_seconds": null,
+              "do_eval": true,
+              "load_best_model_after_train": true,
+              "num_samples_to_log_progress": 1000,
+              "num_accumulated_batches": 1,
+              "num_batches_per_epoch": null,
+              "optimizer": {
+                  "Adam": {
+                      "lr": 0.001,
+                      "weight_decay": 1e-05,
+                      "eps": 1e-08
+                  }
+              },
+              "scheduler": null,
+              "sparsifier": null,
+              "fp16_args": {
+                  "FP16OptimizerFairseq": {
+                      "init_loss_scale": 128,
+                      "scale_window": null,
+                      "scale_tolerance": 0.0,
+                      "threshold_loss_scale": null,
+                      "min_loss_scale": 0.0001
+                  }
+              }
+          }
+      },
+      "model": {
+          "inputs": {
+              "tokens": {
+                  "BERTTensorizerBase": {
+                      "is_input": true,
+                      "columns": [
+                          "text"
+                      ],
+                      "tokenizer": {
+                          "Tokenizer": {
+                              "split_regex": "\\s+",
+                              "lowercase": true
+                          }
+                      },
+                      "base_tokenizer": null,
+                      "vocab_file": "",
+                      "max_seq_len": 128
+                  }
+              }
+          },
+          "encoder": {
+              "TransformerSentenceEncoder": {
+                  "load_path": null,
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null,
+                  "output_dropout": 0.4,
+                  "embedding_dim": 768,
+                  "pooling": "cls_token",
+                  "export": false,
+                  "dropout": 0.1,
+                  "attention_dropout": 0.1,
+                  "activation_dropout": 0.1,
+                  "ffn_embedding_dim": 3072,
+                  "num_encoder_layers": 6,
+                  "num_attention_heads": 8,
+                  "num_segments": 2,
+                  "use_position_embeddings": true,
+                  "offset_positions_by_padding": true,
+                  "apply_bert_init": true,
+                  "encoder_normalize_before": true,
+                  "activation_fn": "relu",
+                  "projection_dim": 0,
+                  "max_seq_len": 128,
+                  "multilingual": false,
+                  "freeze_embeddings": false,
+                  "n_trans_layers_to_freeze": 0,
+                  "use_torchscript": false
+              }
+          },
+          "decoder": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "hidden_dims": [],
+              "out_dim": null,
+              "layer_norm": false,
+              "dropout": 0.0,
+              "activation": "relu"
+          },
+          "output_layer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {}
+          },
+          "mask_prob": 0.15,
+          "mask_bos": false,
+          "masking_strategy": "random",
+          "tie_weights": true
+      },
+      "metric_reporter": {
+          "output_path": "/tmp/test_out.txt",
+          "pep_format": false,
+          "aggregate_metrics": true,
+          "perplexity_type": "median"
+      }
+  }

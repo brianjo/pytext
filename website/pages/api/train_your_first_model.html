@@ -1,0 +1,212 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="train-your-first-model">
+<h1>Train your first model<a class="headerlink" href="#train-your-first-model" title="Permalink to this headline">¶</a></h1>
+<p>Once you’ve <a class="reference external" href="installation.html">installed PyText</a> you can start training your first model!</p>
+<p>This tutorial series is an overview of <em>using</em> PyText, and will cover the main concepts PyText uses to interact with the world. It won’t deal with modifying the code (e.g. hacking on new model architectures). By the end, you should have a high-quality text classification model that can be used in production.</p>
+<p>You can use PyText as a library either in your own scripts or in a Jupyter notebook, but the fastest way to start training is through the PyText command line tool. This tool will automatically be in your path when you install PyText!</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext
+
+<span class="go">Usage: pytext [OPTIONS] COMMAND [ARGS]...</span>
+
+<span class="go">  Configs can be passed by file or directly from json. If neither --config-</span>
+<span class="go">  file or --config-json is passed, attempts to read the file from stdin.</span>
+
+<span class="go">  Example:</span>
+
+<span class="go">    pytext train &lt; demos/docnn.json</span>
+
+<span class="go">Options:</span>
+<span class="go">  --config-file TEXT</span>
+<span class="go">  --config-json TEXT</span>
+<span class="go">  --help              Show this message and exit.</span>
+
+<span class="go">Commands:</span>
+<span class="go">  export   Convert a pytext model snapshot to a caffe2 model.</span>
+<span class="go">  predict  Start a repl executing examples against a caffe2 model.</span>
+<span class="go">  test     Test a trained model snapshot.</span>
+<span class="go">  train    Train a model and save the best snapshot.</span>
+</pre></div>
+</div>
+<div class="section" id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>Fundamentally, “machine learning” means learning a function automatically. Your training, evaluation, and test datasets are examples of inputs and their corresponding outputs which show how that function behaves. A <strong>model</strong> is an implementation of that function. To <strong>train</strong> a <strong>model</strong> means to make a statistical implementation of that function that uses the training data as a rubric. To <strong>predict</strong> using a <strong>model</strong> means to take a trained implementation and apply it to new inputs, thus predicting what the result of the idealized function would be on those inputs.</p>
+<p>More examples to train on usually corresponds to more accurate and better-generalizing models. This can mean thousands to millions or billions of examples depending on the task (function) you’re trying to learn.</p>
+</div>
+<div class="section" id="pytext-configs">
+<h2>PyText Configs<a class="headerlink" href="#pytext-configs" title="Permalink to this headline">¶</a></h2>
+<p>Training a state-of-the-art PyText model on a dataset is primarily about configuration. Picking your training dataset, your model parameters, your training parameters, and so on, is a central part of building high-quality text models.</p>
+<p>Configuration is a central part of every component within PyText, and the config system that we provide allows for all of these configurations to be easily expressible in JSON format. PyText comes in-built with a number of example configurations that can train in-built models, and we have a system for automatically documenting the default configurations and possible configuration values.</p>
+</div>
+<div class="section" id="pytext-modes">
+<h2>PyText Modes<a class="headerlink" href="#pytext-modes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><strong>train</strong>
+- Using a configuration, initialize a model and train it. Save the best model found as a model snapshot. This snapshot is something that can be loaded back in to PyText and trained further, tested, or exported.</p></li>
+<li><p><strong>test</strong>
+- Load a trained model snapshot and evaluate its performance against a test set.</p></li>
+<li><p><strong>export</strong>
+- Save the model as a serialized Caffe2 model, which is a stable model representation that can be loaded in production. (PyTorch model snapshots aren’t very durable; if you update parts of your runtime environment, they may be invalidated).</p></li>
+<li><p><strong>predict</strong>
+- Provide a simple REPL which lets you run inputs through your exported Caffe2 model and get a tangible sense for how your model will behave.</p></li>
+</ul>
+</div>
+<div class="section" id="id1">
+<h2>Train your first model<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>To get our feet wet, let’s run one of the demo configurations included with PyText.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> cat demo/configs/docnn.json
+<span class="go">{</span>
+<span class="go">  "version": 8,</span>
+<span class="go">  "task": {</span>
+<span class="go">    "DocumentClassificationTask": {</span>
+<span class="go">      "data": {</span>
+<span class="go">        "source": {</span>
+<span class="go">          "TSVDataSource": {</span>
+<span class="go">            "field_names": ["label", "slots", "text"],</span>
+<span class="go">            "train_filename": "tests/data/train_data_tiny.tsv",</span>
+<span class="go">            "test_filename": "tests/data/test_data_tiny.tsv",</span>
+<span class="go">            "eval_filename": "tests/data/test_data_tiny.tsv"</span>
+<span class="go">          }</span>
+<span class="go">        }</span>
+<span class="go">      },</span>
+<span class="go">      "model": {</span>
+<span class="go">        "DocModel": {</span>
+<span class="go">          "representation": {</span>
+<span class="go">            "DocNNRepresentation": {}</span>
+<span class="go">          }</span>
+<span class="go">        }</span>
+<span class="go">      }</span>
+<span class="go">    }</span>
+<span class="go">  }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>This config will train a document classification model (DocNN) to detect the “class” of a series of commands given to a smart assistant. Let’s take a quick look at the dataset:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> head -2 tests/data/train_data_tiny.tsv
+<span class="go">alarm/modify_alarm      16:24:datetime,39:57:datetime   change my alarm tomorrow to wake me up 30 minutes earlier</span>
+<span class="go">alarm/set_alarm         Turn on all my alarms</span>
+<span class="gp">(pytext) $</span> wc -l tests/data/train_data_tiny.tsv
+<span class="go">    10 tests/data/train_data_tiny.tsv</span>
+</pre></div>
+</div>
+<p>As you can see, the dataset is quite small, so don’t get your hopes up on accuracy! We included this dataset for running unit tests against our models. PyText uses data in a tab separated format, as specified in the config by TSVDataSource. The order of the columns can be configured, but here we use the default. The first column is the “class”, the output label that we’re trying to predict. The second column is word-level tags, which we’re not trying to predict yet, so ignore them for now. The last column here is the input text, which is the command whose class (the first column) the model tries to predict.</p>
+<p>Let’s train the model!</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; demo/configs/docnn.json
+<span class="go">... [snip]</span>
+
+<span class="go">Stage.TEST</span>
+<span class="go">Epoch:1</span>
+<span class="go">loss: 1.646484</span>
+<span class="go">Accuracy: 50.00</span>
+
+<span class="go">Soft Metrics:</span>
+<span class="go">+--------------------------+-------------------+---------+</span>
+<span class="go">| Label                    | Average precision | ROC AUC |</span>
+<span class="go">+--------------------------+-------------------+---------+</span>
+<span class="go">|       alarm/modify_alarm |               nan |   0.000 |</span>
+<span class="go">|          alarm/set_alarm |             1.000 |   1.000 |</span>
+<span class="go">|       alarm/snooze_alarm |               nan |   0.000 |</span>
+<span class="go">| alarm/time_left_on_alarm |             0.333 |   0.333 |</span>
+<span class="go">|    reminder/set_reminder |             1.000 |   1.000 |</span>
+<span class="go">|  reminder/show_reminders |               nan |   0.000 |</span>
+<span class="go">|             weather/find |               nan |   0.000 |</span>
+<span class="go">+--------------------------+-------------------+---------+</span>
+
+<span class="go">Recall at Precision</span>
+<span class="go">+--------------------------+---------+---------+---------+---------+---------+</span>
+<span class="go">| Label                    | R@P 0.2 | R@P 0.4 | R@P 0.6 | R@P 0.8 | R@P 0.9 |</span>
+<span class="go">+--------------------------+---------+---------+---------+---------+---------+</span>
+<span class="go">| alarm/modify_alarm       |   0.000 |   0.000 |   0.000 |   0.000 |   0.000 |</span>
+<span class="go">| alarm/set_alarm          |   1.000 |   1.000 |   1.000 |   1.000 |   1.000 |</span>
+<span class="go">| alarm/snooze_alarm       |   0.000 |   0.000 |   0.000 |   0.000 |   0.000 |</span>
+<span class="go">| alarm/time_left_on_alarm |   1.000 |   0.000 |   0.000 |   0.000 |   0.000 |</span>
+<span class="go">| reminder/set_reminder    |   1.000 |   1.000 |   1.000 |   1.000 |   1.000 |</span>
+<span class="go">| reminder/show_reminders  |   0.000 |   0.000 |   0.000 |   0.000 |   0.000 |</span>
+<span class="go">| weather/find             |   0.000 |   0.000 |   0.000 |   0.000 |   0.000 |</span>
+<span class="go">+--------------------------+---------+---------+---------+---------+---------+</span>
+<span class="go">saving result to file /tmp/test_out.txt</span>
+</pre></div>
+</div>
+<p>The model ran over the training set 10 times. This output is the result of evaluating the model on the test set, and tracking how well it did. If you’re not familiar with these accuracy measurements,</p>
+<ul class="simple">
+<li><p><strong>Precision</strong> - The number of times the model guessed this label and was right</p></li>
+<li><p><strong>Recall</strong> - The number of times the model correctly identified this label, out of every time it shows up in the test set. If this number is low for a label, the model should be predicting this label more.</p></li>
+<li><p><strong>F1</strong> - A harmonic mean of recall and precision.</p></li>
+<li><p><strong>Support</strong> - The number of times this label shows up in the test set.</p></li>
+</ul>
+<p>As you can see, the training results were pretty bad. We ran over the data 10 times, and in that time managed to learn how to predict only one of the labels in the test set successfully. In fact, many of the labels were never predicted at all! With 10 examples, that’s not too surprising. See the next tutorial to run on a real dataset and get more usable results.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+<li>Next: <a href="execute_your_first_model.html" title="next chapter">Execute your first model</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

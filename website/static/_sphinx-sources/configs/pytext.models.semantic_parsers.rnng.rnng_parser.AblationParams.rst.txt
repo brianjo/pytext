@@ -1,0 +1,68 @@
+AblationParams
+==============
+
+
+
+.. py:currentmodule:: pytext.models.semantic_parsers.rnng.rnng_parser
+.. py:class:: AblationParams
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  Ablation parameters.
+  
+  .. attribute:: use_buffer
+  
+     whether to use the buffer LSTM
+  
+     :type: bool
+  
+  .. attribute:: use_stack
+  
+     whether to use the stack LSTM
+  
+     :type: bool
+  
+  .. attribute:: use_action
+  
+     whether to use the action LSTM
+  
+     :type: bool
+  
+  .. attribute:: use_last_open_NT_feature
+  
+     whether to use the last open
+     non-terminal as a 1-hot feature when computing representation
+     for the action classifier
+  
+     :type: bool
+  
+
+**All Attributes (including base classes)**
+
+  **use_buffer**: bool = ``True``
+    \ 
+
+  **use_stack**: bool = ``True``
+    \ 
+
+  **use_action**: bool = ``True``
+    \ 
+
+  **use_last_open_NT_feature**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "use_buffer": true,
+      "use_stack": true,
+      "use_action": true,
+      "use_last_open_NT_feature": false
+  }

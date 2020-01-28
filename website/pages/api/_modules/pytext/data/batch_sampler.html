@@ -1,0 +1,355 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.batch_sampler</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span>
+
+
+<span class="k">class</span> <span class="nc">BaseBatchSampler</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">BATCH_SAMPLER</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterators</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">]):</span>
+        <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">EvalBatchSampler</span><span class="p">(</span><span class="n">BaseBatchSampler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    This sampler takes in a dictionary of Iterators and returns batches</span>
+<span class="sd">    associated with each key in the dictionary. It guarentees that we  will see</span>
+<span class="sd">    each batch associated with each key exactly once in the epoch.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        Iterator 1: [A, B, C, D], Iterator 2: [a, b]</span>
+
+<span class="sd">        Output: [A, B, C, D, a, b]</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterators</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">]):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Loop through each key in the input dict and generate batches from</span>
+<span class="sd">        the iterator associated with that key.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            iterators: Dictionary of iterators</span>
+<span class="sd">        """</span>
+        <span class="n">iter_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">iterator</span> <span class="ow">in</span> <span class="n">iterators</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">iter_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">it</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="n">item</span>
+
+
+<span class="k">class</span> <span class="nc">RoundRobinBatchSampler</span><span class="p">(</span><span class="n">BaseBatchSampler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    This sampler takes a dictionary of Iterators and returns batches in a round</span>
+<span class="sd">    robin fashion till a the end of one of the iterators is reached. The end</span>
+<span class="sd">    is specified by `iter_to_set_epoch`.</span>
+
+<span class="sd">    If `iter_to_set_epoch` is set, cycle batches from each iterator until one</span>
+<span class="sd">    epoch of the target iterator is fulfilled. Iterators with fewer batches</span>
+<span class="sd">    than the target iterator are repeated, so they never run out.</span>
+
+<span class="sd">    If `iter_to_set_epoch` is None, cycle over batches from each iterator until the</span>
+<span class="sd">    shortest iterator completes one epoch.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        Iterator 1: [A, B, C, D],  Iterator 2: [a, b]</span>
+
+<span class="sd">        iter_to_set_epoch = "Iterator 1"</span>
+<span class="sd">        Output: [A, a, B, b, C, a, D, b]</span>
+
+<span class="sd">        iter_to_set_epoch = None</span>
+<span class="sd">        Output: [A, a, B, b]</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        iter_to_set_epoch (Optional[str]): Name of iterator to define epoch size.</span>
+<span class="sd">            If this is not set, epoch size defaults to the length of</span>
+<span class="sd">            the shortest iterator.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">BATCH_SAMPLER</span>
+
+<div class="viewcode-block" id="RoundRobinBatchSampler.Config"><a class="viewcode-back" href="../../../configs/pytext.data.batch_sampler.RoundRobinBatchSampler.Config.html#pytext.data.batch_sampler.RoundRobinBatchSampler.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">iter_to_set_epoch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">iter_to_set_epoch</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iter_to_set_epoch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iter_to_set_epoch</span> <span class="o">=</span> <span class="n">iter_to_set_epoch</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterators</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">]):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Loop through each key in the input dict and generate batches from</span>
+<span class="sd">        the iterator associated with that key until the target iterator reaches</span>
+<span class="sd">        its end.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            iterators: Dictionary of iterators</span>
+<span class="sd">        """</span>
+        <span class="n">iter_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">iterator</span> <span class="ow">in</span> <span class="n">iterators</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">iter_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                    <span class="n">new_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterators</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                    <span class="n">iter_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_iter</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_to_set_epoch</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_to_set_epoch</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">iter_to_set_epoch</span> <span class="o">=</span> <span class="n">name</span>
+                        <span class="c1"># end of epoch</span>
+                        <span class="k">return</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="n">new_iter</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">select_key_and_batch</span><span class="p">(</span>
+    <span class="n">iterator_names</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">iter_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">],</span>
+    <span class="n">iterators</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">],</span>
+<span class="p">):</span>
+    <span class="sd">""" Helper function for RandomizedBatchSampler and AlternatingRandomizedBatchSampler</span>
+<span class="sd">    to select a key from iterator_names using iterator_probs and return a batch</span>
+<span class="sd">    for the selected key using iter_dict and iterators.</span>
+<span class="sd">    """</span>
+    <span class="c1"># Select a candidate iterator using the uniform distribtion</span>
+    <span class="n">selected_key</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">iterator_names</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">iterator_probs</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iter_dict</span><span class="p">[</span><span class="n">selected_key</span><span class="p">])</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="n">iter_dict</span><span class="p">[</span><span class="n">selected_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterators</span><span class="p">[</span><span class="n">selected_key</span><span class="p">])</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iter_dict</span><span class="p">[</span><span class="n">selected_key</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">selected_key</span><span class="p">,</span> <span class="n">batch</span>
+
+
+<span class="k">def</span> <span class="nf">extract_iterator_properties</span><span class="p">(</span><span class="n">input_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>
+    <span class="sd">""" Helper function for RandomizedBatchSampler and AlternatingRandomizedBatchSampler</span>
+<span class="sd">    to generate iterator properties: iterator_names and iterator_probs.</span>
+<span class="sd">    """</span>
+    <span class="n">iterator_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_iterator_probs</span><span class="p">)</span>
+    <span class="n">iterator_probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">input_iterator_probs</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">iterator_names</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">iterator_probs</span> <span class="o">/=</span> <span class="n">iterator_probs</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">iterator_names</span><span class="p">,</span> <span class="n">iterator_probs</span>
+
+
+<span class="k">class</span> <span class="nc">RandomizedBatchSampler</span><span class="p">(</span><span class="n">BaseBatchSampler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    This sampler takes in a dictionary of iterators and returns batches according</span>
+<span class="sd">    to the specified probabilities by `unnormalized_iterator_probs`. We cycle through</span>
+<span class="sd">    the iterators (restarting any that "run out") indefinitely. Set batches_per_epoch</span>
+<span class="sd">    in Trainer.Config.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        Iterator A: [A, B, C, D],  Iterator B: [a, b]</span>
+
+<span class="sd">        batches_per_epoch = 3, unnormalized_iterator_probs = {"A": 0, "B": 1}</span>
+<span class="sd">        Epoch 1 = [a, b, a]</span>
+<span class="sd">        Epoch 2 = [b, a, b]</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        unnormalized_iterator_probs (Dict[str, float]): Iterator sampling probabilities.</span>
+<span class="sd">            The keys should be the same as the keys of the underlying iterators, and the</span>
+<span class="sd">            values will be normalized to sum to 1.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">BATCH_SAMPLER</span>
+
+<div class="viewcode-block" id="RandomizedBatchSampler.Config"><a class="viewcode-back" href="../../../configs/pytext.data.batch_sampler.RandomizedBatchSampler.Config.html#pytext.data.batch_sampler.RandomizedBatchSampler.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">unnormalized_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">unnormalized_iterator_probs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unnormalized_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterator_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterator_probs</span> <span class="o">=</span> <span class="n">extract_iterator_properties</span><span class="p">(</span>
+            <span class="n">unnormalized_iterator_probs</span>
+        <span class="p">)</span>
+        <span class="c1"># Note: we need to make `iter_dict` an instance attribute so that it persists</span>
+        <span class="c1"># across calls to `batchify()`. This way subsequent epochs will continue from</span>
+        <span class="c1"># previous states of the iterators (instead of recreating them).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterators</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">]):</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">iterators</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iterator_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">iterator</span> <span class="ow">in</span> <span class="n">iterators</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="n">num_batches</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">selected_key</span><span class="p">,</span> <span class="n">batch</span> <span class="o">=</span> <span class="n">select_key_and_batch</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">iterator_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterator_probs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span><span class="p">,</span> <span class="n">iterators</span>
+            <span class="p">)</span>
+            <span class="n">num_batches</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">yield</span> <span class="n">selected_key</span><span class="p">,</span> <span class="n">batch</span>
+
+
+<span class="k">class</span> <span class="nc">AlternatingRandomizedBatchSampler</span><span class="p">(</span><span class="n">RandomizedBatchSampler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    This sampler takes in a dictionary of iterators and returns batches alternating</span>
+<span class="sd">    between keys and probabilities specified by `unnormalized_iterator_probs` and</span>
+<span class="sd">    'second_unnormalized_iterator_probs', This is used for example in XLM</span>
+<span class="sd">    pre-training where we alternate between MLM and TLM batches.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">BATCH_SAMPLER</span>
+
+<div class="viewcode-block" id="AlternatingRandomizedBatchSampler.Config"><a class="viewcode-back" href="../../../configs/pytext.data.batch_sampler.AlternatingRandomizedBatchSampler.Config.html#pytext.data.batch_sampler.AlternatingRandomizedBatchSampler.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">unnormalized_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+        <span class="n">second_unnormalized_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">unnormalized_iterator_probs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">second_unnormalized_iterator_probs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">unnormalized_iterator_probs</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">unnormalized_iterator_probs</span><span class="p">,</span>
+            <span class="n">second_unnormalized_iterator_probs</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">second_unnormalized_iterator_probs</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">unnormalized_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">second_unnormalized_iterator_probs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">unnormalized_iterator_probs</span><span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_iterator_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_iterator_probs</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">extract_iterator_properties</span><span class="p">(</span><span class="n">second_unnormalized_iterator_probs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_secondary_turn</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterators</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">]):</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">iterators</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iterator_names</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">second_iterator_names</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">iterator</span> <span class="ow">in</span> <span class="n">iterators</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">curr_iter</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">second_iterator_names</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_secondary_turn</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterator_names</span>
+            <span class="p">)</span>
+            <span class="n">curr_probs</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">second_iterator_probs</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_secondary_turn</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterator_probs</span>
+            <span class="p">)</span>
+
+            <span class="n">selected_key</span><span class="p">,</span> <span class="n">batch</span> <span class="o">=</span> <span class="n">select_key_and_batch</span><span class="p">(</span>
+                <span class="n">curr_iter</span><span class="p">,</span> <span class="n">curr_probs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_dict</span><span class="p">,</span> <span class="n">iterators</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_secondary_turn</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_secondary_turn</span>
+
+            <span class="k">yield</span> <span class="n">selected_key</span><span class="p">,</span> <span class="n">batch</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

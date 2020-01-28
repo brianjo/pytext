@@ -1,0 +1,7 @@
+mlp_decoder
+===========
+
+
+.. toctree::
+
+  pytext.models.decoders.mlp_decoder.MLPDecoder.Config

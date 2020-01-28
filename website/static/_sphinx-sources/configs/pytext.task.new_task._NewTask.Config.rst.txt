@@ -1,0 +1,114 @@
+_NewTask.Config
+===============
+
+
+
+**Component:** :class:`_NewTask  <pytext.task.new_task._NewTask>`\ 
+
+
+.. py:currentmodule:: pytext.task.new_task
+.. py:class:: _NewTask.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`Data.Config <pytext.data.data.Data.Config>` = :doc:`Data.Config <pytext.data.data.Data.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>` = :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ ()
+    \ 
+
+
+
+**Subclasses**
+  - :class:`NewDisjointMultitask.Config <pytext.task.disjoint_multitask.NewDisjointMultitask.Config>`\ 
+  - :class:`NewTask.Config <pytext.task.new_task.NewTask.Config>`\ 
+  - :class:`BertPairRegressionTask.Config <pytext.task.tasks.BertPairRegressionTask.Config>`\ 
+  - :class:`DocumentClassificationTask.Config <pytext.task.tasks.DocumentClassificationTask.Config>`\ 
+  - :class:`DocumentRegressionTask.Config <pytext.task.tasks.DocumentRegressionTask.Config>`\ 
+  - :class:`EnsembleTask.Config <pytext.task.tasks.EnsembleTask.Config>`\ 
+  - :class:`IntentSlotTask.Config <pytext.task.tasks.IntentSlotTask.Config>`\ 
+  - :class:`LMTask.Config <pytext.task.tasks.LMTask.Config>`\ 
+  - :class:`MaskedLMTask.Config <pytext.task.tasks.MaskedLMTask.Config>`\ 
+  - :class:`NewBertClassificationTask.Config <pytext.task.tasks.NewBertClassificationTask.Config>`\ 
+  - :class:`NewBertPairClassificationTask.Config <pytext.task.tasks.NewBertPairClassificationTask.Config>`\ 
+  - :class:`PairwiseClassificationTask.Config <pytext.task.tasks.PairwiseClassificationTask.Config>`\ 
+  - :class:`QueryDocumentPairwiseRankingTask.Config <pytext.task.tasks.QueryDocumentPairwiseRankingTask.Config>`\ 
+  - :class:`RoBERTaNERTask.Config <pytext.task.tasks.RoBERTaNERTask.Config>`\ 
+  - :class:`SemanticParsingTask.Config <pytext.task.tasks.SemanticParsingTask.Config>`\ 
+  - :class:`SeqNNTask.Config <pytext.task.tasks.SeqNNTask.Config>`\ 
+  - :class:`SquadQATask.Config <pytext.task.tasks.SquadQATask.Config>`\ 
+  - :class:`WordTaggingTask.Config <pytext.task.tasks.WordTaggingTask.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "data": {
+          "Data": {
+              "source": {
+                  "TSVDataSource": {
+                      "column_mapping": {},
+                      "train_filename": null,
+                      "test_filename": null,
+                      "eval_filename": null,
+                      "field_names": null,
+                      "delimiter": "\t",
+                      "quoted": false,
+                      "drop_incomplete_rows": false
+                  }
+              },
+              "batcher": {
+                  "PoolingBatcher": {
+                      "train_batch_size": 16,
+                      "eval_batch_size": 16,
+                      "test_batch_size": 16,
+                      "pool_num_batches": 10000,
+                      "num_shuffled_pools": 1
+                  }
+              },
+              "sort_key": null,
+              "in_memory": true
+          }
+      },
+      "trainer": {
+          "TaskTrainer": {
+              "epochs": 10,
+              "early_stop_after": 0,
+              "max_clip_norm": null,
+              "report_train_metrics": true,
+              "target_time_limit_seconds": null,
+              "do_eval": true,
+              "load_best_model_after_train": true,
+              "num_samples_to_log_progress": 1000,
+              "num_accumulated_batches": 1,
+              "num_batches_per_epoch": null,
+              "optimizer": {
+                  "Adam": {
+                      "lr": 0.001,
+                      "weight_decay": 1e-05,
+                      "eps": 1e-08
+                  }
+              },
+              "scheduler": null,
+              "sparsifier": null,
+              "fp16_args": {
+                  "FP16OptimizerFairseq": {
+                      "init_loss_scale": 128,
+                      "scale_window": null,
+                      "scale_tolerance": 0.0,
+                      "threshold_loss_scale": null,
+                      "min_loss_scale": 0.0001
+                  }
+              }
+          }
+      }
+  }

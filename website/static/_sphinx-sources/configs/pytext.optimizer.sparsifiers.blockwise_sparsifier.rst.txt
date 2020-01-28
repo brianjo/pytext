@@ -1,0 +1,7 @@
+blockwise_sparsifier
+====================
+
+
+.. toctree::
+
+  pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.Config

@@ -1,0 +1,30 @@
+pytext.optimizer.sparsifiers package
+====================================
+
+Submodules
+----------
+
+pytext.optimizer.sparsifiers.blockwise\_sparsifier module
+---------------------------------------------------------
+
+.. automodule:: pytext.optimizer.sparsifiers.blockwise_sparsifier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.sparsifiers.sparsifier module
+----------------------------------------------
+
+.. automodule:: pytext.optimizer.sparsifiers.sparsifier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.optimizer.sparsifiers
+   :members:
+   :undoc-members:
+   :show-inheritance:

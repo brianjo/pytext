@@ -1,0 +1,10 @@
+doc_classification_output_layer
+===============================
+
+
+.. toctree::
+
+  pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.Config
+  pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config
+  pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.Config
+  pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.Config

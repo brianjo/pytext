@@ -1,0 +1,7 @@
+lm_output_layer
+===============
+
+
+.. toctree::
+
+  pytext.models.output_layers.lm_output_layer.LMOutputLayer.Config

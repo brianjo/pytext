@@ -1,0 +1,75 @@
+TSVDataSource.Config
+====================
+
+
+
+**Component:** :class:`TSVDataSource  <pytext.data.sources.tsv.TSVDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.data.sources.tsv
+.. py:class:: TSVDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`RootDataSource.Config <pytext.data.sources.data_source.RootDataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+  **train_filename**: Optional[str] = ``None``
+    Filename of training set. If not set, iteration will be empty.
+    
+
+  **test_filename**: Optional[str] = ``None``
+    Filename of testing set. If not set, iteration will be empty.
+    
+
+  **eval_filename**: Optional[str] = ``None``
+    Filename of eval set. If not set, iteration will be empty.
+    
+
+  **field_names**: Optional[list[str]] = ``None``
+    Field names for the TSV. If this is not set, the first line of each file
+    will be assumed to be a header containing the field names.
+    
+
+  **delimiter**: str = ``'\t'``
+    The column delimiter passed to Python's csv library. Change to "," for csv.
+    
+
+  **quoted**: bool = ``False``
+    Whether the columns can use quotes to include delimiters or not.
+    Rows with unclosed quotes will be merged with \n inside.
+    Change to True for quoted csv.
+    
+
+  **drop_incomplete_rows**: bool = ``False``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BlockShardedTSVDataSource.Config <pytext.data.sources.tsv.BlockShardedTSVDataSource.Config>`\ 
+  - :class:`MultilingualTSVDataSource.Config <pytext.data.sources.tsv.MultilingualTSVDataSource.Config>`\ 
+  - :class:`SessionTSVDataSource.Config <pytext.data.sources.tsv.SessionTSVDataSource.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {},
+      "train_filename": null,
+      "test_filename": null,
+      "eval_filename": null,
+      "field_names": null,
+      "delimiter": "\t",
+      "quoted": false,
+      "drop_incomplete_rows": false
+  }

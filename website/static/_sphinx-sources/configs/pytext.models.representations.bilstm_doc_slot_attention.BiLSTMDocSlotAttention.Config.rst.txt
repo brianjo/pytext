@@ -1,0 +1,80 @@
+BiLSTMDocSlotAttention.Config
+=============================
+
+
+
+**Component:** :class:`BiLSTMDocSlotAttention  <pytext.models.representations.bilstm_doc_slot_attention.BiLSTMDocSlotAttention>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.bilstm_doc_slot_attention
+.. py:class:: BiLSTMDocSlotAttention.Config
+  :noindex:
+
+  **Bases:** :class:`RepresentationBase.Config <pytext.models.representations.representation_base.RepresentationBase.Config>`\ , :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **dropout**: float = ``0.4``
+    \ 
+
+  **lstm**: Union[:doc:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>`, :doc:`OrderedNeuronLSTM.Config <pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTM.Config>`] = :doc:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>`\ ()
+    \ 
+
+  **pooling**: Union[:doc:`SelfAttention.Config <pytext.models.representations.pooling.SelfAttention.Config>`, :doc:`MaxPool.Config <pytext.models.representations.pooling.MaxPool.Config>`, :doc:`MeanPool.Config <pytext.models.representations.pooling.MeanPool.Config>`, NoneType] = ``None``
+    \ 
+
+  **slot_attention**: Optional[:doc:`SlotAttention.Config <pytext.models.representations.slot_attention.SlotAttention.Config>`] = ``None``
+    \ 
+
+  **doc_mlp_layers**: int = ``0``
+    \ 
+
+  **word_mlp_layers**: int = ``0``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "dropout": 0.4,
+      "lstm": {
+          "BiLSTM": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "dropout": 0.4,
+              "lstm_dim": 32,
+              "num_layers": 1,
+              "bidirectional": true,
+              "pack_sequence": true
+          }
+      },
+      "pooling": null,
+      "slot_attention": null,
+      "doc_mlp_layers": 0,
+      "word_mlp_layers": 0
+  }

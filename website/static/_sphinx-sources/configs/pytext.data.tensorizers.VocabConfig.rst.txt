@@ -1,0 +1,43 @@
+VocabConfig
+===========
+
+
+
+**Component:** :class:`Component  <pytext.config.component.Component>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: VocabConfig
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **build_from_data**: bool = ``True``
+    Whether to add tokens from training data to vocab.
+    
+
+  **size_from_data**: int = ``0``
+    Add `size_from_data` most frequent tokens in training data to vocab (if this
+    is 0, add all tokens from training data).
+    
+
+  **vocab_files**: list[:doc:`VocabFileConfig <pytext.data.tensorizers.VocabFileConfig>`] = ``[]``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "build_from_data": true,
+      "size_from_data": 0,
+      "vocab_files": []
+  }

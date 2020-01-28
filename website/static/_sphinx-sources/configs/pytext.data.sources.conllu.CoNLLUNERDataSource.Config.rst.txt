@@ -1,0 +1,56 @@
+CoNLLUNERDataSource.Config
+==========================
+
+
+
+**Component:** :class:`CoNLLUNERDataSource  <pytext.data.sources.conllu.CoNLLUNERDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: CoNLLUNERDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`CoNLLUPOSDataSource.Config <pytext.data.sources.conllu.CoNLLUPOSDataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+  **language**: Optional[str] = ``None``
+    \ 
+
+  **train_filename**: Optional[str] = ``None``
+    \ 
+
+  **test_filename**: Optional[str] = ``None``
+    \ 
+
+  **eval_filename**: Optional[str] = ``None``
+    \ 
+
+  **field_names**: Optional[list[str]] = ``None``
+    \ 
+
+  **delimiter**: str = ``'\t'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {},
+      "language": null,
+      "train_filename": null,
+      "test_filename": null,
+      "eval_filename": null,
+      "field_names": null,
+      "delimiter": "\t"
+  }

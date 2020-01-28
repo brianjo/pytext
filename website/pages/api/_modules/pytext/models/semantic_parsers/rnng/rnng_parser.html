@@ -1,0 +1,778 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.semantic_parsers.rnng.rnng_parser</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pytext.utils.cuda</span> <span class="kn">as</span> <span class="nn">cuda_utils</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="kn">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">ComponentType</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">CommonMetadata</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">AnnotationNumberizer</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">,</span> <span class="n">TokenTensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">pad_and_tensorize</span>
+<span class="kn">from</span> <span class="nn">pytext.models</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">pytext.models.embeddings</span> <span class="kn">import</span> <span class="n">EmbeddingList</span>
+<span class="kn">from</span> <span class="nn">pytext.models.embeddings.word_embedding</span> <span class="kn">import</span> <span class="n">WordEmbedding</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.bilstm</span> <span class="kn">import</span> <span class="n">BiLSTM</span>
+<span class="kn">from</span> <span class="nn">pytext.models.semantic_parsers.rnng.rnng_data_structures</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CompositionalNN</span><span class="p">,</span>
+    <span class="n">CompositionalSummationNN</span><span class="p">,</span>
+    <span class="n">Element</span><span class="p">,</span>
+    <span class="n">ParserState</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="RNNGParserBase"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase">[docs]</a><span class="k">class</span> <span class="nc">RNNGParserBase</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    The Recurrent Neural Network Grammar (RNNG) parser from</span>
+<span class="sd">    Dyer et al.: https://arxiv.org/abs/1602.07776 and</span>
+<span class="sd">    Gupta et al.: https://arxiv.org/abs/1810.07942d.</span>
+<span class="sd">    RNNG is a neural constituency parsing algorithm that</span>
+<span class="sd">    explicitly models compositional structure of a sentence.</span>
+<span class="sd">    It is able to learn about hierarchical relationship among the words and</span>
+<span class="sd">    phrases in a given sentence thereby learning the underlying tree structure.</span>
+<span class="sd">    The paper proposes generative as well as discriminative approaches.</span>
+<span class="sd">    In PyText we have implemented the discriminative approach for modeling</span>
+<span class="sd">    intent slot models.</span>
+<span class="sd">    It is a top-down shift-reduce parser than can output</span>
+<span class="sd">    trees with non-terminals (intent and slot labels) and terminals (tokens)</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">MODEL</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">CompositionalType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+            <span class="sd">"""Whether to use summation of the vectors or a BiLSTM based composition to</span>
+<span class="sd">             generate embedding for a subtree"""</span>
+
+            <span class="n">BLSTM</span> <span class="o">=</span> <span class="s2">"blstm"</span>
+            <span class="n">SUM</span> <span class="o">=</span> <span class="s2">"sum"</span>
+
+        <span class="k">class</span> <span class="nc">AblationParams</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="sd">"""Ablation parameters.</span>
+
+<span class="sd">            Attributes:</span>
+<span class="sd">                use_buffer (bool): whether to use the buffer LSTM</span>
+<span class="sd">                use_stack (bool): whether to use the stack LSTM</span>
+<span class="sd">                use_action (bool): whether to use the action LSTM</span>
+<span class="sd">                use_last_open_NT_feature (bool): whether to use the last open</span>
+<span class="sd">                    non-terminal as a 1-hot feature when computing representation</span>
+<span class="sd">                    for the action classifier</span>
+<span class="sd">            """</span>
+
+            <span class="n">use_buffer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">use_stack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">use_action</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">use_last_open_NT_feature</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">class</span> <span class="nc">RNNGConstraints</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="sd">"""Constraints when computing valid actions.</span>
+
+<span class="sd">            Attributes:</span>
+<span class="sd">                intent_slot_nesting (bool): for the intent slot models, the top level</span>
+<span class="sd">                    non-terminal has to be an intent, an intent can only have slot</span>
+<span class="sd">                    non-terminals as children and vice-versa.</span>
+
+<span class="sd">                ignore_loss_for_unsupported (bool): if the data has "unsupported" label,</span>
+<span class="sd">                    that is if the label has a substring "unsupported" in it, do not</span>
+<span class="sd">                    compute loss</span>
+<span class="sd">                no_slots_inside_unsupported (bool): if the data has "unsupported" label,</span>
+<span class="sd">                    that is if the label has a substring "unsupported" in it, do not</span>
+<span class="sd">                    predict slots inside this label.</span>
+<span class="sd">            """</span>
+
+            <span class="n">intent_slot_nesting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">ignore_loss_for_unsupported</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">no_slots_inside_unsupported</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c1"># version 0 - initial implementation</span>
+        <span class="c1"># version 1 - beam search</span>
+        <span class="c1"># version 2 - use zero init state rather than random</span>
+        <span class="c1"># version 3 - add beam search input params</span>
+        <span class="n">version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">lstm</span><span class="p">:</span> <span class="n">BiLSTM</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BiLSTM</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">ablation</span><span class="p">:</span> <span class="n">AblationParams</span> <span class="o">=</span> <span class="n">AblationParams</span><span class="p">()</span>
+        <span class="n">constraints</span><span class="p">:</span> <span class="n">RNNGConstraints</span> <span class="o">=</span> <span class="n">RNNGConstraints</span><span class="p">()</span>
+        <span class="n">max_open_NT</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">beam_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">top_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">compositional_type</span><span class="p">:</span> <span class="n">CompositionalType</span> <span class="o">=</span> <span class="n">CompositionalType</span><span class="o">.</span><span class="n">BLSTM</span>
+
+<div class="viewcode-block" id="RNNGParserBase.from_config"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">model_config</span><span class="p">,</span>
+        <span class="n">feature_config</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">CommonMetadata</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">compositional_type</span> <span class="o">==</span> <span class="n">RNNGParser</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">CompositionalType</span><span class="o">.</span><span class="n">SUM</span><span class="p">:</span>
+            <span class="n">p_compositional</span> <span class="o">=</span> <span class="n">CompositionalSummationNN</span><span class="p">(</span>
+                <span class="n">lstm_dim</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">lstm_dim</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">model_config</span><span class="o">.</span><span class="n">compositional_type</span> <span class="o">==</span> <span class="n">RNNGParser</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">CompositionalType</span><span class="o">.</span><span class="n">BLSTM</span>
+        <span class="p">):</span>
+            <span class="n">p_compositional</span> <span class="o">=</span> <span class="n">CompositionalNN</span><span class="p">(</span><span class="n">lstm_dim</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Cannot understand compositional flag {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">model_config</span><span class="o">.</span><span class="n">compositional_type</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tensorizers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">embedding</span> <span class="o">=</span> <span class="n">EmbeddingList</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">create_module</span><span class="p">(</span>
+                        <span class="n">model_config</span><span class="o">.</span><span class="n">embedding</span><span class="p">,</span> <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="p">],</span>
+                <span class="n">concat</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">actions_params</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"actions"</span><span class="p">]</span>
+            <span class="n">actions_vocab</span> <span class="o">=</span> <span class="n">actions_params</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">embedding</span> <span class="o">=</span> <span class="n">Model</span><span class="o">.</span><span class="n">create_embedding</span><span class="p">(</span><span class="n">feature_config</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+            <span class="n">actions_params</span> <span class="o">=</span> <span class="n">metadata</span>
+            <span class="n">actions_vocab</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">actions_vocab</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">ablation</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">ablation</span><span class="p">,</span>
+            <span class="n">constraints</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">constraints</span><span class="p">,</span>
+            <span class="n">lstm_num_layers</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">lstm_dim</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">,</span>
+            <span class="n">max_open_NT</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">max_open_NT</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">actions_vocab</span><span class="o">=</span><span class="n">actions_vocab</span><span class="p">,</span>
+            <span class="n">shift_idx</span><span class="o">=</span><span class="n">actions_params</span><span class="o">.</span><span class="n">shift_idx</span><span class="p">,</span>
+            <span class="n">reduce_idx</span><span class="o">=</span><span class="n">actions_params</span><span class="o">.</span><span class="n">reduce_idx</span><span class="p">,</span>
+            <span class="n">ignore_subNTs_roots</span><span class="o">=</span><span class="n">actions_params</span><span class="o">.</span><span class="n">ignore_subNTs_roots</span><span class="p">,</span>
+            <span class="n">valid_NT_idxs</span><span class="o">=</span><span class="n">actions_params</span><span class="o">.</span><span class="n">valid_NT_idxs</span><span class="p">,</span>
+            <span class="n">valid_IN_idxs</span><span class="o">=</span><span class="n">actions_params</span><span class="o">.</span><span class="n">valid_IN_idxs</span><span class="p">,</span>
+            <span class="n">valid_SL_idxs</span><span class="o">=</span><span class="n">actions_params</span><span class="o">.</span><span class="n">valid_SL_idxs</span><span class="p">,</span>
+            <span class="n">embedding</span><span class="o">=</span><span class="n">embedding</span><span class="p">,</span>
+            <span class="n">p_compositional</span><span class="o">=</span><span class="n">p_compositional</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ablation</span><span class="p">:</span> <span class="n">Config</span><span class="o">.</span><span class="n">AblationParams</span><span class="p">,</span>
+        <span class="n">constraints</span><span class="p">:</span> <span class="n">Config</span><span class="o">.</span><span class="n">RNNGConstraints</span><span class="p">,</span>
+        <span class="n">lstm_num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lstm_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">max_open_NT</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">actions_vocab</span><span class="p">,</span>
+        <span class="n">shift_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">reduce_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ignore_subNTs_roots</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">valid_NT_idxs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">valid_IN_idxs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">valid_SL_idxs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">EmbeddingList</span><span class="p">,</span>
+        <span class="n">p_compositional</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Initialize the model</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">        ablation : AblationParams</span>
+<span class="sd">            Features/RNNs to use</span>
+<span class="sd">        constraints : RNNGConstraints</span>
+<span class="sd">            Constraints to use when computing valid actions</span>
+<span class="sd">        lstm_num_layers : int</span>
+<span class="sd">            number of layers in the LSTMs</span>
+<span class="sd">        lstm_dim : int</span>
+<span class="sd">            size of LSTM</span>
+<span class="sd">        max_open_NT : int</span>
+<span class="sd">            number of maximum open non-terminals allowed on the stack.</span>
+<span class="sd">            After that, the only valid actions are SHIFT and REDUCE</span>
+<span class="sd">        dropout : float</span>
+<span class="sd">            dropout parameter</span>
+<span class="sd">        beam_size : int</span>
+<span class="sd">            beam size for beam search; run only during inference</span>
+<span class="sd">        top_k : int</span>
+<span class="sd">            top k results from beam search</span>
+<span class="sd">        actions_vocab : Vocab (right now torchtext.vocab.Vocab)</span>
+<span class="sd">            dictionary of actions</span>
+<span class="sd">        shift_idx : int</span>
+<span class="sd">            index of shift action</span>
+<span class="sd">        reduce_idx : int</span>
+<span class="sd">            index of reduce action</span>
+<span class="sd">        ignore_subNTs_roots : List[int]</span>
+<span class="sd">            for these top non-terminals, ignore loss for all subsequent actions</span>
+<span class="sd">        valid_NT_idxs : List[int]</span>
+<span class="sd">            indices of all non-terminals</span>
+<span class="sd">        valid_IN_idxs : List[int]</span>
+<span class="sd">            indices of intent non-terminals</span>
+<span class="sd">        valid_SL_idxs : List[int]</span>
+<span class="sd">            indices of slot non-terminals</span>
+<span class="sd">        embedding : EmbeddingList</span>
+<span class="sd">            embeddings for the tokens</span>
+<span class="sd">        p_compositional : CompositionFunction</span>
+<span class="sd">            Composition function to use to get embedding of a sub-tree</span>
+
+
+<span class="sd">        Returns:</span>
+<span class="sd">        None</span>
+
+
+<span class="sd">        """</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding</span>
+        <span class="c1"># self.embedding.config: FeatureConfig object cannot be pickled but,</span>
+        <span class="c1"># we require the model to be pickled for passing from one worker process</span>
+        <span class="c1"># for Hogwild training. Hence, setting the config to None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_compositional</span> <span class="o">=</span> <span class="n">p_compositional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_last_open_NT_feature</span> <span class="o">=</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_last_open_NT_feature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_buffer</span> <span class="o">=</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_stack</span> <span class="o">=</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_stack</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_action</span> <span class="o">=</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_action</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints_intent_slot_nesting</span> <span class="o">=</span> <span class="n">constraints</span><span class="o">.</span><span class="n">intent_slot_nesting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints_no_slots_inside_unsupported</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">constraints</span><span class="o">.</span><span class="n">no_slots_inside_unsupported</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints_ignore_loss_for_unsupported</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">constraints</span><span class="o">.</span><span class="n">ignore_loss_for_unsupported</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_num_layers</span> <span class="o">=</span> <span class="n">lstm_num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span> <span class="o">=</span> <span class="n">lstm_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_open_NT</span> <span class="o">=</span> <span class="n">max_open_NT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions_vocab</span> <span class="o">=</span> <span class="n">actions_vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift_idx</span> <span class="o">=</span> <span class="n">shift_idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduce_idx</span> <span class="o">=</span> <span class="n">reduce_idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_subNTs_roots</span> <span class="o">=</span> <span class="n">ignore_subNTs_roots</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid_NT_idxs</span> <span class="o">=</span> <span class="n">valid_NT_idxs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid_IN_idxs</span> <span class="o">=</span> <span class="n">valid_IN_idxs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid_SL_idxs</span> <span class="o">=</span> <span class="n">valid_SL_idxs</span>
+
+        <span class="n">num_actions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">actions_vocab</span><span class="p">)</span>
+        <span class="n">lstm_count</span> <span class="o">=</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_buffer</span> <span class="o">+</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_stack</span> <span class="o">+</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_action</span>
+        <span class="k">if</span> <span class="n">lstm_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Need at least one of the LSTMs to be true"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+                <span class="n">lstm_count</span> <span class="o">*</span> <span class="n">lstm_dim</span> <span class="o">+</span> <span class="n">num_actions</span> <span class="o">*</span> <span class="n">ablation</span><span class="o">.</span><span class="n">use_last_open_NT_feature</span><span class="p">,</span>
+                <span class="n">lstm_dim</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">lstm_dim</span><span class="p">,</span> <span class="n">num_actions</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buff_rnn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span>
+            <span class="n">embedding</span><span class="o">.</span><span class="n">embedding_dim</span><span class="p">,</span>
+            <span class="n">lstm_dim</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="n">lstm_num_layers</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack_rnn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span>
+            <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="n">lstm_num_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_rnn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span>
+            <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="n">lstm_num_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions_lookup</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">num_actions</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_func</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RNNGParserBase.forward"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">seq_lens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">dict_feat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">actions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">contextual_token_embeddings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">beam_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+        <span class="sd">"""RNNG forward function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tokens (torch.Tensor): list of tokens</span>
+<span class="sd">            seq_lens (torch.Tensor): list of sequence lengths</span>
+<span class="sd">            dict_feat (Optional[Tuple[torch.Tensor, ...]]): dictionary or gazetteer</span>
+<span class="sd">                features for each token</span>
+<span class="sd">            actions (Optional[List[List[int]]]): Used only during training.</span>
+<span class="sd">                Oracle actions for the instances.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of top k tuple of predicted actions tensor and corresponding scores tensor.</span>
+<span class="sd">            Tensor shape:</span>
+<span class="sd">            (batch_size, action_length)</span>
+<span class="sd">            (batch_size, action_length, number_of_actions)</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">:</span>
+            <span class="n">beam_size</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">top_k</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">actions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">,</span> <span class="s2">"actions must be provided for training"</span>
+            <span class="n">actions_idx_rev</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">actions</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">beam_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">beam_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Reverse the order of input tokens.</span>
+        <span class="n">tokens_list_rev</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Aggregate inputs for embedding module.</span>
+        <span class="n">embedding_input</span> <span class="o">=</span> <span class="p">[</span><span class="n">tokens</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">dict_feat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">embedding_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dict_feat</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">contextual_token_embeddings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">embedding_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contextual_token_embeddings</span><span class="p">)</span>
+
+        <span class="c1"># Embed and reverse the order of tokens.</span>
+        <span class="n">token_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="p">(</span><span class="o">*</span><span class="n">embedding_input</span><span class="p">)</span>
+        <span class="n">token_embeddings</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">token_embeddings</span><span class="p">,</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Batch size is always = 1. So we squeeze the batch_size dimension.</span>
+        <span class="n">token_embeddings</span> <span class="o">=</span> <span class="n">token_embeddings</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">tokens_list_rev</span> <span class="o">=</span> <span class="n">tokens_list_rev</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">initial_state</span> <span class="o">=</span> <span class="n">ParserState</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">token_embeddings</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">token_embedding</span> <span class="o">=</span> <span class="n">token_embeddings</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens_list_rev</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">initial_state</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">token_embedding</span><span class="p">,</span> <span class="n">Element</span><span class="p">(</span><span class="n">tok</span><span class="p">))</span>
+
+        <span class="n">beam</span> <span class="o">=</span> <span class="p">[</span><span class="n">initial_state</span><span class="p">]</span>
+        <span class="k">while</span> <span class="n">beam</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">finished</span><span class="p">()</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">beam</span><span class="p">):</span>
+            <span class="c1"># Stores plans for expansion as (score, state, action)</span>
+            <span class="n">plans</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">ParserState</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1"># Expand current beam states</span>
+            <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">beam</span><span class="p">:</span>
+                <span class="c1"># Keep terminal states</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">finished</span><span class="p">():</span>
+                    <span class="n">plans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">state</span><span class="o">.</span><span class="n">neg_prob</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+                    <span class="k">continue</span>
+
+                <span class="c1">#  translating Expression p_t = affine_transform({pbias, S,</span>
+                <span class="c1">#  stack_summary, B, buffer_summary, A, action_summary});</span>
+                <span class="n">stack</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span>
+                <span class="n">stack_summary</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">embedding</span><span class="p">()</span>
+                <span class="n">action_summary</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">action_stackrnn</span><span class="o">.</span><span class="n">embedding</span><span class="p">()</span>
+                <span class="n">buffer_summary</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="o">.</span><span class="n">embedding</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout_layer</span><span class="o">.</span><span class="n">p</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">stack_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout_layer</span><span class="p">(</span><span class="n">stack_summary</span><span class="p">)</span>
+                    <span class="n">action_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout_layer</span><span class="p">(</span><span class="n">action_summary</span><span class="p">)</span>
+                    <span class="n">buffer_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout_layer</span><span class="p">(</span><span class="n">buffer_summary</span><span class="p">)</span>
+
+                <span class="c1"># feature for index of last open non-terminal</span>
+                <span class="n">last_open_NT_feature</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">actions_vocab</span><span class="p">))</span>
+                <span class="n">open_NT_exists</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">num_open_NT</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="ow">and</span> <span class="n">open_NT_exists</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_last_open_NT_feature</span>
+                <span class="p">):</span>
+                    <span class="n">last_open_NT</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">open_NT</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+                        <span class="n">last_open_NT</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">element_from_top</span><span class="p">(</span><span class="n">open_NT</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">if</span> <span class="n">last_open_NT</span><span class="p">:</span>
+                        <span class="n">last_open_NT_feature</span><span class="p">[</span><span class="n">last_open_NT</span><span class="o">.</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+                <span class="n">last_open_NT_feature</span> <span class="o">=</span> <span class="n">last_open_NT_feature</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+                <span class="n">summaries</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_buffer</span><span class="p">:</span>
+                    <span class="n">summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">buffer_summary</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_stack</span><span class="p">:</span>
+                    <span class="n">summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stack_summary</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_action</span><span class="p">:</span>
+                    <span class="n">summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">action_summary</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ablation_use_last_open_NT_feature</span><span class="p">:</span>
+                    <span class="n">summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_open_NT_feature</span><span class="p">)</span>
+
+                <span class="n">state</span><span class="o">.</span><span class="n">action_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">action_linear</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">summaries</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+                <span class="n">log_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">action_p</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_actions</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+                    <span class="n">plans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">neg_prob</span> <span class="o">-</span> <span class="n">log_probs</span><span class="p">[</span><span class="n">action</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+            <span class="n">beam</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1"># Take actions to regenerate the beam</span>
+            <span class="k">for</span> <span class="n">neg_prob</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">predicted_action_idx</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">plans</span><span class="p">)[:</span><span class="n">beam_size</span><span class="p">]:</span>
+                <span class="c1"># Skip terminal states</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">finished</span><span class="p">():</span>
+                    <span class="n">beam</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Only branch out states when needed</span>
+                <span class="k">if</span> <span class="n">beam_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="n">state</span><span class="o">.</span><span class="n">predicted_actions_idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicted_action_idx</span><span class="p">)</span>
+
+                <span class="n">target_action_idx</span> <span class="o">=</span> <span class="n">predicted_action_idx</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="p">(</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">actions_idx_rev</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="p">),</span> <span class="s2">"Actions and tokens may not be in sync."</span>
+                    <span class="n">target_action_idx</span> <span class="o">=</span> <span class="n">actions_idx_rev</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">actions_idx_rev</span> <span class="o">=</span> <span class="n">actions_idx_rev</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">constraints_ignore_loss_for_unsupported</span>
+                    <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">found_unsupported</span>
+                <span class="p">):</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">action_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">action_p</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">push_action</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">target_action_idx</span><span class="p">)</span>
+
+                <span class="n">state</span><span class="o">.</span><span class="n">neg_prob</span> <span class="o">=</span> <span class="n">neg_prob</span>
+                <span class="n">beam</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+            <span class="c1"># End for</span>
+        <span class="c1"># End while</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">beam</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"How come beam is empty?"</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"How come stack len is "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"How come buffer len is "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Unsqueeze to add batch dimension before returning.</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="n">cuda_utils</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">predicted_actions_idx</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">action_scores</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">beam</span><span class="p">)[:</span><span class="n">top_k</span><span class="p">]</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.valid_actions"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.valid_actions">[docs]</a>    <span class="k">def</span> <span class="nf">valid_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">ParserState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">"""Used for restricting the set of possible action predictions</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            state (ParserState): The state of the stack, buffer and action</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[int] : indices of the valid actions</span>
+
+<span class="sd">        """</span>
+        <span class="n">valid_actions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">is_open_NT</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span>
+        <span class="n">num_open_NT</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">num_open_NT</span>
+        <span class="n">stack</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span>
+        <span class="nb">buffer</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">buffer_stackrnn</span>
+
+        <span class="c1"># Can REDUCE if</span>
+        <span class="c1"># 1. Top of multi-element stack is not an NT, and</span>
+        <span class="c1"># 2. Two open NTs on stack, or buffer is empty</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">is_open_NT</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_open_NT</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">is_open_NT</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">num_open_NT</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">buffer</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="n">valid_actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reduce_idx</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">buffer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">num_open_NT</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_open_NT</span><span class="p">:</span>
+            <span class="n">last_open_NT</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">last_open_NT</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">element_from_top</span><span class="p">(</span><span class="n">is_open_NT</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">True</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints_intent_slot_nesting</span><span class="p">:</span>
+                <span class="c1"># if stack is empty or the last open NT is slot</span>
+                <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">last_open_NT</span><span class="p">)</span> <span class="ow">or</span> <span class="n">last_open_NT</span><span class="o">.</span><span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_SL_idxs</span><span class="p">:</span>
+                    <span class="n">valid_actions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_IN_idxs</span>
+                <span class="k">elif</span> <span class="n">last_open_NT</span><span class="o">.</span><span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_IN_idxs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">constraints_no_slots_inside_unsupported</span>
+                        <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">found_unsupported</span>
+                    <span class="p">):</span>
+                        <span class="k">pass</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">valid_actions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_SL_idxs</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">valid_actions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_IN_idxs</span>
+                <span class="n">valid_actions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_SL_idxs</span>
+
+        <span class="k">elif</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">)</span> <span class="ow">and</span> <span class="n">num_open_NT</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_open_NT</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="s2">"not predicting NT because buffer len is "</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">buffer</span><span class="p">))</span>
+                <span class="o">+</span> <span class="s2">" and num open NTs is "</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">num_open_NT</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Can SHIFT if</span>
+        <span class="c1"># 1. Buffer is non-empty, and</span>
+        <span class="c1"># 2. At least one open NT on stack</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">buffer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">num_open_NT</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">valid_actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_idx</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">valid_actions</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.push_action"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.push_action">[docs]</a>    <span class="k">def</span> <span class="nf">push_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">ParserState</span><span class="p">,</span> <span class="n">target_action_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""Used for updating the state with a target next action</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            state (ParserState): The state of the stack, buffer and action</span>
+<span class="sd">            target_action_idx (int): Index of the action to process</span>
+<span class="sd">        """</span>
+
+        <span class="c1"># Update action_stackrnn</span>
+        <span class="n">action_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions_lookup</span><span class="p">(</span>
+            <span class="n">cuda_utils</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="n">target_action_idx</span><span class="p">]))</span>
+        <span class="p">)</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">action_stackrnn</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">action_embedding</span><span class="p">,</span> <span class="n">Element</span><span class="p">(</span><span class="n">target_action_idx</span><span class="p">))</span>
+
+        <span class="c1"># Update stack_stackrnn</span>
+        <span class="k">if</span> <span class="n">target_action_idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_idx</span><span class="p">:</span>
+            <span class="c1"># To SHIFT,</span>
+            <span class="c1"># 1. Pop T from buffer</span>
+            <span class="c1"># 2. Push T into stack</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+            <span class="n">token_embedding</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">token_embedding</span><span class="p">,</span> <span class="n">Element</span><span class="p">(</span><span class="n">token</span><span class="p">))</span>
+
+        <span class="k">elif</span> <span class="n">target_action_idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduce_idx</span><span class="p">:</span>
+            <span class="c1"># To REDUCE</span>
+            <span class="c1"># 1. Pop Ts from stack until hit NT</span>
+            <span class="c1"># 2. Pop the open NT from stack and close it</span>
+            <span class="c1"># 3. Compute compositionalRep and push into stack</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">num_open_NT</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">popped_rep</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">nt_tree</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"How come stack is empty!"</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">top_of_stack</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">popped_rep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top_of_stack</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">nt_tree</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top_of_stack</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="c1"># pop the open NT and close it</span>
+            <span class="n">top_of_stack</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">popped_rep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top_of_stack</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">nt_tree</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top_of_stack</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+
+            <span class="n">compostional_rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_compositional</span><span class="p">(</span><span class="n">popped_rep</span><span class="p">)</span>
+            <span class="n">combinedElement</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="n">nt_tree</span><span class="p">)</span>
+
+            <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">compostional_rep</span><span class="p">,</span> <span class="n">combinedElement</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">target_action_idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_NT_idxs</span><span class="p">:</span>
+
+            <span class="c1"># if this is root prediction and if that root is one</span>
+            <span class="c1"># of the unsupported intents</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">predicted_actions_idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+                <span class="ow">and</span> <span class="n">target_action_idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_subNTs_roots</span>
+            <span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">found_unsupported</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="n">state</span><span class="o">.</span><span class="n">is_open_NT</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">num_open_NT</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">action_embedding</span><span class="p">,</span> <span class="n">Element</span><span class="p">(</span><span class="n">target_action_idx</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="s2">"not a valid action: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">actions_vocab</span><span class="o">.</span><span class="n">itos</span><span class="p">[</span><span class="n">target_action_idx</span><span class="p">]</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.get_param_groups_for_optimizer"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.get_param_groups_for_optimizer">[docs]</a>    <span class="k">def</span> <span class="nf">get_param_groups_for_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        This is called by code that looks for an instance of pytext.models.model.Model.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[{</span><span class="s2">"params"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">()}]</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.get_loss"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.get_loss">[docs]</a>    <span class="k">def</span> <span class="nf">get_loss</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span>
+        <span class="n">target_actions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Shapes:</span>
+<span class="sd">            logits[1]: action scores: (1, action_length, number_of_actions)</span>
+<span class="sd">            target_actions: (1, action_length)</span>
+<span class="sd">        """</span>
+        <span class="c1"># squeeze to get rid of the batch dimension</span>
+        <span class="c1"># logits[0] is the top1 result</span>
+        <span class="n">action_scores</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">target_actions</span> <span class="o">=</span> <span class="n">target_actions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">action_scores_list</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="n">action_scores</span><span class="p">,</span> <span class="n">action_scores</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">target_vars</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="n">target_actions</span><span class="p">,</span> <span class="n">target_actions</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">losses</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loss_func</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">action</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">action_scores_list</span><span class="p">,</span> <span class="n">target_vars</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">losses</span><span class="p">))</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">total_loss</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.get_single_pred"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.get_single_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_single_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">predicted_action_idx</span><span class="p">,</span> <span class="n">predicted_action_scores</span> <span class="o">=</span> <span class="n">logits</span>
+        <span class="n">predicted_scores</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">action_scores</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">action_scores</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">action_scores</span> <span class="ow">in</span> <span class="n">predicted_action_scores</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="c1"># remove the batch dimension since it's only 1</span>
+        <span class="k">return</span> <span class="n">predicted_action_idx</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">predicted_scores</span></div>
+
+    <span class="c1"># Supports beam search by checking if top K exists return type</span>
+<div class="viewcode-block" id="RNNGParserBase.get_pred"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.get_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span> <span class="n">context</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Return Shapes:</span>
+<span class="sd">            preds: batch (1) * topk * action_len</span>
+<span class="sd">            scores: batch (1) * topk * (action_len * number_of_actions)</span>
+<span class="sd">        """</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+        <span class="n">all_action_idx</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">all_scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logits</span><span class="p">):</span>
+            <span class="n">all_action_idx</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">all_scores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_single_pred</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="c1"># add back batch dimension</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">all_action_idx</span><span class="p">],</span> <span class="p">[</span><span class="n">all_scores</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.save_modules"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.save_modules">[docs]</a>    <span class="k">def</span> <span class="nf">save_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="RNNGParserBase.contextualize"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.contextualize">[docs]</a>    <span class="k">def</span> <span class="nf">contextualize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">context</span></div></div>
+
+
+<div class="viewcode-block" id="RNNGParser"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser">[docs]</a><span class="k">class</span> <span class="nc">RNNGParser</span><span class="p">(</span><span class="n">RNNGParserBase</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RNNGParserBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                <span class="n">column</span><span class="o">=</span><span class="s2">"tokenized_text"</span>
+            <span class="p">)</span>
+            <span class="n">actions</span><span class="p">:</span> <span class="n">AnnotationNumberizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">AnnotationNumberizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RNNGParser.arrange_model_inputs"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"actions"</span><span class="p">]</span>
+        <span class="n">dict_feat</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">contextual_token_embeddings</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">dict_feat</span><span class="p">,</span> <span class="n">actions</span><span class="p">,</span> <span class="n">contextual_token_embeddings</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RNNGParser.arrange_targets"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"actions"</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="RNNGParser.get_export_input_names"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.get_export_input_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">"tokens_vals"</span><span class="p">,</span> <span class="s2">"tokens_lens"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="RNNGParser.get_export_output_names"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.get_export_output_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_output_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">"scores"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="RNNGParser.vocab_to_export"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.vocab_to_export">[docs]</a>    <span class="k">def</span> <span class="nf">vocab_to_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"tokens_vals"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="s2">"actions"</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s2">"actions"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"actions"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../../index.html">Module code</a><ul>
+<li><a href="../../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

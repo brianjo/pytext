@@ -1,0 +1,87 @@
+RNNGParserBase.Config
+=====================
+
+
+
+**Component:** :class:`RNNGParserBase  <pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase>`\ 
+
+
+.. py:currentmodule:: pytext.models.semantic_parsers.rnng.rnng_parser
+.. py:class:: RNNGParserBase.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **version**: int = ``2``
+    \ 
+
+  **lstm**: :doc:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>` = :doc:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>`\ ()
+    \ 
+
+  **ablation**: :doc:`AblationParams <pytext.models.semantic_parsers.rnng.rnng_parser.AblationParams>` = :doc:`AblationParams <pytext.models.semantic_parsers.rnng.rnng_parser.AblationParams>`\ ()
+    \ 
+
+  **constraints**: :doc:`RNNGConstraints <pytext.models.semantic_parsers.rnng.rnng_parser.RNNGConstraints>` = :doc:`RNNGConstraints <pytext.models.semantic_parsers.rnng.rnng_parser.RNNGConstraints>`\ ()
+    \ 
+
+  **max_open_NT**: int = ``10``
+    \ 
+
+  **dropout**: float = ``0.1``
+    \ 
+
+  **beam_size**: int = ``1``
+    \ 
+
+  **top_k**: int = ``1``
+    \ 
+
+  **compositional_type**: CompositionalType = ``<CompositionalType.BLSTM: 'blstm'>``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`RNNGParser.Config <pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "version": 2,
+      "lstm": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "dropout": 0.4,
+          "lstm_dim": 32,
+          "num_layers": 1,
+          "bidirectional": true,
+          "pack_sequence": true
+      },
+      "ablation": {
+          "use_buffer": true,
+          "use_stack": true,
+          "use_action": true,
+          "use_last_open_NT_feature": false
+      },
+      "constraints": {
+          "intent_slot_nesting": true,
+          "ignore_loss_for_unsupported": false,
+          "no_slots_inside_unsupported": true
+      },
+      "max_open_NT": 10,
+      "dropout": 0.1,
+      "beam_size": 1,
+      "top_k": 1,
+      "compositional_type": "blstm"
+  }

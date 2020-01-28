@@ -1,0 +1,401 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-common-package">
+<h1>pytext.common package<a class="headerlink" href="#pytext-common-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.common.constants">
+<span id="pytext-common-constants-module"></span><h2>pytext.common.constants module<a class="headerlink" href="#module-pytext.common.constants" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.common.constants.BatchContext">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">BatchContext</code><a class="reference internal" href="../_modules/pytext/common/constants.html#BatchContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.BatchContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.BatchContext.IGNORE_LOSS">
+<code class="sig-name descname">IGNORE_LOSS</code><em class="property"> = 'ignore_loss'</em><a class="headerlink" href="#pytext.common.constants.BatchContext.IGNORE_LOSS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.BatchContext.INDEX">
+<code class="sig-name descname">INDEX</code><em class="property"> = 'row_index'</em><a class="headerlink" href="#pytext.common.constants.BatchContext.INDEX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.BatchContext.TASK_NAME">
+<code class="sig-name descname">TASK_NAME</code><em class="property"> = 'task_name'</em><a class="headerlink" href="#pytext.common.constants.BatchContext.TASK_NAME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.DFColumn">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">DFColumn</code><a class="reference internal" href="../_modules/pytext/common/constants.html#DFColumn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.DFColumn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.ALIGNMENT">
+<code class="sig-name descname">ALIGNMENT</code><em class="property"> = 'alignment'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.ALIGNMENT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.CONTEXT_SEQUENCE">
+<code class="sig-name descname">CONTEXT_SEQUENCE</code><em class="property"> = 'context_sequence'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.CONTEXT_SEQUENCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.DENSE_FEAT">
+<code class="sig-name descname">DENSE_FEAT</code><em class="property"> = 'dense_feat'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.DENSE_FEAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.DICT_FEAT">
+<code class="sig-name descname">DICT_FEAT</code><em class="property"> = 'dict_feat'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.DICT_FEAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.DOC_LABEL">
+<code class="sig-name descname">DOC_LABEL</code><em class="property"> = 'doc_label'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.DOC_LABEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.DOC_WEIGHT">
+<code class="sig-name descname">DOC_WEIGHT</code><em class="property"> = 'doc_weight'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.DOC_WEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.LANGUAGE_ID">
+<code class="sig-name descname">LANGUAGE_ID</code><em class="property"> = 'lang'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.LANGUAGE_ID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.MODEL_FEATS">
+<code class="sig-name descname">MODEL_FEATS</code><em class="property"> = 'model_feats'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.MODEL_FEATS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.RAW_FEATS">
+<code class="sig-name descname">RAW_FEATS</code><em class="property"> = 'raw_feats'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.RAW_FEATS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.SEQLOGICAL">
+<code class="sig-name descname">SEQLOGICAL</code><em class="property"> = 'seqlogical'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.SEQLOGICAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.SOURCE_FEATS">
+<code class="sig-name descname">SOURCE_FEATS</code><em class="property"> = 'source_feats'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.SOURCE_FEATS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.SOURCE_SEQUENCE">
+<code class="sig-name descname">SOURCE_SEQUENCE</code><em class="property"> = 'source_sequence'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.SOURCE_SEQUENCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.TARGET_LABELS">
+<code class="sig-name descname">TARGET_LABELS</code><em class="property"> = 'target_labels'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.TARGET_LABELS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.TARGET_LOGITS">
+<code class="sig-name descname">TARGET_LOGITS</code><em class="property"> = 'target_logits'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.TARGET_LOGITS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.TARGET_PROBS">
+<code class="sig-name descname">TARGET_PROBS</code><em class="property"> = 'target_probs'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.TARGET_PROBS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.TARGET_SEQUENCE">
+<code class="sig-name descname">TARGET_SEQUENCE</code><em class="property"> = 'target_sequence'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.TARGET_SEQUENCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.TARGET_TOKENS">
+<code class="sig-name descname">TARGET_TOKENS</code><em class="property"> = 'target_tokens'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.TARGET_TOKENS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.TOKEN_RANGE">
+<code class="sig-name descname">TOKEN_RANGE</code><em class="property"> = 'token_range'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.TOKEN_RANGE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.UTTERANCE">
+<code class="sig-name descname">UTTERANCE</code><em class="property"> = 'text'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.UTTERANCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.WORD_LABEL">
+<code class="sig-name descname">WORD_LABEL</code><em class="property"> = 'word_label'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.WORD_LABEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DFColumn.WORD_WEIGHT">
+<code class="sig-name descname">WORD_WEIGHT</code><em class="property"> = 'word_weight'</em><a class="headerlink" href="#pytext.common.constants.DFColumn.WORD_WEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.DatasetFieldName">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">DatasetFieldName</code><a class="reference internal" href="../_modules/pytext/common/constants.html#DatasetFieldName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.DatasetFieldName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.CHAR_FIELD">
+<code class="sig-name descname">CHAR_FIELD</code><em class="property"> = 'char_feat'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.CHAR_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.CONTEXTUAL_TOKEN_EMBEDDING">
+<code class="sig-name descname">CONTEXTUAL_TOKEN_EMBEDDING</code><em class="property"> = 'contextual_token_embedding'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.CONTEXTUAL_TOKEN_EMBEDDING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.DENSE_FIELD">
+<code class="sig-name descname">DENSE_FIELD</code><em class="property"> = 'dense_feat'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.DENSE_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.DICT_FIELD">
+<code class="sig-name descname">DICT_FIELD</code><em class="property"> = 'dict_feat'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.DICT_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.DOC_LABEL_FIELD">
+<code class="sig-name descname">DOC_LABEL_FIELD</code><em class="property"> = 'doc_label'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.DOC_LABEL_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.DOC_WEIGHT_FIELD">
+<code class="sig-name descname">DOC_WEIGHT_FIELD</code><em class="property"> = 'doc_weight'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.DOC_WEIGHT_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.LANGUAGE_ID_FIELD">
+<code class="sig-name descname">LANGUAGE_ID_FIELD</code><em class="property"> = 'lang'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.LANGUAGE_ID_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.NUM_TOKENS">
+<code class="sig-name descname">NUM_TOKENS</code><em class="property"> = 'num_tokens'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.NUM_TOKENS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.RAW_DICT_FIELD">
+<code class="sig-name descname">RAW_DICT_FIELD</code><em class="property"> = 'sparsefeat'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.RAW_DICT_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.RAW_SEQUENCE">
+<code class="sig-name descname">RAW_SEQUENCE</code><em class="property"> = 'raw_sequence'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.RAW_SEQUENCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.RAW_WORD_LABEL">
+<code class="sig-name descname">RAW_WORD_LABEL</code><em class="property"> = 'raw_word_label'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.RAW_WORD_LABEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.SEQ_FIELD">
+<code class="sig-name descname">SEQ_FIELD</code><em class="property"> = 'seq_word_feat'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.SEQ_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.SEQ_LENS">
+<code class="sig-name descname">SEQ_LENS</code><em class="property"> = 'seq_lens'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.SEQ_LENS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.SOURCE_SEQ_FIELD">
+<code class="sig-name descname">SOURCE_SEQ_FIELD</code><em class="property"> = 'source_sequence'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.SOURCE_SEQ_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.TARGET_SEQ_FIELD">
+<code class="sig-name descname">TARGET_SEQ_FIELD</code><em class="property"> = 'target_sequence'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.TARGET_SEQ_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.TARGET_SEQ_LENS">
+<code class="sig-name descname">TARGET_SEQ_LENS</code><em class="property"> = 'target_seq_lens'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.TARGET_SEQ_LENS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.TEXT_FIELD">
+<code class="sig-name descname">TEXT_FIELD</code><em class="property"> = 'word_feat'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.TEXT_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.TOKENS">
+<code class="sig-name descname">TOKENS</code><em class="property"> = 'tokens'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.TOKENS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.TOKEN_INDICES">
+<code class="sig-name descname">TOKEN_INDICES</code><em class="property"> = 'token_indices'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.TOKEN_INDICES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.TOKEN_RANGE">
+<code class="sig-name descname">TOKEN_RANGE</code><em class="property"> = 'token_range'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.TOKEN_RANGE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.UTTERANCE_FIELD">
+<code class="sig-name descname">UTTERANCE_FIELD</code><em class="property"> = 'utterance'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.UTTERANCE_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.WORD_LABEL_FIELD">
+<code class="sig-name descname">WORD_LABEL_FIELD</code><em class="property"> = 'word_label'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.WORD_LABEL_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.DatasetFieldName.WORD_WEIGHT_FIELD">
+<code class="sig-name descname">WORD_WEIGHT_FIELD</code><em class="property"> = 'word_weight'</em><a class="headerlink" href="#pytext.common.constants.DatasetFieldName.WORD_WEIGHT_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.PackageFileName">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">PackageFileName</code><a class="reference internal" href="../_modules/pytext/common/constants.html#PackageFileName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.PackageFileName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.PackageFileName.RAW_EMBED">
+<code class="sig-name descname">RAW_EMBED</code><em class="property"> = 'pretrained_embed_raw'</em><a class="headerlink" href="#pytext.common.constants.PackageFileName.RAW_EMBED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.PackageFileName.SERIALIZED_EMBED">
+<code class="sig-name descname">SERIALIZED_EMBED</code><em class="property"> = 'pretrained_embed_pt_serialized'</em><a class="headerlink" href="#pytext.common.constants.PackageFileName.SERIALIZED_EMBED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.Padding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">Padding</code><a class="reference internal" href="../_modules/pytext/common/constants.html#Padding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.Padding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.Padding.DEFAULT_LABEL_PAD_IDX">
+<code class="sig-name descname">DEFAULT_LABEL_PAD_IDX</code><em class="property"> = -1</em><a class="headerlink" href="#pytext.common.constants.Padding.DEFAULT_LABEL_PAD_IDX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.Padding.WORD_LABEL_PAD">
+<code class="sig-name descname">WORD_LABEL_PAD</code><em class="property"> = 'PAD_LABEL'</em><a class="headerlink" href="#pytext.common.constants.Padding.WORD_LABEL_PAD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.Padding.WORD_LABEL_PAD_IDX">
+<code class="sig-name descname">WORD_LABEL_PAD_IDX</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.common.constants.Padding.WORD_LABEL_PAD_IDX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.RawExampleFieldName">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">RawExampleFieldName</code><a class="reference internal" href="../_modules/pytext/common/constants.html#RawExampleFieldName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.RawExampleFieldName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.RawExampleFieldName.ROW_INDEX">
+<code class="sig-name descname">ROW_INDEX</code><em class="property"> = 'row_index'</em><a class="headerlink" href="#pytext.common.constants.RawExampleFieldName.ROW_INDEX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.Stage">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">Stage</code><a class="reference internal" href="../_modules/pytext/common/constants.html#Stage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.Stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.common.constants.Stage.EVAL">
+<code class="sig-name descname">EVAL</code><em class="property"> = 'Evaluation'</em><a class="headerlink" href="#pytext.common.constants.Stage.EVAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.Stage.TEST">
+<code class="sig-name descname">TEST</code><em class="property"> = 'Test'</em><a class="headerlink" href="#pytext.common.constants.Stage.TEST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.Stage.TRAIN">
+<code class="sig-name descname">TRAIN</code><em class="property"> = 'Training'</em><a class="headerlink" href="#pytext.common.constants.Stage.TRAIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.common.constants.VocabMeta">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.common.constants.</code><code class="sig-name descname">VocabMeta</code><a class="reference internal" href="../_modules/pytext/common/constants.html#VocabMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.constants.VocabMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.EOS_SEQ">
+<code class="sig-name descname">EOS_SEQ</code><em class="property"> = '&lt;/s_seq&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.EOS_SEQ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.EOS_TOKEN">
+<code class="sig-name descname">EOS_TOKEN</code><em class="property"> = '&lt;/s&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.EOS_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.INIT_SEQ">
+<code class="sig-name descname">INIT_SEQ</code><em class="property"> = '&lt;s_seq&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.INIT_SEQ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.INIT_TOKEN">
+<code class="sig-name descname">INIT_TOKEN</code><em class="property"> = '&lt;s&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.INIT_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.PAD_SEQ">
+<code class="sig-name descname">PAD_SEQ</code><em class="property"> = '&lt;pad_seq&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.PAD_SEQ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.PAD_TOKEN">
+<code class="sig-name descname">PAD_TOKEN</code><em class="property"> = '&lt;pad&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.PAD_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.UNK_NUM_TOKEN">
+<code class="sig-name descname">UNK_NUM_TOKEN</code><em class="property"> = '&lt;unk&gt;-NUM'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.UNK_NUM_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.common.constants.VocabMeta.UNK_TOKEN">
+<code class="sig-name descname">UNK_TOKEN</code><em class="property"> = '&lt;unk&gt;'</em><a class="headerlink" href="#pytext.common.constants.VocabMeta.UNK_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.common.utils">
+<span id="pytext-common-utils-module"></span><h2>pytext.common.utils module<a class="headerlink" href="#module-pytext.common.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.common.utils.eprint">
+<code class="sig-prename descclassname">pytext.common.utils.</code><code class="sig-name descname">eprint</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/common/utils.html#eprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.common.utils.eprint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.common">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.common" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.html" title="previous chapter">pytext package</a></li>
+<li>Next: <a href="pytext.config.html" title="next chapter">pytext.config package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

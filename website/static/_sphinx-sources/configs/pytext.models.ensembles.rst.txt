@@ -1,0 +1,9 @@
+ensembles
+=========
+
+
+.. toctree::
+
+  pytext.models.ensembles.bagging_doc_ensemble
+  pytext.models.ensembles.bagging_intent_slot_ensemble
+  pytext.models.ensembles.ensemble

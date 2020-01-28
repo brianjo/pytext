@@ -1,0 +1,44 @@
+Lamb.Config
+===========
+
+
+
+**Component:** :class:`Lamb  <pytext.optimizer.lamb.Lamb>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.lamb
+.. py:class:: Lamb.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **lr**: float = ``0.001``
+    \ 
+
+  **weight_decay**: float = ``1e-05``
+    \ 
+
+  **eps**: float = ``1e-08``
+    \ 
+
+  **min_trust**: Optional[float] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "lr": 0.001,
+      "weight_decay": 1e-05,
+      "eps": 1e-08,
+      "min_trust": null
+  }

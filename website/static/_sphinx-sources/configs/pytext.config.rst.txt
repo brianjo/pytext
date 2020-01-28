@@ -1,0 +1,9 @@
+config
+======
+
+
+.. toctree::
+
+  pytext.config.field_config
+  pytext.config.module_config
+  pytext.config.pytext_config

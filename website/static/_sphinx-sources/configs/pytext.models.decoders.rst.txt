@@ -1,0 +1,10 @@
+decoders
+========
+
+
+.. toctree::
+
+  pytext.models.decoders.decoder_base
+  pytext.models.decoders.intent_slot_model_decoder
+  pytext.models.decoders.mlp_decoder
+  pytext.models.decoders.mlp_decoder_query_response

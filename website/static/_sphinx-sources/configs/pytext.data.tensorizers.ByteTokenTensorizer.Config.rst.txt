@@ -1,0 +1,74 @@
+ByteTokenTensorizer.Config
+==========================
+
+
+
+**Component:** :class:`ByteTokenTensorizer  <pytext.data.tensorizers.ByteTokenTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: ByteTokenTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str = ``'text'``
+    The name of the text column to parse from the data source.
+    
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`\ ()
+    The tokenizer to use to split input text into tokens.
+    
+
+  **max_seq_len**: Optional[int] = ``None``
+    The max token length for input text.
+    
+
+  **max_byte_len**: int = ``15``
+    The max byte length for a token.
+    
+
+  **offset_for_non_padding**: int = ``0``
+    Offset to add to all non-padding bytes
+    
+
+  **add_bos_token**: bool = ``False``
+    \ 
+
+  **add_eos_token**: bool = ``False``
+    \ 
+
+  **use_eos_token_for_bos**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "column": "text",
+      "tokenizer": {
+          "Tokenizer": {
+              "split_regex": "\\s+",
+              "lowercase": true
+          }
+      },
+      "max_seq_len": null,
+      "max_byte_len": 15,
+      "offset_for_non_padding": 0,
+      "add_bos_token": false,
+      "add_eos_token": false,
+      "use_eos_token_for_bos": false
+  }

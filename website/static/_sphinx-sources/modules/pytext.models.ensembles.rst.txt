@@ -1,0 +1,38 @@
+pytext.models.ensembles package
+===============================
+
+Submodules
+----------
+
+pytext.models.ensembles.bagging\_doc\_ensemble module
+-----------------------------------------------------
+
+.. automodule:: pytext.models.ensembles.bagging_doc_ensemble
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.ensembles.bagging\_intent\_slot\_ensemble module
+--------------------------------------------------------------
+
+.. automodule:: pytext.models.ensembles.bagging_intent_slot_ensemble
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.ensembles.ensemble module
+---------------------------------------
+
+.. automodule:: pytext.models.ensembles.ensemble
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.ensembles
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+output_layer_base
+=================
+
+
+.. toctree::
+
+  pytext.models.output_layers.output_layer_base.OutputLayerBase.Config

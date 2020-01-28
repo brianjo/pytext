@@ -1,0 +1,7 @@
+huggingface_bert_sentence_encoder
+=================================
+
+
+.. toctree::
+
+  pytext.models.representations.huggingface_bert_sentence_encoder.HuggingFaceBertSentenceEncoder.Config

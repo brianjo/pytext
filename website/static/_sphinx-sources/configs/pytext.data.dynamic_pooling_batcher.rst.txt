@@ -1,0 +1,11 @@
+dynamic_pooling_batcher
+=======================
+
+
+.. toctree::
+
+  pytext.data.dynamic_pooling_batcher.BatcherSchedulerConfig
+  pytext.data.dynamic_pooling_batcher.DynamicPoolingBatcher.Config
+  pytext.data.dynamic_pooling_batcher.ExponentialBatcherSchedulerConfig
+  pytext.data.dynamic_pooling_batcher.ExponentialDynamicPoolingBatcher.Config
+  pytext.data.dynamic_pooling_batcher.LinearDynamicPoolingBatcher.Config

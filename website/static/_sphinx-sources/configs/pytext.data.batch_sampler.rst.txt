@@ -1,0 +1,11 @@
+batch_sampler
+=============
+
+
+.. toctree::
+
+  pytext.data.batch_sampler.AlternatingRandomizedBatchSampler.Config
+  pytext.data.batch_sampler.BaseBatchSampler.Config
+  pytext.data.batch_sampler.EvalBatchSampler.Config
+  pytext.data.batch_sampler.RandomizedBatchSampler.Config
+  pytext.data.batch_sampler.RoundRobinBatchSampler.Config

@@ -1,0 +1,8 @@
+hogwild_trainer
+===============
+
+
+.. toctree::
+
+  pytext.trainers.hogwild_trainer.HogwildTrainer.Config
+  pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.Config

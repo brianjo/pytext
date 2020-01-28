@@ -1,0 +1,247 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-torchscript-tensorizer-package">
+<h1>pytext.torchscript.tensorizer package<a class="headerlink" href="#pytext-torchscript-tensorizer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.torchscript.tensorizer.bert">
+<span id="pytext-torchscript-tensorizer-bert-module"></span><h2>pytext.torchscript.tensorizer.bert module<a class="headerlink" href="#module-pytext.torchscript.tensorizer.bert" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.bert.</code><code class="sig-name descname">ScriptBERTTensorizer</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/bert.html#ScriptBERTTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.bert.</code><code class="sig-name descname">ScriptBERTTensorizerBase</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/bert.html#ScriptBERTTensorizerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer" title="pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</span></code></a></p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tensorizer.normalizer">
+<span id="pytext-torchscript-tensorizer-normalizer-module"></span><h2>pytext.torchscript.tensorizer.normalizer module<a class="headerlink" href="#module-pytext.torchscript.tensorizer.normalizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.normalizer.VectorNormalizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.normalizer.</code><code class="sig-name descname">VectorNormalizer</code><span class="sig-paren">(</span><em class="sig-param">dim: int</em>, <em class="sig-param">do_normalization: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.normalizer.VectorNormalizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Performs in-place normalization over all features of a dense feature
+vector by doing (x - mean)/stddev for each x in the feature vector.</p>
+<p>This is a ScriptModule so that the normalize function can be called at
+training time in the tensorizer, as well as at inference time by using it in
+your torchscript forward function. To use this in your tensorizer
+update_meta_data must be called once per row in your initialize function,
+and then calculate_feature_stats must be called upon the last time it runs.
+See usage in FloatListTensorizer for an example.</p>
+<p>Setting do_normalization=False will make the normalize function an identity
+function.</p>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.normalizer.VectorNormalizer.calculate_feature_stats">
+<code class="sig-name descname">calculate_feature_stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.calculate_feature_stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.calculate_feature_stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.normalizer.VectorNormalizer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.normalizer.VectorNormalizer.normalize">
+<code class="sig-name descname">normalize</code><span class="sig-paren">(</span><em class="sig-param">vec: List[List[float]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.normalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.normalizer.VectorNormalizer.update_meta_data">
+<code class="sig-name descname">update_meta_data</code><span class="sig-paren">(</span><em class="sig-param">vec</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.update_meta_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.update_meta_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tensorizer.roberta">
+<span id="pytext-torchscript-tensorizer-roberta-module"></span><h2>pytext.torchscript.tensorizer.roberta module<a class="headerlink" href="#module-pytext.torchscript.tensorizer.roberta" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.roberta.ScriptRoBERTaTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.roberta.</code><code class="sig-name descname">ScriptRoBERTaTensorizer</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/roberta.html#ScriptRoBERTaTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.roberta.ScriptRoBERTaTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.roberta.ScriptRoBERTaTensorizerWithIndices">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.roberta.</code><code class="sig-name descname">ScriptRoBERTaTensorizerWithIndices</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/roberta.html#ScriptRoBERTaTensorizerWithIndices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.roberta.ScriptRoBERTaTensorizerWithIndices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase</span></code></a></p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tensorizer.tensorizer">
+<span id="pytext-torchscript-tensorizer-tensorizer-module"></span><h2>pytext.torchscript.tensorizer.tensorizer module<a class="headerlink" href="#module-pytext.torchscript.tensorizer.tensorizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.tensorizer.</code><code class="sig-name descname">ScriptTensorizer</code><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/tensorizer.html#ScriptTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.tensorizer.VocabLookup">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.tensorizer.</code><code class="sig-name descname">VocabLookup</code><span class="sig-paren">(</span><em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/tensorizer.html#VocabLookup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.tensorizer.VocabLookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+<p>TorchScript implementation of lookup_tokens() in pytext/data/tensorizers.py</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tensorizer.xlm">
+<span id="pytext-torchscript-tensorizer-xlm-module"></span><h2>pytext.torchscript.tensorizer.xlm module<a class="headerlink" href="#module-pytext.torchscript.tensorizer.xlm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.xlm.ScriptXLMTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.xlm.</code><code class="sig-name descname">ScriptXLMTensorizer</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">token_vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">language_vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em>, <em class="sig-param">default_language: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/xlm.html#ScriptXLMTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.xlm.ScriptXLMTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer" title="pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</span></code></a></p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tensorizer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.torchscript.tensorizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.ScriptBERTTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.</code><code class="sig-name descname">ScriptBERTTensorizer</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/bert.html#ScriptBERTTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.ScriptBERTTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.ScriptRoBERTaTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.</code><code class="sig-name descname">ScriptRoBERTaTensorizer</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/roberta.html#ScriptRoBERTaTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.ScriptRoBERTaTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.ScriptRoBERTaTensorizerWithIndices">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.</code><code class="sig-name descname">ScriptRoBERTaTensorizerWithIndices</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/roberta.html#ScriptRoBERTaTensorizerWithIndices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.ScriptRoBERTaTensorizerWithIndices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase" title="pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.bert.ScriptBERTTensorizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.ScriptXLMTensorizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.</code><code class="sig-name descname">ScriptXLMTensorizer</code><span class="sig-paren">(</span><em class="sig-param">tokenizer: torch.jit.ScriptModule</em>, <em class="sig-param">token_vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">language_vocab: pytext.torchscript.vocab.ScriptVocabulary</em>, <em class="sig-param">max_seq_len: int</em>, <em class="sig-param">default_language: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/xlm.html#ScriptXLMTensorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.ScriptXLMTensorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer" title="pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tensorizer.VectorNormalizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tensorizer.</code><code class="sig-name descname">VectorNormalizer</code><span class="sig-paren">(</span><em class="sig-param">dim: int</em>, <em class="sig-param">do_normalization: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.VectorNormalizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Performs in-place normalization over all features of a dense feature
+vector by doing (x - mean)/stddev for each x in the feature vector.</p>
+<p>This is a ScriptModule so that the normalize function can be called at
+training time in the tensorizer, as well as at inference time by using it in
+your torchscript forward function. To use this in your tensorizer
+update_meta_data must be called once per row in your initialize function,
+and then calculate_feature_stats must be called upon the last time it runs.
+See usage in FloatListTensorizer for an example.</p>
+<p>Setting do_normalization=False will make the normalize function an identity
+function.</p>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.VectorNormalizer.calculate_feature_stats">
+<code class="sig-name descname">calculate_feature_stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.calculate_feature_stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.VectorNormalizer.calculate_feature_stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.VectorNormalizer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.VectorNormalizer.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.VectorNormalizer.normalize">
+<code class="sig-name descname">normalize</code><span class="sig-paren">(</span><em class="sig-param">vec: List[List[float]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.VectorNormalizer.normalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tensorizer.VectorNormalizer.update_meta_data">
+<code class="sig-name descname">update_meta_data</code><span class="sig-paren">(</span><em class="sig-param">vec</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tensorizer/normalizer.html#VectorNormalizer.update_meta_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tensorizer.VectorNormalizer.update_meta_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.torchscript.html">pytext.torchscript package</a><ul>
+<li>Previous: <a href="pytext.torchscript.html" title="previous chapter">pytext.torchscript package</a></li>
+<li>Next: <a href="pytext.torchscript.tokenizer.html" title="next chapter">pytext.torchscript.tokenizer package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,655 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-task-package">
+<h1>pytext.task package<a class="headerlink" href="#pytext-task-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.task.disjoint_multitask">
+<span id="pytext-task-disjoint-multitask-module"></span><h2>pytext.task.disjoint_multitask module<a class="headerlink" href="#module-pytext.task.disjoint_multitask" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.task.disjoint_multitask.DisjointMultitask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.disjoint_multitask.</code><code class="sig-name descname">DisjointMultitask</code><span class="sig-paren">(</span><em class="sig-param">target_task_name</em>, <em class="sig-param">exporters</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#DisjointMultitask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.DisjointMultitask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.task.TaskBase" title="pytext.task.task.TaskBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.task.TaskBase</span></code></a></p>
+<p>Modules which have the same shared_module_key and type share parameters.
+Only the first instance of such module should be configured in tasks list.</p>
+<dl class="method">
+<dt id="pytext.task.disjoint_multitask.DisjointMultitask.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param">multitask_model</em>, <em class="sig-param">export_path</em>, <em class="sig-param">metric_channels</em>, <em class="sig-param">export_onnx_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#DisjointMultitask.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.DisjointMultitask.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to export PyTorch model to Caffe2 model using <code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_path</strong> (<em>str</em>) – file path of exported caffe2 model</p></li>
+<li><p><strong>metric_channels</strong> – output the PyTorch model’s execution graph to</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – file path of exported onnx model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.disjoint_multitask.DisjointMultitask.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">task_config: pytext.task.disjoint_multitask.DisjointMultitask.Config</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">model_state=None</em>, <em class="sig-param">tensorizers=None</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#DisjointMultitask.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.DisjointMultitask.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the task from config, and optionally load metadata/model_state
+This function will create components including <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricReporter</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>, and wire them up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_config</strong> (<em>Task.Config</em>) – the config of the current task</p></li>
+<li><p><strong>metadata</strong> – saved global context of this task, e.g: vocabulary, will be
+generated by <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code> if it’s None</p></li>
+<li><p><strong>model_state</strong> – saved model parameters, will be loaded into model when given</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.disjoint_multitask.NewDisjointMultitask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.disjoint_multitask.</code><code class="sig-name descname">NewDisjointMultitask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#NewDisjointMultitask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.NewDisjointMultitask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task._NewTask</span></code></p>
+<p>Multitask training based on underlying subtasks. To share parameters between modules
+from different tasks, specify the same shared_module_key. Only the first instance of
+each shared module should be configured in tasks list. Only the multitask trainer
+(not the per-task trainers) is used.</p>
+<dl class="method">
+<dt id="pytext.task.disjoint_multitask.NewDisjointMultitask.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path</em>, <em class="sig-param">metric_channels=None</em>, <em class="sig-param">export_onnx_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#NewDisjointMultitask.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.NewDisjointMultitask.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to export PyTorch model to Caffe2 model using <code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_path</strong> (<em>str</em>) – file path of exported caffe2 model</p></li>
+<li><p><strong>metric_channels</strong> (<em>List</em><em>[</em><em>Channel</em><em>]</em>) – outputs of model’s execution graph</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – file path of exported onnx model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.disjoint_multitask.NewDisjointMultitask.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">task_config: pytext.task.disjoint_multitask.NewDisjointMultitask.Config</em>, <em class="sig-param">unused_metadata=None</em>, <em class="sig-param">model_state=None</em>, <em class="sig-param">tensorizers=None</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#NewDisjointMultitask.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.NewDisjointMultitask.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the task from config, and optionally load metadata/model_state
+This function will create components including <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricReporter</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>, and wire them up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_config</strong> (<em>Task.Config</em>) – the config of the current task</p></li>
+<li><p><strong>metadata</strong> – saved global context of this task, e.g: vocabulary, will be
+generated by <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code> if it’s None</p></li>
+<li><p><strong>model_state</strong> – saved model parameters, will be loaded into model when given</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.disjoint_multitask.NewDisjointMultitask.torchscript_export">
+<code class="sig-name descname">torchscript_export</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path</em>, <em class="sig-param">quantize=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/disjoint_multitask.html#NewDisjointMultitask.torchscript_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.disjoint_multitask.NewDisjointMultitask.torchscript_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.task.new_task">
+<span id="pytext-task-new-task-module"></span><h2>pytext.task.new_task module<a class="headerlink" href="#module-pytext.task.new_task" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.task.new_task.NewTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.new_task.</code><code class="sig-name descname">NewTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/new_task.html#NewTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.new_task.NewTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task._NewTask</span></code></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.new_task.create_schema">
+<code class="sig-prename descclassname">pytext.task.new_task.</code><code class="sig-name descname">create_schema</code><span class="sig-paren">(</span><em class="sig-param">tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], extra_schema: Optional[Dict[str, Type]] = None</em><span class="sig-paren">)</span> → Dict[str, Type]<a class="reference internal" href="../_modules/pytext/task/new_task.html#create_schema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.new_task.create_schema" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.new_task.create_tensorizers">
+<code class="sig-prename descclassname">pytext.task.new_task.</code><code class="sig-name descname">create_tensorizers</code><span class="sig-paren">(</span><em class="sig-param">model_inputs: Union[pytext.models.model.BaseModel.Config.ModelInput, Dict[str, pytext.data.tensorizers.Tensorizer.Config]]</em><span class="sig-paren">)</span> → Dict[str, pytext.data.tensorizers.Tensorizer]<a class="reference internal" href="../_modules/pytext/task/new_task.html#create_tensorizers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.new_task.create_tensorizers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.task.serialize">
+<span id="pytext-task-serialize-module"></span><h2>pytext.task.serialize module<a class="headerlink" href="#module-pytext.task.serialize" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.task.serialize.CheckpointManager">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">CheckpointManager</code><a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>CheckpointManager is class abstraction to manage training job’s
+checkpoints with different IO and storage, using two functions:
+save() and load().</p>
+<dl class="attribute">
+<dt id="pytext.task.serialize.CheckpointManager.DELIMITER">
+<code class="sig-name descname">DELIMITER</code><em class="property"> = '-'</em><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.DELIMITER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.task.serialize.CheckpointManager.generate_checkpoint_path">
+<code class="sig-name descname">generate_checkpoint_path</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">identifier: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager.generate_checkpoint_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.generate_checkpoint_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.task.serialize.CheckpointManager.get_latest_checkpoint_path">
+<code class="sig-name descname">get_latest_checkpoint_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager.get_latest_checkpoint_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.get_latest_checkpoint_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return most recent saved checkpoint path in str
+Returns: checkpoint_path (str)</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.serialize.CheckpointManager.get_post_training_snapshot_path">
+<code class="sig-name descname">get_post_training_snapshot_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager.get_post_training_snapshot_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.get_post_training_snapshot_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.task.serialize.CheckpointManager.list">
+<code class="sig-name descname">list</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager.list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all existing checkpoint path in str
+Returns: checkpoint_path_list (List[str]), list elements are in the same
+order of checkpoint saving</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.serialize.CheckpointManager.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">load_path: str</em>, <em class="sig-param">overwrite_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a checkpoint from disk.
+:param load_path: the file path to load for checkpoint
+:type load_path: str</p>
+<p>Returns: task (Task), config (PyTextConfig) and training_state (TrainingState)</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.serialize.CheckpointManager.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig, model: pytext.models.model.Model, meta: Optional[pytext.data.data_handler.CommonMetadata], tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], training_state: Optional[pytext.trainers.training_state.TrainingState] = None, identifier: str = None</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#CheckpointManager.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.CheckpointManager.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>save a checkpoint to given path, config, model and training_state
+together represent the checkpoint. When identifier is None, this
+function is used to save post-training snapshot</p>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.get_latest_checkpoint_path">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">get_latest_checkpoint_path</code><span class="sig-paren">(</span><em class="sig-param">dir_path: Optional[str] = None</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#get_latest_checkpoint_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.get_latest_checkpoint_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the latest checkpoint path
+:param dir_path: the dir to scan for existing checkpoint files. Default: if None,
+:param the latest checkpoint path saved in momery will be returned:</p>
+<p>Returns: checkpoint_path</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.get_post_training_snapshot_path">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">get_post_training_snapshot_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#get_post_training_snapshot_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.get_post_training_snapshot_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.load">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">load_path: str</em>, <em class="sig-param">overwrite_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load task, config and training state from a saved snapshot
+by default, it will construct the task using the saved config then load
+metadata and model state.</p>
+<p>if overwrite_task is specified, it will construct the task using
+overwrite_task then load metadata and model state.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.load_checkpoint">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">load_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">f: io.IOBase</em>, <em class="sig-param">overwrite_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#load_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.load_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.load_v1">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">load_v1</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#load_v1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.load_v1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.load_v2">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">load_v2</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#load_v2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.load_v2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.load_v3">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">load_v3</code><span class="sig-paren">(</span><em class="sig-param">state</em>, <em class="sig-param">overwrite_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#load_v3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.load_v3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.register_snapshot_loader">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">register_snapshot_loader</code><span class="sig-paren">(</span><em class="sig-param">version</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#register_snapshot_loader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.register_snapshot_loader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.save">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig, model: pytext.models.model.Model, meta: Optional[pytext.data.data_handler.CommonMetadata], tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], training_state: Optional[pytext.trainers.training_state.TrainingState] = None, identifier: Optional[str] = None</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all stateful information of a training task to a specified file-like
+object, will save the original config, model state, metadata,
+training state if training is not completed
+Args:
+identifier (str): used to identify a checkpoint within a training job,
+used as a suffix for save path
+config (PytextConfig): contains all raw parameter/hyper-parameters
+for training task
+model (Model): actual model in training
+training_state (TrainingState): stateful infomation during training
+Returns:
+identifier (str): if identifier is not specified, will save to
+config.save_snapshot_path to be consistent to post-training snapshot;
+if specified, will be used to save checkpoint during training,
+identifier is used to identify checkpoints in the same training</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.save_checkpoint">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">save_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">f: io.IOBase, config: pytext.config.pytext_config.PyTextConfig, model: pytext.models.model.Model, meta: Optional[pytext.data.data_handler.CommonMetadata], tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], training_state: Optional[pytext.trainers.training_state.TrainingState] = None</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#save_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.save_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.task.serialize.set_checkpoint_manager">
+<code class="sig-prename descclassname">pytext.task.serialize.</code><code class="sig-name descname">set_checkpoint_manager</code><span class="sig-paren">(</span><em class="sig-param">manager: pytext.task.serialize.CheckpointManager</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/task/serialize.html#set_checkpoint_manager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.serialize.set_checkpoint_manager" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.task.task">
+<span id="pytext-task-task-module"></span><h2>pytext.task.task module<a class="headerlink" href="#module-pytext.task.task" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.task.task.TaskBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.task.</code><code class="sig-name descname">TaskBase</code><span class="sig-paren">(</span><em class="sig-param">trainer: pytext.trainers.trainer.Trainer, data_handler: pytext.data.data_handler.DataHandler, model: pytext.models.model.Model, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, exporter: Optional[pytext.exporters.exporter.ModelExporter]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Task is the central place to define and wire up components for data processing,
+model training, metric reporting, etc. Task class has a Config class containing
+the config of each component in a descriptive way.</p>
+<dl class="method">
+<dt id="pytext.task.task.TaskBase.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path</em>, <em class="sig-param">metric_channels=None</em>, <em class="sig-param">export_onnx_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to export PyTorch model to Caffe2 model using <code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_path</strong> (<em>str</em>) – file path of exported caffe2 model</p></li>
+<li><p><strong>metric_channels</strong> (<em>List</em><em>[</em><em>Channel</em><em>]</em>) – outputs of model’s execution graph</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – file path of exported onnx model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.task.TaskBase.format_prediction">
+<em class="property">classmethod </em><code class="sig-name descname">format_prediction</code><span class="sig-paren">(</span><em class="sig-param">predictions</em>, <em class="sig-param">scores</em>, <em class="sig-param">context</em>, <em class="sig-param">target_meta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.format_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase.format_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format the prediction and score from model output, by default just return
+them in a dict</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.task.TaskBase.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">task_config</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">model_state=None</em>, <em class="sig-param">tensorizers=None</em>, <em class="sig-param">rank=1</em>, <em class="sig-param">world_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the task from config, and optionally load metadata/model_state
+This function will create components including <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricReporter</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>, and wire them up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_config</strong> (<em>Task.Config</em>) – the config of the current task</p></li>
+<li><p><strong>metadata</strong> – saved global context of this task, e.g: vocabulary, will be
+generated by <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code> if it’s None</p></li>
+<li><p><strong>model_state</strong> – saved model parameters, will be loaded into model when given</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.task.TaskBase.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">examples</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates predictions using PyTorch model. The difference with <cite>test()</cite> is
+that this should be used when the the examples do not have any true
+label/target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>examples</strong> – json format examples, input names should match the names specified
+in this task’s features config</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.task.TaskBase.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param">test_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to compute test metrics on holdout blind test dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>test_path</strong> (<em>str</em>) – test data file path</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.task.TaskBase.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">train_config</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em>, <em class="sig-param">training_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.TaskBase.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to train the model using <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_config</strong> (<em>PyTextConfig</em>) – config for training</p></li>
+<li><p><strong>rank</strong> (<em>int</em>) – for distributed training only, rank of the gpu, default is 0</p></li>
+<li><p><strong>world_size</strong> (<em>int</em>) – for distributed training only, total gpu to use, default
+is 1</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.task.Task_Deprecated">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.task.</code><code class="sig-name descname">Task_Deprecated</code><span class="sig-paren">(</span><em class="sig-param">trainer: pytext.trainers.trainer.Trainer, data_handler: pytext.data.data_handler.DataHandler, model: pytext.models.model.Model, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, exporter: Optional[pytext.exporters.exporter.ModelExporter]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#Task_Deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.Task_Deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.task.TaskBase" title="pytext.task.task.TaskBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.task.TaskBase</span></code></a></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.task.create_task">
+<code class="sig-prename descclassname">pytext.task.task.</code><code class="sig-name descname">create_task</code><span class="sig-paren">(</span><em class="sig-param">task_config</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">model_state=None</em>, <em class="sig-param">tensorizers=None</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#create_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.task.create_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a task by finding task class in registry and invoking the from_config
+function of the class, see <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_config()</span></code> for more details</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.task.tasks">
+<span id="pytext-task-tasks-module"></span><h2>pytext.task.tasks module<a class="headerlink" href="#module-pytext.task.tasks" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.task.tasks.BertPairRegressionTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">BertPairRegressionTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#BertPairRegressionTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.BertPairRegressionTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.tasks.DocumentRegressionTask" title="pytext.task.tasks.DocumentRegressionTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.tasks.DocumentRegressionTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.DocumentClassificationTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">DocumentClassificationTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#DocumentClassificationTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.DocumentClassificationTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+<dl class="method">
+<dt id="pytext.task.tasks.DocumentClassificationTask.format_prediction">
+<em class="property">classmethod </em><code class="sig-name descname">format_prediction</code><span class="sig-paren">(</span><em class="sig-param">predictions</em>, <em class="sig-param">scores</em>, <em class="sig-param">context</em>, <em class="sig-param">target_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#DocumentClassificationTask.format_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.DocumentClassificationTask.format_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format the prediction and score from model output, by default just return
+them in a dict</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.DocumentRegressionTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">DocumentRegressionTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#DocumentRegressionTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.DocumentRegressionTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.EnsembleTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">EnsembleTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#EnsembleTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.EnsembleTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+<dl class="method">
+<dt id="pytext.task.tasks.EnsembleTask.example_config">
+<em class="property">classmethod </em><code class="sig-name descname">example_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#EnsembleTask.example_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.EnsembleTask.example_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.task.tasks.EnsembleTask.train_single_model">
+<code class="sig-name descname">train_single_model</code><span class="sig-paren">(</span><em class="sig-param">train_config</em>, <em class="sig-param">model_id</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#EnsembleTask.train_single_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.EnsembleTask.train_single_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.IntentSlotTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">IntentSlotTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#IntentSlotTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.IntentSlotTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.LMTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">LMTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#LMTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.LMTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.MaskedLMTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">MaskedLMTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#MaskedLMTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.MaskedLMTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.NewBertClassificationTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">NewBertClassificationTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#NewBertClassificationTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.NewBertClassificationTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.tasks.DocumentClassificationTask" title="pytext.task.tasks.DocumentClassificationTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.tasks.DocumentClassificationTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.NewBertPairClassificationTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">NewBertPairClassificationTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#NewBertPairClassificationTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.NewBertPairClassificationTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.tasks.DocumentClassificationTask" title="pytext.task.tasks.DocumentClassificationTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.tasks.DocumentClassificationTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.PairwiseClassificationTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">PairwiseClassificationTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#PairwiseClassificationTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.PairwiseClassificationTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.QueryDocumentPairwiseRankingTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">QueryDocumentPairwiseRankingTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#QueryDocumentPairwiseRankingTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.QueryDocumentPairwiseRankingTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.RoBERTaNERTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">RoBERTaNERTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#RoBERTaNERTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.RoBERTaNERTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+<dl class="method">
+<dt id="pytext.task.tasks.RoBERTaNERTask.create_metric_reporter">
+<em class="property">classmethod </em><code class="sig-name descname">create_metric_reporter</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.task.tasks.RoBERTaNERTask.Config, tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#RoBERTaNERTask.create_metric_reporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.RoBERTaNERTask.create_metric_reporter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.SemanticParsingTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">SemanticParsingTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter</em>, <em class="sig-param">trainer: pytext.trainers.hogwild_trainer.HogwildTrainer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#SemanticParsingTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.SemanticParsingTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.SeqNNTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">SeqNNTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#SeqNNTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.SeqNNTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.SquadQATask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">SquadQATask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#SquadQATask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.SquadQATask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.tasks.WordTaggingTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.tasks.</code><code class="sig-name descname">WordTaggingTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#WordTaggingTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.WordTaggingTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.new_task.NewTask" title="pytext.task.new_task.NewTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task.NewTask</span></code></a></p>
+<dl class="method">
+<dt id="pytext.task.tasks.WordTaggingTask.create_metric_reporter">
+<em class="property">classmethod </em><code class="sig-name descname">create_metric_reporter</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.task.tasks.WordTaggingTask.Config, tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/tasks.html#WordTaggingTask.create_metric_reporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.tasks.WordTaggingTask.create_metric_reporter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.task">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.task" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.task.NewTask">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">NewTask</code><span class="sig-paren">(</span><em class="sig-param">data: pytext.data.data.Data</em>, <em class="sig-param">model: pytext.models.model.BaseModel</em>, <em class="sig-param">metric_reporter: Optional[pytext.metric_reporters.metric_reporter.MetricReporter] = None</em>, <em class="sig-param">trainer: Optional[pytext.trainers.trainer.TaskTrainer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/new_task.html#NewTask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.NewTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.new_task._NewTask</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.Task_Deprecated">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">Task_Deprecated</code><span class="sig-paren">(</span><em class="sig-param">trainer: pytext.trainers.trainer.Trainer, data_handler: pytext.data.data_handler.DataHandler, model: pytext.models.model.Model, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, exporter: Optional[pytext.exporters.exporter.ModelExporter]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#Task_Deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.Task_Deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.task.task.TaskBase" title="pytext.task.task.TaskBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.task.task.TaskBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.task.TaskBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">TaskBase</code><span class="sig-paren">(</span><em class="sig-param">trainer: pytext.trainers.trainer.Trainer, data_handler: pytext.data.data_handler.DataHandler, model: pytext.models.model.Model, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, exporter: Optional[pytext.exporters.exporter.ModelExporter]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Task is the central place to define and wire up components for data processing,
+model training, metric reporting, etc. Task class has a Config class containing
+the config of each component in a descriptive way.</p>
+<dl class="method">
+<dt id="pytext.task.TaskBase.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path</em>, <em class="sig-param">metric_channels=None</em>, <em class="sig-param">export_onnx_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to export PyTorch model to Caffe2 model using <code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_path</strong> (<em>str</em>) – file path of exported caffe2 model</p></li>
+<li><p><strong>metric_channels</strong> (<em>List</em><em>[</em><em>Channel</em><em>]</em>) – outputs of model’s execution graph</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – file path of exported onnx model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.TaskBase.format_prediction">
+<em class="property">classmethod </em><code class="sig-name descname">format_prediction</code><span class="sig-paren">(</span><em class="sig-param">predictions</em>, <em class="sig-param">scores</em>, <em class="sig-param">context</em>, <em class="sig-param">target_meta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.format_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase.format_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format the prediction and score from model output, by default just return
+them in a dict</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.TaskBase.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">task_config</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">model_state=None</em>, <em class="sig-param">tensorizers=None</em>, <em class="sig-param">rank=1</em>, <em class="sig-param">world_size=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the task from config, and optionally load metadata/model_state
+This function will create components including <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricReporter</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Exporter</span></code>, and wire them up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_config</strong> (<em>Task.Config</em>) – the config of the current task</p></li>
+<li><p><strong>metadata</strong> – saved global context of this task, e.g: vocabulary, will be
+generated by <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code> if it’s None</p></li>
+<li><p><strong>model_state</strong> – saved model parameters, will be loaded into model when given</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.TaskBase.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">examples</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates predictions using PyTorch model. The difference with <cite>test()</cite> is
+that this should be used when the the examples do not have any true
+label/target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>examples</strong> – json format examples, input names should match the names specified
+in this task’s features config</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.TaskBase.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param">test_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to compute test metrics on holdout blind test dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>test_path</strong> (<em>str</em>) – test data file path</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.task.TaskBase.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">train_config</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em>, <em class="sig-param">training_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#TaskBase.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.TaskBase.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper method to train the model using <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_config</strong> (<em>PyTextConfig</em>) – config for training</p></li>
+<li><p><strong>rank</strong> (<em>int</em>) – for distributed training only, rank of the gpu, default is 0</p></li>
+<li><p><strong>world_size</strong> (<em>int</em>) – for distributed training only, total gpu to use, default
+is 1</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.save">
+<code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig, model: pytext.models.model.Model, meta: Optional[pytext.data.data_handler.CommonMetadata], tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], training_state: Optional[pytext.trainers.training_state.TrainingState] = None, identifier: Optional[str] = None</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all stateful information of a training task to a specified file-like
+object, will save the original config, model state, metadata,
+training state if training is not completed
+Args:
+identifier (str): used to identify a checkpoint within a training job,
+used as a suffix for save path
+config (PytextConfig): contains all raw parameter/hyper-parameters
+for training task
+model (Model): actual model in training
+training_state (TrainingState): stateful infomation during training
+Returns:
+identifier (str): if identifier is not specified, will save to
+config.save_snapshot_path to be consistent to post-training snapshot;
+if specified, will be used to save checkpoint during training,
+identifier is used to identify checkpoints in the same training</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.load">
+<code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">load_path: str</em>, <em class="sig-param">overwrite_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/serialize.html#load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load task, config and training state from a saved snapshot
+by default, it will construct the task using the saved config then load
+metadata and model state.</p>
+<p>if overwrite_task is specified, it will construct the task using
+overwrite_task then load metadata and model state.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.create_task">
+<code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">create_task</code><span class="sig-paren">(</span><em class="sig-param">task_config</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">model_state=None</em>, <em class="sig-param">tensorizers=None</em>, <em class="sig-param">rank=0</em>, <em class="sig-param">world_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/task/task.html#create_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.create_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a task by finding task class in registry and invoking the from_config
+function of the class, see <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_config()</span></code> for more details</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.task.get_latest_checkpoint_path">
+<code class="sig-prename descclassname">pytext.task.</code><code class="sig-name descname">get_latest_checkpoint_path</code><span class="sig-paren">(</span><em class="sig-param">dir_path: Optional[str] = None</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/task/serialize.html#get_latest_checkpoint_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.task.get_latest_checkpoint_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the latest checkpoint path
+:param dir_path: the dir to scan for existing checkpoint files. Default: if None,
+:param the latest checkpoint path saved in momery will be returned:</p>
+<p>Returns: checkpoint_path</p>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.optimizer.sparsifiers.html" title="previous chapter">pytext.optimizer.sparsifiers package</a></li>
+<li>Next: <a href="pytext.torchscript.html" title="next chapter">pytext.torchscript package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

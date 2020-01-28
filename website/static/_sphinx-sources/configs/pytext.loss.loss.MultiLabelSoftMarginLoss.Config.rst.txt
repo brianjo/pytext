@@ -1,0 +1,27 @@
+MultiLabelSoftMarginLoss.Config
+===============================
+
+
+
+**Component:** :class:`MultiLabelSoftMarginLoss  <pytext.loss.loss.MultiLabelSoftMarginLoss>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: MultiLabelSoftMarginLoss.Config
+  :noindex:
+
+  **Bases:** :class:`Loss.Config <pytext.loss.loss.Loss.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

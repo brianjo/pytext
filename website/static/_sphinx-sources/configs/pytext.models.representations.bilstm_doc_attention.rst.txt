@@ -1,0 +1,7 @@
+bilstm_doc_attention
+====================
+
+
+.. toctree::
+
+  pytext.models.representations.bilstm_doc_attention.BiLSTMDocAttention.Config

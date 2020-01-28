@@ -1,0 +1,71 @@
+BasePairwiseModel.Config
+========================
+
+
+
+**Component:** :class:`BasePairwiseModel  <pytext.models.pair_classification_model.BasePairwiseModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.pair_classification_model
+.. py:class:: BasePairwiseModel.Config
+  :noindex:
+
+  **Bases:** :class:`BaseModel.Config <pytext.models.model.BaseModel.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.model.ModelInput>` = :doc:`ModelInput <pytext.models.model.ModelInput>`\ ()
+    \ 
+
+  **decoder**: :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>` = :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`\ ()
+    \ 
+
+  **output_layer**: Union[:doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`, :doc:`PairwiseCosineDistanceOutputLayer.Config <pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.Config>`] = :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`\ ()
+    \ 
+
+  **encode_relations**: bool = ``True``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BertPairwiseModel.Config <pytext.models.bert_classification_models.BertPairwiseModel.Config>`\ 
+  - :class:`PairwiseModel.Config <pytext.models.pair_classification_model.PairwiseModel.Config>`\ 
+  - :class:`QueryDocPairwiseRankingModel.Config <pytext.models.query_document_pairwise_ranking_model.QueryDocPairwiseRankingModel.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {},
+      "decoder": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_dims": [],
+          "out_dim": null,
+          "layer_norm": false,
+          "dropout": 0.0,
+          "activation": "relu"
+      },
+      "output_layer": {
+          "ClassificationOutputLayer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {
+                  "CrossEntropyLoss": {}
+              },
+              "label_weights": null
+          }
+      },
+      "encode_relations": true
+  }

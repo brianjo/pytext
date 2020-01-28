@@ -1,0 +1,36 @@
+InitPredictNetExporter.Config
+=============================
+
+
+
+**Component:** :class:`InitPredictNetExporter  <pytext.exporters.custom_exporters.InitPredictNetExporter>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: InitPredictNetExporter.Config
+  :noindex:
+
+  **Bases:** :class:`ModelExporter.Config <pytext.exporters.exporter.ModelExporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **export_logits**: bool = ``False``
+    \ 
+
+  **export_raw_to_metrics**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "export_logits": false,
+      "export_raw_to_metrics": false
+  }

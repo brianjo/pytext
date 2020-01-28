@@ -1,0 +1,474 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-models-representations-transformer-package">
+<h1>pytext.models.representations.transformer package<a class="headerlink" href="#pytext-models-representations-transformer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.models.representations.transformer.multihead_attention">
+<span id="pytext-models-representations-transformer-multihead-attention-module"></span><h2>pytext.models.representations.transformer.multihead_attention module<a class="headerlink" href="#module-pytext.models.representations.transformer.multihead_attention" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.multihead_attention.MultiheadSelfAttention">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.multihead_attention.</code><code class="sig-name descname">MultiheadSelfAttention</code><span class="sig-paren">(</span><em class="sig-param">embed_dim: int</em>, <em class="sig-param">num_heads: int</em>, <em class="sig-param">scaling: float = 0.125</em>, <em class="sig-param">dropout: float = 0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/multihead_attention.html#MultiheadSelfAttention"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.multihead_attention.MultiheadSelfAttention" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>This is a TorchScriptable implementation of MultiheadAttention from fairseq
+for the purposes of creating a productionized RoBERTa model. It distills just
+the elements which are required to implement the RoBERTa use cases of
+MultiheadAttention, and within that is restructured and rewritten to be able
+to be compiled by TorchScript for production use cases.</p>
+<p>The default constructor values match those required to import the public
+RoBERTa weights. Unless you are pretraining your own model, there’s no need to
+change them.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.multihead_attention.MultiheadSelfAttention.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">query</em>, <em class="sig-param">key_padding_mask</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/multihead_attention.html#MultiheadSelfAttention.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.multihead_attention.MultiheadSelfAttention.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input shape: Time x Batch x Channel
+Timesteps can be masked by supplying a T x T mask in the
+<cite>attn_mask</cite> argument. Padding elements can be excluded from
+the key by passing a binary ByteTensor (<cite>key_padding_mask</cite>) with shape:
+batch x source_length, where padding elements are indicated by 1s.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.representations.transformer.positional_embedding">
+<span id="pytext-models-representations-transformer-positional-embedding-module"></span><h2>pytext.models.representations.transformer.positional_embedding module<a class="headerlink" href="#module-pytext.models.representations.transformer.positional_embedding" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.positional_embedding.PositionalEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.positional_embedding.</code><code class="sig-name descname">PositionalEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int</em>, <em class="sig-param">embedding_dim: int</em>, <em class="sig-param">pad_index: Optional[int] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#PositionalEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.positional_embedding.PositionalEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>This module learns positional embeddings up to a fixed maximum size.
+Padding ids are ignored by either offsetting based on pad_index
+or by setting pad_index to None and ensuring that the appropriate
+position ids are passed to the forward function.</p>
+<p>This is a TorchScriptable implementation of PositionalEmbedding from fairseq
+for the purposes of creating a productionized RoBERTa model. It distills just
+the elements which are required to implement the RoBERTa use cases of
+MultiheadAttention, and within that is restructured and rewritten to be able
+to be compiled by TorchScript for production use cases.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.positional_embedding.PositionalEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#PositionalEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.positional_embedding.PositionalEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input is expected to be of size [batch_size x sequence_length].</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.positional_embedding.PositionalEmbedding.max_positions">
+<code class="sig-name descname">max_positions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#PositionalEmbedding.max_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.positional_embedding.PositionalEmbedding.max_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum number of supported positions.</p>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.representations.transformer.positional_embedding.make_positions">
+<code class="sig-prename descclassname">pytext.models.representations.transformer.positional_embedding.</code><code class="sig-name descname">make_positions</code><span class="sig-paren">(</span><em class="sig-param">tensor</em>, <em class="sig-param">pad_index: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#make_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.positional_embedding.make_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace non-padding symbols with their position numbers.
+Position numbers begin at pad_index+1. Padding symbols are ignored.</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.representations.transformer.residual_mlp">
+<span id="pytext-models-representations-transformer-residual-mlp-module"></span><h2>pytext.models.representations.transformer.residual_mlp module<a class="headerlink" href="#module-pytext.models.representations.transformer.residual_mlp" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.residual_mlp.GeLU">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.residual_mlp.</code><code class="sig-name descname">GeLU</code><a class="reference internal" href="../_modules/pytext/models/representations/transformer/residual_mlp.html#GeLU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.residual_mlp.GeLU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Component class to wrap F.gelu.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.residual_mlp.GeLU.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/residual_mlp.html#GeLU.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.residual_mlp.GeLU.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.residual_mlp.ResidualMLP">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.residual_mlp.</code><code class="sig-name descname">ResidualMLP</code><span class="sig-paren">(</span><em class="sig-param">input_dim: int, hidden_dims: List[int], dropout: float = 0.1, activation=&lt;class 'pytext.models.representations.transformer.residual_mlp.GeLU'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/residual_mlp.html#ResidualMLP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.residual_mlp.ResidualMLP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>A square MLP component which can learn a bias on an input vector.
+This MLP in particular defaults to using GeLU as its activation function
+(this can be changed by passing a different activation function),
+and retains a residual connection to its original input to help with gradient
+propogation.</p>
+<p>Unlike pytext’s MLPDecoder it doesn’t currently allow adding a LayerNorm
+in between hidden layers.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.residual_mlp.ResidualMLP.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/residual_mlp.html#ResidualMLP.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.residual_mlp.ResidualMLP.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.representations.transformer.sentence_encoder">
+<span id="pytext-models-representations-transformer-sentence-encoder-module"></span><h2>pytext.models.representations.transformer.sentence_encoder module<a class="headerlink" href="#module-pytext.models.representations.transformer.sentence_encoder" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.sentence_encoder.SentenceEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.sentence_encoder.</code><code class="sig-name descname">SentenceEncoder</code><span class="sig-paren">(</span><em class="sig-param">transformer: Optional[pytext.models.representations.transformer.transformer.Transformer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>This is a TorchScriptable implementation of RoBERTa from fairseq
+for the purposes of creating a productionized RoBERTa model. It distills just
+the elements which are required to implement the RoBERTa model, and within that
+is restructured and rewritten to be able to be compiled by TorchScript for
+production use cases.</p>
+<p>This SentenceEncoder can load in the public RoBERTa weights directly with
+<cite>load_roberta_state_dict</cite>, which will translate the keys as they exist in
+the publicly released RoBERTa to the correct structure for this implementation.
+The default constructor value will have the same size and shape as that model.</p>
+<p>To use RoBERTa with this, download the RoBERTa public weights as <cite>roberta.weights</cite></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">encoder</span> <span class="o">=</span> <span class="n">SentenceEncoder</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"roberta.weights"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">encoder</span><span class="o">.</span><span class="n">load_roberta_state_dict</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Within this you will still need to preprocess inputs using fairseq and the publicly
+released vocabs, and finally place this encoder in a model alongside say an MLP
+output layer to do classification.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.extract_features">
+<code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param">tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder.extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.extract_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.load_roberta_state_dict">
+<code class="sig-name descname">load_roberta_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder.load_roberta_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.load_roberta_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.representations.transformer.sentence_encoder.merge_input_projection">
+<code class="sig-prename descclassname">pytext.models.representations.transformer.sentence_encoder.</code><code class="sig-name descname">merge_input_projection</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#merge_input_projection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.merge_input_projection" title="Permalink to this definition">¶</a></dt>
+<dd><p>New checkpoints of fairseq multihead attention split in_projections into
+k,v,q projections. This function merge them back to to make it compatible.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.representations.transformer.sentence_encoder.remove_state_keys">
+<code class="sig-prename descclassname">pytext.models.representations.transformer.sentence_encoder.</code><code class="sig-name descname">remove_state_keys</code><span class="sig-paren">(</span><em class="sig-param">state</em>, <em class="sig-param">keys_regex</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#remove_state_keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.remove_state_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove keys from state that match a regex</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.representations.transformer.sentence_encoder.rename_component_from_root">
+<code class="sig-prename descclassname">pytext.models.representations.transformer.sentence_encoder.</code><code class="sig-name descname">rename_component_from_root</code><span class="sig-paren">(</span><em class="sig-param">state</em>, <em class="sig-param">old_name</em>, <em class="sig-param">new_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#rename_component_from_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.rename_component_from_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename keys from state using full python paths</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.representations.transformer.sentence_encoder.rename_state_keys">
+<code class="sig-prename descclassname">pytext.models.representations.transformer.sentence_encoder.</code><code class="sig-name descname">rename_state_keys</code><span class="sig-paren">(</span><em class="sig-param">state</em>, <em class="sig-param">keys_regex</em>, <em class="sig-param">replacement</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#rename_state_keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.rename_state_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename keys from state that match a regex; replacement can use capture groups</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.representations.transformer.sentence_encoder.translate_roberta_state_dict">
+<code class="sig-prename descclassname">pytext.models.representations.transformer.sentence_encoder.</code><code class="sig-name descname">translate_roberta_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#translate_roberta_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.sentence_encoder.translate_roberta_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Translate the public RoBERTa weights to ones which match SentenceEncoder.</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.representations.transformer.transformer">
+<span id="pytext-models-representations-transformer-transformer-module"></span><h2>pytext.models.representations.transformer.transformer module<a class="headerlink" href="#module-pytext.models.representations.transformer.transformer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.transformer.Transformer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.transformer.</code><code class="sig-name descname">Transformer</code><span class="sig-paren">(</span><em class="sig-param">vocab_size: int = 50265</em>, <em class="sig-param">embedding_dim: int = 768</em>, <em class="sig-param">padding_idx: int = 1</em>, <em class="sig-param">max_seq_len: int = 514</em>, <em class="sig-param">layers: List[pytext.models.representations.transformer.transformer.TransformerLayer] = ()</em>, <em class="sig-param">dropout: float = 0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#Transformer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.transformer.Transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.transformer.Transformer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens: torch.Tensor</em><span class="sig-paren">)</span> → List[torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#Transformer.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.transformer.Transformer.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.transformer.TransformerLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.transformer.</code><code class="sig-name descname">TransformerLayer</code><span class="sig-paren">(</span><em class="sig-param">embedding_dim: int = 768</em>, <em class="sig-param">attention: Optional[pytext.models.representations.transformer.multihead_attention.MultiheadSelfAttention] = None</em>, <em class="sig-param">residual_mlp: Optional[pytext.models.representations.transformer.residual_mlp.ResidualMLP] = None</em>, <em class="sig-param">dropout: float = 0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#TransformerLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.transformer.TransformerLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.transformer.TransformerLayer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em>, <em class="sig-param">key_padding_mask</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#TransformerLayer.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.transformer.TransformerLayer.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.representations.transformer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.models.representations.transformer" title="Permalink to this headline">¶</a></h2>
+<p>This directory contains modules for implementing a productionized RoBERTa model.
+These modules implement the same Transformer components that are implemented in
+the fairseq library, however they’re distilled down to just the elements which
+are used in the final RoBERTa model, and within that are restructured and
+rewritten to be able to be compiled by TorchScript for production use cases.</p>
+<p>The SentenceEncoder specifically can be used to load model weights directly from
+the publicly release RoBERTa weights, and it will translate these weights to
+the corresponding values in this implementation.</p>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.MultiheadSelfAttention">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.</code><code class="sig-name descname">MultiheadSelfAttention</code><span class="sig-paren">(</span><em class="sig-param">embed_dim: int</em>, <em class="sig-param">num_heads: int</em>, <em class="sig-param">scaling: float = 0.125</em>, <em class="sig-param">dropout: float = 0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/multihead_attention.html#MultiheadSelfAttention"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.MultiheadSelfAttention" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>This is a TorchScriptable implementation of MultiheadAttention from fairseq
+for the purposes of creating a productionized RoBERTa model. It distills just
+the elements which are required to implement the RoBERTa use cases of
+MultiheadAttention, and within that is restructured and rewritten to be able
+to be compiled by TorchScript for production use cases.</p>
+<p>The default constructor values match those required to import the public
+RoBERTa weights. Unless you are pretraining your own model, there’s no need to
+change them.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.MultiheadSelfAttention.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">query</em>, <em class="sig-param">key_padding_mask</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/multihead_attention.html#MultiheadSelfAttention.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.MultiheadSelfAttention.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input shape: Time x Batch x Channel
+Timesteps can be masked by supplying a T x T mask in the
+<cite>attn_mask</cite> argument. Padding elements can be excluded from
+the key by passing a binary ByteTensor (<cite>key_padding_mask</cite>) with shape:
+batch x source_length, where padding elements are indicated by 1s.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.PositionalEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.</code><code class="sig-name descname">PositionalEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int</em>, <em class="sig-param">embedding_dim: int</em>, <em class="sig-param">pad_index: Optional[int] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#PositionalEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.PositionalEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>This module learns positional embeddings up to a fixed maximum size.
+Padding ids are ignored by either offsetting based on pad_index
+or by setting pad_index to None and ensuring that the appropriate
+position ids are passed to the forward function.</p>
+<p>This is a TorchScriptable implementation of PositionalEmbedding from fairseq
+for the purposes of creating a productionized RoBERTa model. It distills just
+the elements which are required to implement the RoBERTa use cases of
+MultiheadAttention, and within that is restructured and rewritten to be able
+to be compiled by TorchScript for production use cases.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.PositionalEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#PositionalEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.PositionalEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input is expected to be of size [batch_size x sequence_length].</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.PositionalEmbedding.max_positions">
+<code class="sig-name descname">max_positions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/positional_embedding.html#PositionalEmbedding.max_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.PositionalEmbedding.max_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum number of supported positions.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.ResidualMLP">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.</code><code class="sig-name descname">ResidualMLP</code><span class="sig-paren">(</span><em class="sig-param">input_dim: int, hidden_dims: List[int], dropout: float = 0.1, activation=&lt;class 'pytext.models.representations.transformer.residual_mlp.GeLU'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/residual_mlp.html#ResidualMLP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.ResidualMLP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>A square MLP component which can learn a bias on an input vector.
+This MLP in particular defaults to using GeLU as its activation function
+(this can be changed by passing a different activation function),
+and retains a residual connection to its original input to help with gradient
+propogation.</p>
+<p>Unlike pytext’s MLPDecoder it doesn’t currently allow adding a LayerNorm
+in between hidden layers.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.ResidualMLP.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/residual_mlp.html#ResidualMLP.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.ResidualMLP.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.SentenceEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.</code><code class="sig-name descname">SentenceEncoder</code><span class="sig-paren">(</span><em class="sig-param">transformer: Optional[pytext.models.representations.transformer.transformer.Transformer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.SentenceEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>This is a TorchScriptable implementation of RoBERTa from fairseq
+for the purposes of creating a productionized RoBERTa model. It distills just
+the elements which are required to implement the RoBERTa model, and within that
+is restructured and rewritten to be able to be compiled by TorchScript for
+production use cases.</p>
+<p>This SentenceEncoder can load in the public RoBERTa weights directly with
+<cite>load_roberta_state_dict</cite>, which will translate the keys as they exist in
+the publicly released RoBERTa to the correct structure for this implementation.
+The default constructor value will have the same size and shape as that model.</p>
+<p>To use RoBERTa with this, download the RoBERTa public weights as <cite>roberta.weights</cite></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">encoder</span> <span class="o">=</span> <span class="n">SentenceEncoder</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"roberta.weights"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">encoder</span><span class="o">.</span><span class="n">load_roberta_state_dict</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Within this you will still need to preprocess inputs using fairseq and the publicly
+released vocabs, and finally place this encoder in a model alongside say an MLP
+output layer to do classification.</p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.SentenceEncoder.extract_features">
+<code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param">tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder.extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.SentenceEncoder.extract_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.SentenceEncoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.SentenceEncoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.SentenceEncoder.load_roberta_state_dict">
+<code class="sig-name descname">load_roberta_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/sentence_encoder.html#SentenceEncoder.load_roberta_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.SentenceEncoder.load_roberta_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.Transformer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.</code><code class="sig-name descname">Transformer</code><span class="sig-paren">(</span><em class="sig-param">vocab_size: int = 50265</em>, <em class="sig-param">embedding_dim: int = 768</em>, <em class="sig-param">padding_idx: int = 1</em>, <em class="sig-param">max_seq_len: int = 514</em>, <em class="sig-param">layers: List[pytext.models.representations.transformer.transformer.TransformerLayer] = ()</em>, <em class="sig-param">dropout: float = 0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#Transformer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.Transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.Transformer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens: torch.Tensor</em><span class="sig-paren">)</span> → List[torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#Transformer.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.Transformer.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.representations.transformer.TransformerLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.representations.transformer.</code><code class="sig-name descname">TransformerLayer</code><span class="sig-paren">(</span><em class="sig-param">embedding_dim: int = 768</em>, <em class="sig-param">attention: Optional[pytext.models.representations.transformer.multihead_attention.MultiheadSelfAttention] = None</em>, <em class="sig-param">residual_mlp: Optional[pytext.models.representations.transformer.residual_mlp.ResidualMLP] = None</em>, <em class="sig-param">dropout: float = 0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#TransformerLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.TransformerLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="pytext.models.representations.transformer.TransformerLayer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em>, <em class="sig-param">key_padding_mask</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/representations/transformer/transformer.html#TransformerLayer.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.representations.transformer.TransformerLayer.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.models.html">pytext.models package</a><ul>
+<li><a href="pytext.models.representations.html">pytext.models.representations package</a><ul>
+<li>Previous: <a href="pytext.models.representations.html" title="previous chapter">pytext.models.representations package</a></li>
+<li>Next: <a href="pytext.models.semantic_parsers.html" title="next chapter">pytext.models.semantic_parsers package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

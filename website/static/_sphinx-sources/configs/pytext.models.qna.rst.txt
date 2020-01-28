@@ -1,0 +1,8 @@
+qna
+===
+
+
+.. toctree::
+
+  pytext.models.qna.bert_squad_qa
+  pytext.models.qna.dr_qa

@@ -1,0 +1,68 @@
+BERTTensorizerBase.Config
+=========================
+
+
+
+**Component:** :class:`BERTTensorizerBase  <pytext.data.bert_tensorizer.BERTTensorizerBase>`\ 
+
+
+.. py:currentmodule:: pytext.data.bert_tensorizer
+.. py:class:: BERTTensorizerBase.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **columns**: list[str] = ``['text']``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`\ ()
+    \ 
+
+  **base_tokenizer**: Optional[:doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`] = ``None``
+    \ 
+
+  **vocab_file**: str = ``''``
+    \ 
+
+  **max_seq_len**: int = ``256``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>`\ 
+  - :class:`RoBERTaTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config>`\ 
+  - :class:`RoBERTaTokenLevelTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config>`\ 
+  - :class:`SquadForBERTTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config>`\ 
+  - :class:`SquadForBERTTensorizerForKD.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizerForKD.Config>`\ 
+  - :class:`SquadForRoBERTaTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForRoBERTaTensorizer.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "columns": [
+          "text"
+      ],
+      "tokenizer": {
+          "Tokenizer": {
+              "split_regex": "\\s+",
+              "lowercase": true
+          }
+      },
+      "base_tokenizer": null,
+      "vocab_file": "",
+      "max_seq_len": 256
+  }

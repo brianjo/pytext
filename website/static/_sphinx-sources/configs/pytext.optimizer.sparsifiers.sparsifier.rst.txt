@@ -1,0 +1,11 @@
+sparsifier
+==========
+
+
+.. toctree::
+
+  pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.Config
+  pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.Config
+  pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.Config
+  pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.Config
+  pytext.optimizer.sparsifiers.sparsifier.Sparsifier.Config

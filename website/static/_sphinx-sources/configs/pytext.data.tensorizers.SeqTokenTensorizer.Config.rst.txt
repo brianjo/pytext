@@ -1,0 +1,76 @@
+SeqTokenTensorizer.Config
+=========================
+
+
+
+**Component:** :class:`SeqTokenTensorizer  <pytext.data.tensorizers.SeqTokenTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: SeqTokenTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str = ``'text_seq'``
+    \ 
+
+  **max_seq_len**: Optional[int] = ``None``
+    \ 
+
+  **add_bos_token**: bool = ``False``
+    sentence markers
+    
+
+  **add_eos_token**: bool = ``False``
+    \ 
+
+  **use_eos_token_for_bos**: bool = ``False``
+    \ 
+
+  **add_bol_token**: bool = ``False``
+    list markers
+    
+
+  **add_eol_token**: bool = ``False``
+    \ 
+
+  **use_eol_token_for_bol**: bool = ``False``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`\ ()
+    The tokenizer to use to split input text into tokens.
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "column": "text_seq",
+      "max_seq_len": null,
+      "add_bos_token": false,
+      "add_eos_token": false,
+      "use_eos_token_for_bos": false,
+      "add_bol_token": false,
+      "add_eol_token": false,
+      "use_eol_token_for_bol": false,
+      "tokenizer": {
+          "Tokenizer": {
+              "split_regex": "\\s+",
+              "lowercase": true
+          }
+      }
+  }

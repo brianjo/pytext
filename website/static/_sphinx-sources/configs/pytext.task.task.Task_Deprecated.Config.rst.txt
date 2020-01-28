@@ -1,0 +1,38 @@
+Task_Deprecated.Config
+======================
+
+
+
+**Component:** :class:`Task_Deprecated  <pytext.task.task.Task_Deprecated>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: Task_Deprecated.Config
+  :noindex:
+
+  **Bases:** :class:`TaskBase.Config <pytext.task.task.TaskBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **features**: :doc:`FeatureConfig <pytext.config.field_config.FeatureConfig>` = :doc:`FeatureConfig <pytext.config.field_config.FeatureConfig>`\ ()
+    \ 
+
+  **featurizer**: :doc:`Featurizer.Config <pytext.data.featurizer.featurizer.Featurizer.Config>` = :doc:`SimpleFeaturizer.Config <pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.Config>`\ ()
+    \ 
+
+  **data_handler**: :doc:`DataHandler.Config <pytext.data.data_handler.DataHandler.Config>`
+    \ 
+
+  **trainer**: :doc:`Trainer.Config <pytext.trainers.trainer.Trainer.Config>` = :doc:`Trainer.Config <pytext.trainers.trainer.Trainer.Config>`\ ()
+    \ 
+
+  **exporter**: Optional[:doc:`ModelExporter.Config <pytext.exporters.exporter.ModelExporter.Config>`] = ``None``
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

@@ -1,0 +1,412 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.optimizer.swa</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">create_optimizer</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.lamb</span> <span class="kn">import</span> <span class="n">Lamb</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.optimizers</span> <span class="kn">import</span> <span class="n">SGD</span><span class="p">,</span> <span class="n">Adagrad</span><span class="p">,</span> <span class="n">Adam</span><span class="p">,</span> <span class="n">AdamW</span><span class="p">,</span> <span class="n">Optimizer</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.radam</span> <span class="kn">import</span> <span class="n">RAdam</span>
+<span class="kn">from</span> <span class="nn">torch.optim</span> <span class="kn">import</span> <span class="n">Optimizer</span> <span class="k">as</span> <span class="n">PT_Optimizer</span>
+
+
+<div class="viewcode-block" id="StochasticWeightAveraging"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging">[docs]</a><span class="k">class</span> <span class="nc">StochasticWeightAveraging</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">,</span> <span class="n">PT_Optimizer</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Optimizer</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">optimizer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">SGD</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">Adam</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">AdamW</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">Adagrad</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">RAdam</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">Lamb</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">SGD</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">frequency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">swa_learning_rate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">swa_start</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">swa_freq</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">swa_lr</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Implements Stochastic Weight Averaging (SWA).</span>
+
+<span class="sd">        THIS WAS DIRECTLY COPIED OVER FROM pytorch/contrib</span>
+<span class="sd">            https://github.com/pytorch/contrib</span>
+<span class="sd">        Stochastic Weight Averaging was proposed in `Averaging Weights Leads to</span>
+<span class="sd">        Wider Optima and Better Generalization`_ by Pavel Izmailov, Dmitrii</span>
+<span class="sd">        Podoprikhin, Timur Garipov, Dmitry Vetrov and Andrew Gordon Wilson</span>
+<span class="sd">        (UAI 2018).</span>
+
+<span class="sd">        SWA is implemented as a wrapper class taking optimizer instance as input</span>
+<span class="sd">        and applying SWA on top of that optimizer.</span>
+
+<span class="sd">        SWA can be used in two modes: automatic and manual. In the automatic</span>
+<span class="sd">        mode SWA running averages are automatically updated every</span>
+<span class="sd">        :attr:`swa_freq` steps after :attr:`swa_start` steps of optimization. If</span>
+<span class="sd">        :attr:`swa_lr` is provided, the learning rate of the optimizer is reset</span>
+<span class="sd">        to :attr:`swa_lr` at every step starting from :attr:`swa_start`. To use</span>
+<span class="sd">        SWA in automatic mode provide values for both :attr:`swa_start` and</span>
+<span class="sd">        :attr:`swa_freq` arguments.</span>
+
+<span class="sd">        Alternatively, in the manual mode, use :meth:`update_swa` or</span>
+<span class="sd">        :meth:`update_swa_group` methods to update the SWA running averages.</span>
+
+<span class="sd">        In the end of training use `swap_swa_sgd` method to set the optimized</span>
+<span class="sd">        variables to the computed averages.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            optimizer (torch.optim.Optimizer): optimizer to use with SWA</span>
+<span class="sd">            swa_start (int): number of steps before starting to apply SWA in</span>
+<span class="sd">                automatic mode; if None, manual mode is selected (default: None)</span>
+<span class="sd">            swa_freq (int): number of steps between subsequent updates of</span>
+<span class="sd">                SWA running averages in automatic mode; if None, manual mode is</span>
+<span class="sd">                selected (default: None)</span>
+<span class="sd">            swa_lr (float): learning rate to use starting from step swa_start</span>
+<span class="sd">                in automatic mode; if None, learning rate is not changed</span>
+<span class="sd">                (default: None)</span>
+
+<span class="sd">        .. _Averaging Weights Leads to Wider Optima and Better Generalization:</span>
+<span class="sd">            https://arxiv.org/abs/1803.05407</span>
+<span class="sd">        .. _Improving Consistency-Based Semi-Supervised Learning with Weight</span>
+<span class="sd">            Averaging:</span>
+<span class="sd">            https://arxiv.org/abs/1806.05594</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auto_mode</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swa_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_freq</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">swa_start</span><span class="p">,</span> <span class="n">swa_freq</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span> <span class="o">=</span> <span class="n">swa_lr</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auto_mode</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">swa_start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid swa_start: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">swa_start</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">swa_freq</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid swa_freq: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">swa_freq</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Some of swa_start, swa_freq is None, ignoring swa_lr"</span><span class="p">)</span>
+            <span class="c1"># If not in auto mode make all swa parameters None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">swa_start</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">swa_freq</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid SWA learning rate: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">swa_lr</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="n">group</span><span class="p">[</span><span class="s2">"n_avg"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">group</span><span class="p">[</span><span class="s2">"step_counter"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">swa_start</span><span class="p">,</span> <span class="n">swa_freq</span><span class="p">):</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">swa_start</span><span class="p">,</span> <span class="n">swa_freq</span><span class="p">]</span>
+        <span class="n">params_none</span> <span class="o">=</span> <span class="p">[</span><span class="n">param</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">params_none</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">params_none</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Some of swa_start, swa_freq is None, ignoring other"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Casting swa_start, swa_freq to int"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">params_none</span><span class="p">),</span> <span class="n">params</span>
+
+    <span class="k">def</span> <span class="nf">_reset_lr_to_swa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">param_group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">"step_counter"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_start</span><span class="p">:</span>
+                <span class="n">param_group</span><span class="p">[</span><span class="s2">"lr"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_lr</span>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.update_swa_group"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.update_swa_group">[docs]</a>    <span class="k">def</span> <span class="nf">update_swa_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Updates the SWA running averages for the given parameter group.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            param_group (dict): Specifies for what parameter group SWA running</span>
+<span class="sd">                averages should be updated</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # automatic mode</span>
+<span class="sd">            &gt;&gt;&gt; base_opt = torch.optim.SGD([{'params': [x]},</span>
+<span class="sd">            &gt;&gt;&gt;             {'params': [y], 'lr': 1e-3}], lr=1e-2, momentum=0.9)</span>
+<span class="sd">            &gt;&gt;&gt; opt = torchcontrib.optim.SWA(base_opt)</span>
+<span class="sd">            &gt;&gt;&gt; for i in range(100):</span>
+<span class="sd">            &gt;&gt;&gt;     opt.zero_grad()</span>
+<span class="sd">            &gt;&gt;&gt;     loss_fn(model(input), target).backward()</span>
+<span class="sd">            &gt;&gt;&gt;     opt.step()</span>
+<span class="sd">            &gt;&gt;&gt;     if i &gt; 10 and i % 5 == 0:</span>
+<span class="sd">            &gt;&gt;&gt;         # Update SWA for the second parameter group</span>
+<span class="sd">            &gt;&gt;&gt;         opt.update_swa_group(opt.param_groups[1])</span>
+<span class="sd">            &gt;&gt;&gt; opt.swap_swa_sgd()</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]:</span>
+            <span class="n">param_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">"swa_buffer"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_state</span><span class="p">:</span>
+                <span class="n">param_state</span><span class="p">[</span><span class="s2">"swa_buffer"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">buf</span> <span class="o">=</span> <span class="n">param_state</span><span class="p">[</span><span class="s2">"swa_buffer"</span><span class="p">]</span>
+            <span class="n">virtual_decay</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"n_avg"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">buf</span><span class="p">)</span> <span class="o">*</span> <span class="n">virtual_decay</span>
+            <span class="n">buf</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
+        <span class="n">group</span><span class="p">[</span><span class="s2">"n_avg"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.update_swa"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.update_swa">[docs]</a>    <span class="k">def</span> <span class="nf">update_swa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Updates the SWA running averages of all optimized parameters.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_swa_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.finalize"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.finalize">[docs]</a>    <span class="k">def</span> <span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Swaps the values of the optimized variables and swa buffers.</span>
+
+<span class="sd">        It's meant to be called in the end of training to use the collected</span>
+<span class="sd">        swa running averages. It can also be used to evaluate the running</span>
+<span class="sd">        averages during training; to continue training `swap_swa_sgd`</span>
+<span class="sd">        should be called again.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]:</span>
+                <span class="n">param_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s2">"swa_buffer"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">param_state</span><span class="p">:</span>
+                    <span class="c1"># If swa wasn't applied we don't swap params</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="s2">"SWA wasn't applied to param {}; skipping it"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">buf</span> <span class="o">=</span> <span class="n">param_state</span><span class="p">[</span><span class="s2">"swa_buffer"</span><span class="p">]</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+                <span class="n">buf</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.step"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closure</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Performs a single optimization step.</span>
+
+<span class="sd">        In automatic mode also updates SWA running averages.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_lr_to_swa</span><span class="p">()</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">closure</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="n">group</span><span class="p">[</span><span class="s2">"step_counter"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">"step_counter"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auto_mode</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">steps</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_start</span> <span class="ow">and</span> <span class="n">steps</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">swa_freq</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update_swa_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.state_dict"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Returns the state of SWA as a :class:`dict`.</span>
+
+<span class="sd">        It contains three entries:</span>
+<span class="sd">            * opt_state - a dict holding current optimization state of the base</span>
+<span class="sd">                optimizer. Its content differs between optimizer classes.</span>
+<span class="sd">            * swa_state - a dict containing current state of SWA. For each</span>
+<span class="sd">                optimized variable it contains swa_buffer keeping the running</span>
+<span class="sd">                average of the variable</span>
+<span class="sd">            * param_groups - a dict containing all parameter groups</span>
+<span class="sd">        """</span>
+        <span class="n">opt_state_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+        <span class="n">swa_state</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">else</span> <span class="n">k</span><span class="p">):</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">opt_state</span> <span class="o">=</span> <span class="n">opt_state_dict</span><span class="p">[</span><span class="s2">"state"</span><span class="p">]</span>
+        <span class="n">param_groups</span> <span class="o">=</span> <span class="n">opt_state_dict</span><span class="p">[</span><span class="s2">"param_groups"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"opt_state"</span><span class="p">:</span> <span class="n">opt_state</span><span class="p">,</span>
+            <span class="s2">"swa_state"</span><span class="p">:</span> <span class="n">swa_state</span><span class="p">,</span>
+            <span class="s2">"param_groups"</span><span class="p">:</span> <span class="n">param_groups</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.load_state_dict"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.load_state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Loads the optimizer state.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            state_dict (dict): SWA optimizer state. Should be an object returned</span>
+<span class="sd">                from a call to `state_dict`.</span>
+<span class="sd">        """</span>
+        <span class="n">swa_state_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"state"</span><span class="p">:</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"swa_state"</span><span class="p">],</span>
+            <span class="s2">"param_groups"</span><span class="p">:</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"param_groups"</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="n">opt_state_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"state"</span><span class="p">:</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"opt_state"</span><span class="p">],</span>
+            <span class="s2">"param_groups"</span><span class="p">:</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"param_groups"</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="n">PT_Optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">swa_state_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">opt_state_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.add_param_group"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.add_param_group">[docs]</a>    <span class="k">def</span> <span class="nf">add_param_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_group</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Add a param group to the :class:`Optimizer` s `param_groups`.</span>
+
+<span class="sd">        This can be useful when fine tuning a pre-trained network as frozen</span>
+<span class="sd">        layers can be made trainable and added to the :class:`Optimizer` as</span>
+<span class="sd">        training progresses.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            param_group (dict): Specifies what Tensors should be optimized along</span>
+<span class="sd">            with group specific optimization options.</span>
+<span class="sd">        """</span>
+        <span class="n">param_group</span><span class="p">[</span><span class="s2">"n_avg"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">param_group</span><span class="p">[</span><span class="s2">"step_counter"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">add_param_group</span><span class="p">(</span><span class="n">param_group</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.bn_update"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.bn_update">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">bn_update</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">"""Updates BatchNorm running_mean, running_var buffers in the model.</span>
+
+<span class="sd">        It performs one pass over data in `loader` to estimate the activation</span>
+<span class="sd">        statistics for BatchNorm layers in the model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            loader (torch.utils.data.DataLoader): dataset loader to compute the</span>
+<span class="sd">                activation statistics on. Each data batch should be either a</span>
+<span class="sd">                tensor, or a list/tuple whose first element is a tensor</span>
+<span class="sd">                containing data.</span>
+
+<span class="sd">            model (torch.nn.Module): model for which we seek to update BatchNorm</span>
+<span class="sd">                statistics.</span>
+
+<span class="sd">            device (torch.device, optional): If set, data will be trasferred to</span>
+<span class="sd">                :attr:`device` before being passed into :attr:`model`.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_check_bn</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">was_training</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">training</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">momenta</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_reset_bn</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">module</span><span class="p">:</span> <span class="n">_get_momenta</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">momenta</span><span class="p">))</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="nb">input</span> <span class="ow">in</span> <span class="n">loader</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="n">momentum</span> <span class="o">=</span> <span class="n">b</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">momenta</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">momentum</span> <span class="o">=</span> <span class="n">momentum</span>
+
+            <span class="k">if</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+            <span class="n">n</span> <span class="o">+=</span> <span class="n">b</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">module</span><span class="p">:</span> <span class="n">_set_momenta</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">momenta</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">was_training</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticWeightAveraging.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.swa.StochasticWeightAveraging.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+        <span class="n">base_opt</span> <span class="o">=</span> <span class="n">create_optimizer</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">base_opt</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">swa_learning_rate</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># BatchNorm utils</span>
+<span class="k">def</span> <span class="nf">_check_bn_apply</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">batchnorm</span><span class="o">.</span><span class="n">_BatchNorm</span><span class="p">):</span>
+        <span class="n">flag</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+
+<span class="k">def</span> <span class="nf">_check_bn</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">flag</span> <span class="o">=</span> <span class="p">[</span><span class="bp">False</span><span class="p">]</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">module</span><span class="p">:</span> <span class="n">_check_bn_apply</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">flag</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">flag</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_reset_bn</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">batchnorm</span><span class="o">.</span><span class="n">_BatchNorm</span><span class="p">):</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">running_mean</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">running_mean</span><span class="p">)</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">running_var</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">running_var</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_momenta</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">momenta</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">batchnorm</span><span class="o">.</span><span class="n">_BatchNorm</span><span class="p">):</span>
+        <span class="n">momenta</span><span class="p">[</span><span class="n">module</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">momentum</span>
+
+
+<span class="k">def</span> <span class="nf">_set_momenta</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">momenta</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">batchnorm</span><span class="o">.</span><span class="n">_BatchNorm</span><span class="p">):</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">momentum</span> <span class="o">=</span> <span class="n">momenta</span><span class="p">[</span><span class="n">module</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

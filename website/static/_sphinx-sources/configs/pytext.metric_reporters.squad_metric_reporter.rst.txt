@@ -1,0 +1,7 @@
+squad_metric_reporter
+=====================
+
+
+.. toctree::
+
+  pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.Config

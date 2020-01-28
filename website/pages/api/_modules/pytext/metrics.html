@@ -1,0 +1,1091 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metrics</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">dumps</span> <span class="k">as</span> <span class="n">json_dumps</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">DefaultDict</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">NamedTuple</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.ascii_table</span> <span class="kn">import</span> <span class="n">ascii_table</span>
+
+
+<span class="n">RECALL_AT_PRECISION_THRESHOLDS</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+<span class="n">PRECISION_AT_RECALL_THRESHOLDS</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+
+<span class="sd">"""</span>
+<span class="sd">Basic metric classes and functions for single-label prediction problems.</span>
+<span class="sd">Extending to multi-label support</span>
+<span class="sd">"""</span>
+
+
+<div class="viewcode-block" id="LabelPrediction"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.LabelPrediction">[docs]</a><span class="k">class</span> <span class="nc">LabelPrediction</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Label predictions of an example.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        label_scores: Confidence scores that each label receives.</span>
+<span class="sd">        predicted_label: Index of the predicted label. This is usually the label with</span>
+<span class="sd">            the highest confidence score in label_scores.</span>
+<span class="sd">        expected_label: Index of the true label.</span>
+<span class="sd">    """</span>
+
+    <span class="n">label_scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">predicted_label</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">expected_label</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+<div class="viewcode-block" id="LabelListPrediction"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.LabelListPrediction">[docs]</a><span class="k">class</span> <span class="nc">LabelListPrediction</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Label list predictions of an example.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        label_scores: Confidence scores that each label receives.</span>
+<span class="sd">        predicted_label: List of indices of the predicted label.</span>
+<span class="sd">        expected_label: List of indices of the true label.</span>
+<span class="sd">    """</span>
+
+    <span class="n">label_scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">predicted_label</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">expected_label</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PRF1Scores"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PRF1Scores">[docs]</a><span class="k">class</span> <span class="nc">PRF1Scores</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Precision/recall/F1 scores for a collection of predictions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        true_positives: Number of true positives.</span>
+<span class="sd">        false_positives: Number of false positives.</span>
+<span class="sd">        false_negatives: Number of false negatives.</span>
+<span class="sd">        precision: TP / (TP + FP).</span>
+<span class="sd">        recall: TP / (TP + FN).</span>
+<span class="sd">        f1: 2 * TP / (2 * TP + FP + FN).</span>
+<span class="sd">    """</span>
+
+    <span class="n">true_positives</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">false_positives</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">false_negatives</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">precision</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">recall</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">f1</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+<div class="viewcode-block" id="SoftClassificationMetrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.SoftClassificationMetrics">[docs]</a><span class="k">class</span> <span class="nc">SoftClassificationMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Classification scores that are independent of thresholds.</span>
+<span class="sd">    """</span>
+
+    <span class="n">average_precision</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">recall_at_precision</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">decision_thresh_at_precision</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">precision_at_recall</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">decision_thresh_at_recall</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">roc_auc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="MacroPRF1Scores"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.MacroPRF1Scores">[docs]</a><span class="k">class</span> <span class="nc">MacroPRF1Scores</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Macro precision/recall/F1 scores (averages across each label).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_label: Number of distinct labels.</span>
+<span class="sd">        precision: Equally weighted average of precisions for each label.</span>
+<span class="sd">        recall: Equally weighted average of recalls for each label.</span>
+<span class="sd">        f1: Equally weighted average of F1 scores for each label.</span>
+<span class="sd">    """</span>
+
+    <span class="n">num_labels</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">precision</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">recall</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">f1</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+<div class="viewcode-block" id="MacroPRF1Metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.MacroPRF1Metrics">[docs]</a><span class="k">class</span> <span class="nc">MacroPRF1Metrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Aggregated metric class for macro precision/recall/F1 scores.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        per_label_scores: Mapping from label string to the corresponding</span>
+<span class="sd">            precision/recall/F1 scores.</span>
+<span class="sd">        macro_scores: Macro precision/recall/F1 scores across the labels in</span>
+<span class="sd">            `per_label_scores`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">per_label_scores</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PRF1Scores</span><span class="p">]</span>
+    <span class="n">macro_scores</span><span class="p">:</span> <span class="n">MacroPRF1Scores</span>
+
+<div class="viewcode-block" id="MacroPRF1Metrics.print_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.MacroPRF1Metrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indentation</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span>
+            <span class="n">ascii_table</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+                        <span class="s2">"precision"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{metrics.precision:.2f}"</span><span class="p">,</span>
+                        <span class="s2">"recall"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{metrics.recall:.2f}"</span><span class="p">,</span>
+                        <span class="s2">"f1"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{metrics.f1:.2f}"</span><span class="p">,</span>
+                        <span class="s2">"support"</span><span class="p">:</span> <span class="n">metrics</span><span class="o">.</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">metrics</span><span class="o">.</span><span class="n">false_negatives</span><span class="p">,</span>
+                    <span class="p">}</span>
+                    <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">metrics</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">per_label_scores</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="p">],</span>
+                <span class="n">human_column_names</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"Label"</span><span class="p">,</span>
+                    <span class="s2">"precision"</span><span class="p">:</span> <span class="s2">"Precision"</span><span class="p">,</span>
+                    <span class="s2">"recall"</span><span class="p">:</span> <span class="s2">"Recall"</span><span class="p">,</span>
+                    <span class="s2">"f1"</span><span class="p">:</span> <span class="s2">"F1"</span><span class="p">,</span>
+                    <span class="s2">"support"</span><span class="p">:</span> <span class="s2">"Support"</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">footer</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"Overall macro scores"</span><span class="p">,</span>
+                    <span class="s2">"precision"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{self.macro_scores.precision:.2f}"</span><span class="p">,</span>
+                    <span class="s2">"recall"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{self.macro_scores.recall:.2f}"</span><span class="p">,</span>
+                    <span class="s2">"f1"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{self.macro_scores.f1:.2f}"</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">alignments</span><span class="o">=</span><span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"&lt;"</span><span class="p">},</span>
+                <span class="n">indentation</span><span class="o">=</span><span class="n">indentation</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PRF1Metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PRF1Metrics">[docs]</a><span class="k">class</span> <span class="nc">PRF1Metrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Metric class for all types of precision/recall/F1 scores.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        per_label_scores: Map from label string to the corresponding precision/recall/F1</span>
+<span class="sd">            scores.</span>
+<span class="sd">        macro_scores: Macro precision/recall/F1 scores across the labels in</span>
+<span class="sd">            `per_label_scores`.</span>
+<span class="sd">        micro_scores: Micro (regular) precision/recall/F1 scores for the same</span>
+<span class="sd">            collection of predictions.</span>
+<span class="sd">    """</span>
+
+    <span class="n">per_label_scores</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PRF1Scores</span><span class="p">]</span>
+    <span class="n">macro_scores</span><span class="p">:</span> <span class="n">MacroPRF1Scores</span>
+    <span class="n">micro_scores</span><span class="p">:</span> <span class="n">PRF1Scores</span>
+
+<div class="viewcode-block" id="PRF1Metrics.print_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PRF1Metrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{'Per label scores':&lt;40}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{'Precision':&lt;10}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{'Recall':&lt;10}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{'F1':&lt;10}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{'Support':&lt;10}</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">label_metrics</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_label_scores</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">support</span> <span class="o">=</span> <span class="n">label_metrics</span><span class="o">.</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">label_metrics</span><span class="o">.</span><span class="n">false_negatives</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{label:&lt;40}"</span>
+                <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{label_metrics.precision * 100:&lt;10.3f}"</span>
+                <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{label_metrics.recall * 100:&lt;10.3f}"</span>
+                <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{label_metrics.f1 * 100:&lt;10.3f}"</span>
+                <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{support:&lt;10}</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">support</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">micro_scores</span><span class="o">.</span><span class="n">true_positives</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">micro_scores</span><span class="o">.</span><span class="n">false_negatives</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\n\t</span><span class="s2">{'Overall micro scores':&lt;40}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{self.micro_scores.precision * 100:&lt;10.3f}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{self.micro_scores.recall * 100:&lt;10.3f}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{self.micro_scores.f1 * 100:&lt;10.3f}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{support:&lt;10}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{'Overall macro scores':&lt;40}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{self.macro_scores.precision * 100:&lt;10.3f}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{self.macro_scores.recall * 100:&lt;10.3f}"</span>
+            <span class="n">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">{self.macro_scores.f1 * 100:&lt;10.3f}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ClassificationMetrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.ClassificationMetrics">[docs]</a><span class="k">class</span> <span class="nc">ClassificationMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Metric class for various classification metrics.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        accuracy: Overall accuracy of predictions.</span>
+<span class="sd">        macro_prf1_metrics: Macro precision/recall/F1 scores.</span>
+<span class="sd">        per_label_soft_scores: Per label soft metrics.</span>
+<span class="sd">        mcc: Matthews correlation coefficient.</span>
+<span class="sd">        roc_auc: Area under the Receiver Operating Characteristic curve.</span>
+<span class="sd">        loss: Training loss (only used for selecting best model, no need to print).</span>
+<span class="sd">    """</span>
+
+    <span class="n">accuracy</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">macro_prf1_metrics</span><span class="p">:</span> <span class="n">MacroPRF1Metrics</span>
+    <span class="n">per_label_soft_scores</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SoftClassificationMetrics</span><span class="p">]]</span>
+    <span class="n">mcc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">roc_auc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">loss</span><span class="p">:</span> <span class="nb">float</span>
+
+<div class="viewcode-block" id="ClassificationMetrics.print_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.ClassificationMetrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_pep</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Accuracy: {self.accuracy * 100:.2f}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Soft Metrics:"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="p">:</span>
+            <span class="n">soft_scores</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+                    <span class="s2">"avg_pr"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{metrics.average_precision:.3f}"</span><span class="p">,</span>
+                    <span class="s2">"roc_auc"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{(metrics.roc_auc or 0.0):.3f}"</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">metrics</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="p">]</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"Label"</span><span class="p">,</span>
+                <span class="s2">"avg_pr"</span><span class="p">:</span> <span class="s2">"Average precision"</span><span class="p">,</span>
+                <span class="s2">"roc_auc"</span><span class="p">:</span> <span class="s2">"ROC AUC"</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">ascii_table</span><span class="p">(</span><span class="n">soft_scores</span><span class="p">,</span> <span class="n">columns</span><span class="p">))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Recall at Precision"</span><span class="p">)</span>
+            <span class="n">r_at_p_thresholds</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+                    <span class="n">metrics</span><span class="o">.</span><span class="n">recall_at_precision</span>
+                    <span class="k">for</span> <span class="n">metrics</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="n">ascii_table</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="nb">dict</span><span class="p">(</span>
+                            <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">},</span>
+                            <span class="o">**</span><span class="p">{</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">):</span> <span class="n">f</span><span class="s2">"{r:.3f}"</span>
+                                <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">recall_at_precision</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                            <span class="p">},</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">metrics</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                    <span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span>
+                        <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"Label"</span><span class="p">},</span>
+                        <span class="o">**</span><span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">):</span> <span class="n">f</span><span class="s2">"R@P {t}"</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">r_at_p_thresholds</span><span class="p">},</span>
+                    <span class="p">),</span>
+                    <span class="n">alignments</span><span class="o">=</span><span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"&lt;"</span><span class="p">},</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Precision at Recall"</span><span class="p">)</span>
+            <span class="n">p_at_r_thresholds</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+                    <span class="n">metrics</span><span class="o">.</span><span class="n">precision_at_recall</span>
+                    <span class="k">for</span> <span class="n">metrics</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="n">ascii_table</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="nb">dict</span><span class="p">(</span>
+                            <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">},</span>
+                            <span class="o">**</span><span class="p">{</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">):</span> <span class="n">f</span><span class="s2">"{r:.3f}"</span>
+                                <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">precision_at_recall</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                            <span class="p">},</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">metrics</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                    <span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span>
+                        <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"Label"</span><span class="p">},</span>
+                        <span class="o">**</span><span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">):</span> <span class="n">f</span><span class="s2">"P@R {t}"</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">p_at_r_thresholds</span><span class="p">},</span>
+                    <span class="p">),</span>
+                    <span class="n">alignments</span><span class="o">=</span><span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"&lt;"</span><span class="p">},</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcc</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Matthews correlation coefficient: {self.mcc :.3f}"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">roc_auc</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">ROC AUC: {self.roc_auc:.3f}"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">report_pep</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_pep</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ClassificationMetrics.print_pep"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.ClassificationMetrics.print_pep">[docs]</a>    <span class="k">def</span> <span class="nf">print_pep</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"Accuracy"</span><span class="p">:</span> <span class="n">f</span><span class="s2">"{self.accuracy * 100:.2f}"</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">roc_auc</span><span class="p">:</span>
+            <span class="n">metrics</span><span class="p">[</span><span class="s2">"ROC AUC"</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="s2">"{self.roc_auc :.3f}"</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"NET"</span><span class="p">,</span> <span class="s2">"metric"</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span> <span class="s2">"unit"</span><span class="p">:</span> <span class="s2">"None"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="n">value</span><span class="p">}</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"PyTorchObserver "</span> <span class="o">+</span> <span class="n">json_dumps</span><span class="p">(</span><span class="n">info</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="Confusions"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.Confusions">[docs]</a><span class="k">class</span> <span class="nc">Confusions</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Confusion information for a collection of predictions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        TP: Number of true positives.</span>
+<span class="sd">        FP: Number of false positives.</span>
+<span class="sd">        FN: Number of false negatives.</span>
+<span class="sd">    """</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="s2">"TP"</span><span class="p">,</span> <span class="s2">"FP"</span><span class="p">,</span> <span class="s2">"FN"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">TP</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">FP</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">FN</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TP</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">TP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FP</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">FP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FN</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">FN</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Confusions</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">TP</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">TP</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">FP</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">FP</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">FN</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">FN</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">"Confusions"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Confusions"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Confusions</span><span class="p">(</span>
+            <span class="n">TP</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TP</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">TP</span><span class="p">,</span> <span class="n">FP</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">FP</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">FP</span><span class="p">,</span> <span class="n">FN</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">FN</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">FN</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">"Confusions"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Confusions"</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TP</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">TP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FP</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">FP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FN</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">FN</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">_asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"TP"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">TP</span><span class="p">,</span> <span class="s2">"FP"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">FP</span><span class="p">,</span> <span class="s2">"FN"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">FN</span><span class="p">}</span>
+
+<div class="viewcode-block" id="Confusions.compute_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.Confusions.compute_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PRF1Scores</span><span class="p">:</span>
+        <span class="n">precision</span><span class="p">,</span> <span class="n">recall</span><span class="p">,</span> <span class="n">f1</span> <span class="o">=</span> <span class="n">compute_prf1</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TP</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">FP</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">FN</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PRF1Scores</span><span class="p">(</span>
+            <span class="n">true_positives</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TP</span><span class="p">,</span>
+            <span class="n">false_positives</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">FP</span><span class="p">,</span>
+            <span class="n">false_negatives</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">FN</span><span class="p">,</span>
+            <span class="n">precision</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span>
+            <span class="n">recall</span><span class="o">=</span><span class="n">recall</span><span class="p">,</span>
+            <span class="n">f1</span><span class="o">=</span><span class="n">f1</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PerLabelConfusions"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PerLabelConfusions">[docs]</a><span class="k">class</span> <span class="nc">PerLabelConfusions</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Per label confusion information.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        label_confusions_map: Map from label string to the corresponding confusion</span>
+<span class="sd">            counts.</span>
+<span class="sd">    """</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="s2">"label_confusions_map"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_confusions_map</span><span class="p">:</span> <span class="n">DefaultDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Confusions</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span>
+            <span class="n">Confusions</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="PerLabelConfusions.update"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PerLabelConfusions.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Increase one of TP, FP or FN count for a label by certain amount.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            label: Label to be modified.</span>
+<span class="sd">            item: Type of count to be modified, should be one of "TP", "FP" or "FN".</span>
+<span class="sd">            count: Amount to be added to the count.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        """</span>
+        <span class="n">confusions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_confusions_map</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">confusions</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">confusions</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="o">+</span> <span class="n">count</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PerLabelConfusions.compute_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PerLabelConfusions.compute_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MacroPRF1Metrics</span><span class="p">:</span>
+        <span class="n">per_label_scores</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PRF1Scores</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">precision_sum</span><span class="p">,</span> <span class="n">recall_sum</span><span class="p">,</span> <span class="n">f1_sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">confusions</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_confusions_map</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="n">confusions</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">()</span>
+            <span class="n">per_label_scores</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">scores</span>
+            <span class="k">if</span> <span class="n">confusions</span><span class="o">.</span><span class="n">TP</span> <span class="o">+</span> <span class="n">confusions</span><span class="o">.</span><span class="n">FN</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">precision_sum</span> <span class="o">+=</span> <span class="n">scores</span><span class="o">.</span><span class="n">precision</span>
+                <span class="n">recall_sum</span> <span class="o">+=</span> <span class="n">scores</span><span class="o">.</span><span class="n">recall</span>
+                <span class="n">f1_sum</span> <span class="o">+=</span> <span class="n">scores</span><span class="o">.</span><span class="n">f1</span>
+        <span class="n">num_labels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_confusions_map</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MacroPRF1Metrics</span><span class="p">(</span>
+            <span class="n">per_label_scores</span><span class="o">=</span><span class="n">per_label_scores</span><span class="p">,</span>
+            <span class="n">macro_scores</span><span class="o">=</span><span class="n">MacroPRF1Scores</span><span class="p">(</span>
+                <span class="n">num_labels</span><span class="o">=</span><span class="n">num_labels</span><span class="p">,</span>
+                <span class="n">precision</span><span class="o">=</span><span class="n">safe_division</span><span class="p">(</span><span class="n">precision_sum</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">),</span>
+                <span class="n">recall</span><span class="o">=</span><span class="n">safe_division</span><span class="p">(</span><span class="n">recall_sum</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">),</span>
+                <span class="n">f1</span><span class="o">=</span><span class="n">safe_division</span><span class="p">(</span><span class="n">f1_sum</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AllConfusions"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.AllConfusions">[docs]</a><span class="k">class</span> <span class="nc">AllConfusions</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Aggregated class for per label confusions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        per_label_confusions: Per label confusion information.</span>
+<span class="sd">        confusions: Overall TP, FP and FN counts across the labels in</span>
+<span class="sd">            `per_label_confusions`.</span>
+<span class="sd">    """</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="s2">"per_label_confusions"</span><span class="p">,</span> <span class="s2">"confusions"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">per_label_confusions</span> <span class="o">=</span> <span class="n">PerLabelConfusions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">confusions</span> <span class="o">=</span> <span class="n">Confusions</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AllConfusions.compute_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.AllConfusions.compute_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PRF1Metrics</span><span class="p">:</span>
+        <span class="n">per_label_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_label_confusions</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PRF1Metrics</span><span class="p">(</span>
+            <span class="n">per_label_scores</span><span class="o">=</span><span class="n">per_label_metrics</span><span class="o">.</span><span class="n">per_label_scores</span><span class="p">,</span>
+            <span class="n">macro_scores</span><span class="o">=</span><span class="n">per_label_metrics</span><span class="o">.</span><span class="n">macro_scores</span><span class="p">,</span>
+            <span class="n">micro_scores</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">confusions</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PairwiseRankingMetrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PairwiseRankingMetrics">[docs]</a><span class="k">class</span> <span class="nc">PairwiseRankingMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Metric class for pairwise ranking</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_examples (int): number of samples</span>
+<span class="sd">        accuracy (float): how many times did we rank in the correct order</span>
+<span class="sd">        average_score_difference (float): average score(higherRank) - score(lowerRank)</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">num_examples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">accuracy</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">average_score_difference</span><span class="p">:</span> <span class="nb">float</span>
+
+<div class="viewcode-block" id="PairwiseRankingMetrics.print_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.PairwiseRankingMetrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"RankingAccuracy: {self.accuracy * 100:.2f}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"AvgScoreDiff: {self.average_score_difference}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"NumExamples: {self.num_examples}"</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RegressionMetrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.RegressionMetrics">[docs]</a><span class="k">class</span> <span class="nc">RegressionMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Metrics for regression tasks.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_examples (int): number of examples</span>
+<span class="sd">        pearson_correlation (float): correlation between predictions and labels</span>
+<span class="sd">        mse (float): mean-squared error between predictions and labels</span>
+<span class="sd">    """</span>
+
+    <span class="n">num_examples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">pearson_correlation</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">mse</span><span class="p">:</span> <span class="nb">float</span>
+
+<div class="viewcode-block" id="RegressionMetrics.print_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.RegressionMetrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Num examples: {self.num_examples}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Pearson correlation: {self.pearson_correlation:.3f}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Mean squared error: {self.mse:.3f}"</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RealtimeMetrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.RealtimeMetrics">[docs]</a><span class="k">class</span> <span class="nc">RealtimeMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Realtime Metrics for tracking training progress and performance.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        samples (int): number of samples</span>
+<span class="sd">        tps (float): tokens per second</span>
+<span class="sd">        ups (float): updates per second</span>
+<span class="sd">    """</span>
+
+    <span class="n">samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">tps</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">ups</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span> <span class="nf">_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"tps"</span><span class="p">,</span> <span class="s2">"ups"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"num_gpus"</span><span class="p">:</span> <span class="n">cuda</span><span class="o">.</span><span class="n">DISTRIBUTED_WORLD_SIZE</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">metrics</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="safe_division"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.safe_division">[docs]</a><span class="k">def</span> <span class="nf">safe_division</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">d</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">d</span> <span class="k">if</span> <span class="n">d</span> <span class="k">else</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="compute_prf1"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_prf1">[docs]</a><span class="k">def</span> <span class="nf">compute_prf1</span><span class="p">(</span><span class="n">tp</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fp</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="n">tp</span> <span class="o">+</span> <span class="n">fp</span><span class="p">)</span>
+    <span class="n">recall</span> <span class="o">=</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="n">tp</span> <span class="o">+</span> <span class="n">fn</span><span class="p">)</span>
+    <span class="n">f1</span> <span class="o">=</span> <span class="n">safe_division</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">tp</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">tp</span> <span class="o">+</span> <span class="n">fp</span> <span class="o">+</span> <span class="n">fn</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">precision</span><span class="p">,</span> <span class="n">recall</span><span class="p">,</span> <span class="n">f1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="average_precision_score"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.average_precision_score">[docs]</a><span class="k">def</span> <span class="nf">average_precision_score</span><span class="p">(</span>
+    <span class="n">y_true_sorted</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes average precision, which summarizes the precision-recall curve as the</span>
+<span class="sd">    precisions achieved at each threshold weighted by the increase in recall since the</span>
+<span class="sd">    previous threshold.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y_true_sorted: Numpy array sorted according to decreasing confidence scores</span>
+<span class="sd">            indicating whether each prediction is correct.</span>
+<span class="sd">        y_score_sorted Numpy array of confidence scores for the predictions in</span>
+<span class="sd">            decreasing order.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Average precision score.</span>
+
+<span class="sd">    TODO: This is too slow, improve the performance</span>
+<span class="sd">    """</span>
+    <span class="n">ap</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">tp</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">y_score_sorted</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y_score_sorted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_score_sorted</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">NAN</span><span class="p">)</span>
+    <span class="n">total_positive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">)</span>
+    <span class="n">added_positives</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">score</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">label</span><span class="p">:</span>
+            <span class="n">added_positives</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">score</span> <span class="o">!=</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="n">threshold</span> <span class="o">=</span> <span class="n">score</span>
+            <span class="n">recall_diff</span> <span class="o">=</span> <span class="n">added_positives</span> <span class="o">/</span> <span class="n">total_positive</span>
+            <span class="n">tp</span> <span class="o">+=</span> <span class="n">added_positives</span>
+            <span class="n">added_positives</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">p_at_tresh</span> <span class="o">=</span> <span class="n">tp</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">ap</span> <span class="o">+=</span> <span class="n">p_at_tresh</span> <span class="o">*</span> <span class="n">recall_diff</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">ap</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="sort_by_score"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.sort_by_score">[docs]</a><span class="k">def</span> <span class="nf">sort_by_score</span><span class="p">(</span><span class="n">y_true_list</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">y_score_list</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_true_list</span><span class="p">)</span>
+    <span class="n">y_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_score_list</span><span class="p">)</span>
+    <span class="n">sort_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">y_score</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"mergesort"</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">y_true</span><span class="p">[</span><span class="n">sort_indices</span><span class="p">]</span>
+    <span class="n">y_score</span> <span class="o">=</span> <span class="n">y_score</span><span class="p">[</span><span class="n">sort_indices</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span></div>
+
+
+<div class="viewcode-block" id="recall_at_precision"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.recall_at_precision">[docs]</a><span class="k">def</span> <span class="nf">recall_at_precision</span><span class="p">(</span>
+    <span class="n">y_true_sorted</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes recall at various precision levels</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y_true_sorted: Numpy array sorted according to decreasing confidence scores</span>
+<span class="sd">            indicating whether each prediction is correct.</span>
+<span class="sd">        y_score_sorted: Numpy array of confidence scores for the predictions in</span>
+<span class="sd">            decreasing order.</span>
+<span class="sd">        thresholds: Sequence of floats indicating the requested precision thresholds</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary of maximum recall at requested precision thresholds.</span>
+<span class="sd">    """</span>
+    <span class="n">y_score_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_score_sorted</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">score_change</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_score_sorted</span> <span class="o">-</span> <span class="n">y_score_shift</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">cum_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">)</span>
+    <span class="n">recall_at_precision_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">thresholds</span><span class="p">}</span>
+    <span class="n">decision_thresh_at_precision_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">thresholds</span><span class="p">}</span>
+    <span class="n">sum_y_true</span> <span class="o">=</span> <span class="n">y_true_sorted</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sum_y_true</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">recall_at_precision_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_precision_dict</span>
+    <span class="n">recall</span> <span class="o">=</span> <span class="n">cum_sum</span> <span class="o">/</span> <span class="n">sum_y_true</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">cum_sum</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="n">thresholds</span><span class="p">:</span>
+        <span class="n">meets_requirements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">precision</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">score_change</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">meets_requirements</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="n">recall_at_precision_dict</span><span class="p">[</span><span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">meets_requirements</span><span class="p">,</span> <span class="n">recall</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">decision_thresh_at_precision_dict</span><span class="p">[</span><span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="nb">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">meets_requirements</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">))</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">recall_at_precision_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_precision_dict</span></div>
+
+
+<div class="viewcode-block" id="precision_at_recall"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.precision_at_recall">[docs]</a><span class="k">def</span> <span class="nf">precision_at_recall</span><span class="p">(</span>
+    <span class="n">y_true_sorted</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes precision at various recall levels</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y_true_sorted: Numpy array sorted according to decreasing confidence scores</span>
+<span class="sd">            indicating whether each prediction is correct.</span>
+<span class="sd">        y_score_sorted: Numpy array of confidence scores for the predictions in</span>
+<span class="sd">            decreasing order.</span>
+<span class="sd">        thresholds: Sequence of floats indicating the requested recall thresholds</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary of maximum precision at requested recall thresholds.</span>
+<span class="sd">        Dictionary of decision thresholds resulting in max precision at</span>
+<span class="sd">        requested recall thresholds.</span>
+<span class="sd">    """</span>
+    <span class="n">y_score_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_score_sorted</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">score_change</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_score_sorted</span> <span class="o">-</span> <span class="n">y_score_shift</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">cum_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">)</span>
+    <span class="n">precision_at_recall_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">thresholds</span><span class="p">}</span>
+    <span class="n">decision_thresh_at_recall_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">thresholds</span><span class="p">}</span>
+    <span class="n">sum_y_true</span> <span class="o">=</span> <span class="n">y_true_sorted</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sum_y_true</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">precision_at_recall_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_recall_dict</span>
+    <span class="n">recall</span> <span class="o">=</span> <span class="n">cum_sum</span> <span class="o">/</span> <span class="n">sum_y_true</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">cum_sum</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="n">thresholds</span><span class="p">:</span>
+        <span class="n">meets_requirements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">recall</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">score_change</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">meets_requirements</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">precisions_meeting_requirements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">meets_requirements</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+        <span class="n">idx_max_precision_at_recall</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">precisions_meeting_requirements</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="bp">None</span>
+        <span class="p">)</span>
+        <span class="n">precision_at_recall_dict</span><span class="p">[</span><span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="n">precisions_meeting_requirements</span><span class="p">[</span><span class="n">idx_max_precision_at_recall</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">decision_thresh_at_recall_dict</span><span class="p">[</span><span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">meets_requirements</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">)[</span><span class="n">idx_max_precision_at_recall</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">precision_at_recall_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_recall_dict</span></div>
+
+
+<div class="viewcode-block" id="compute_soft_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_soft_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_soft_metrics</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">LabelPrediction</span><span class="p">],</span>
+    <span class="n">label_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">recall_at_precision_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">RECALL_AT_PRECISION_THRESHOLDS</span><span class="p">,</span>
+    <span class="n">precision_at_recall_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">PRECISION_AT_RECALL_THRESHOLDS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SoftClassificationMetrics</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes soft classification metrics given a list of label predictions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions: Label predictions, including the confidence score for each label.</span>
+<span class="sd">        label_names: Indexed label names.</span>
+<span class="sd">        recall_at_precision_thresholds: precision thresholds at which to calculate</span>
+<span class="sd">            recall</span>
+<span class="sd">        precision_at_recall_thresholds: recall thresholds at which to calculate</span>
+<span class="sd">            precision</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict from label strings to their corresponding soft metrics.</span>
+<span class="sd">    """</span>
+    <span class="n">soft_metrics</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">label_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">label_names</span><span class="p">):</span>
+        <span class="n">y_true</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">y_score</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">label_scores</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+            <span class="n">y_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expected</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+            <span class="n">y_score</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label_scores</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span> <span class="o">=</span> <span class="n">sort_by_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span>
+        <span class="n">ap</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">)</span>
+        <span class="n">recall_at_precision_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_precision</span> <span class="o">=</span> <span class="n">recall_at_precision</span><span class="p">(</span>
+            <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">,</span> <span class="n">recall_at_precision_thresholds</span>
+        <span class="p">)</span>
+        <span class="n">precision_at_recall_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_recall</span> <span class="o">=</span> <span class="n">precision_at_recall</span><span class="p">(</span>
+            <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">,</span> <span class="n">precision_at_recall_thresholds</span>
+        <span class="p">)</span>
+        <span class="n">roc_auc</span> <span class="o">=</span> <span class="n">compute_roc_auc</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">target_class</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">soft_metrics</span><span class="p">[</span><span class="n">label_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">SoftClassificationMetrics</span><span class="p">(</span>
+            <span class="n">average_precision</span><span class="o">=</span><span class="n">ap</span><span class="p">,</span>
+            <span class="n">recall_at_precision</span><span class="o">=</span><span class="n">recall_at_precision_dict</span><span class="p">,</span>
+            <span class="n">decision_thresh_at_precision</span><span class="o">=</span><span class="n">decision_thresh_at_precision</span><span class="p">,</span>
+            <span class="n">precision_at_recall</span><span class="o">=</span><span class="n">precision_at_recall_dict</span><span class="p">,</span>
+            <span class="n">decision_thresh_at_recall</span><span class="o">=</span><span class="n">decision_thresh_at_recall</span><span class="p">,</span>
+            <span class="n">roc_auc</span><span class="o">=</span><span class="n">roc_auc</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">soft_metrics</span></div>
+
+
+<div class="viewcode-block" id="compute_multi_label_soft_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_multi_label_soft_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_multi_label_soft_metrics</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">LabelListPrediction</span><span class="p">],</span>
+    <span class="n">label_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">recall_at_precision_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">RECALL_AT_PRECISION_THRESHOLDS</span><span class="p">,</span>
+    <span class="n">precision_at_recall_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">PRECISION_AT_RECALL_THRESHOLDS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SoftClassificationMetrics</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes multi-label soft classification metrics</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions: multi-label predictions,</span>
+<span class="sd">                     including the confidence score for each label.</span>
+<span class="sd">        label_names: Indexed label names.</span>
+<span class="sd">        recall_at_precision_thresholds: precision thresholds at which to calculate</span>
+<span class="sd">            recall</span>
+<span class="sd">        precision_at_recall_thresholds: recall thresholds at which to calculate</span>
+<span class="sd">            precision</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict from label strings to their corresponding soft metrics.</span>
+<span class="sd">    """</span>
+    <span class="n">soft_metrics</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">label_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">label_names</span><span class="p">):</span>
+        <span class="n">y_true</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">y_score</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">label_scores</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+            <span class="n">y_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span> <span class="ow">in</span> <span class="n">expected</span><span class="p">)</span>
+            <span class="n">y_score</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label_scores</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span> <span class="o">=</span> <span class="n">sort_by_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span>
+        <span class="n">ap</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">)</span>
+        <span class="n">recall_at_precision_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_precision</span> <span class="o">=</span> <span class="n">recall_at_precision</span><span class="p">(</span>
+            <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">,</span> <span class="n">recall_at_precision_thresholds</span>
+        <span class="p">)</span>
+        <span class="n">precision_at_recall_dict</span><span class="p">,</span> <span class="n">decision_thresh_at_recall</span> <span class="o">=</span> <span class="n">precision_at_recall</span><span class="p">(</span>
+            <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">y_score_sorted</span><span class="p">,</span> <span class="n">precision_at_recall_thresholds</span>
+        <span class="p">)</span>
+        <span class="n">roc_auc</span> <span class="o">=</span> <span class="n">compute_roc_auc</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">target_class</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">soft_metrics</span><span class="p">[</span><span class="n">label_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">SoftClassificationMetrics</span><span class="p">(</span>
+            <span class="n">average_precision</span><span class="o">=</span><span class="n">ap</span><span class="p">,</span>
+            <span class="n">recall_at_precision</span><span class="o">=</span><span class="n">recall_at_precision_dict</span><span class="p">,</span>
+            <span class="n">decision_thresh_at_precision</span><span class="o">=</span><span class="n">decision_thresh_at_precision</span><span class="p">,</span>
+            <span class="n">precision_at_recall</span><span class="o">=</span><span class="n">precision_at_recall_dict</span><span class="p">,</span>
+            <span class="n">decision_thresh_at_recall</span><span class="o">=</span><span class="n">decision_thresh_at_recall</span><span class="p">,</span>
+            <span class="n">roc_auc</span><span class="o">=</span><span class="n">roc_auc</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">soft_metrics</span></div>
+
+
+<div class="viewcode-block" id="compute_matthews_correlation_coefficients"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_matthews_correlation_coefficients">[docs]</a><span class="k">def</span> <span class="nf">compute_matthews_correlation_coefficients</span><span class="p">(</span>
+    <span class="n">TP</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">FP</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">FN</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">TN</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes Matthews correlation coefficient, a way to summarize all four counts (TP,</span>
+<span class="sd">    FP, FN, TN) in the confusion matrix of binary classification.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        TP: Number of true positives.</span>
+<span class="sd">        FP: Number of false positives.</span>
+<span class="sd">        FN: Number of false negatives.</span>
+<span class="sd">        TN: Number of true negatives.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Matthews correlation coefficient, which is `sqrt((TP + FP) * (TP + FN) *</span>
+<span class="sd">        (TN + FP) * (TN + FN))`.</span>
+<span class="sd">    """</span>
+    <span class="n">mcc</span> <span class="o">=</span> <span class="n">safe_division</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">TP</span> <span class="o">*</span> <span class="n">TN</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">FP</span> <span class="o">*</span> <span class="n">FN</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">float</span><span class="p">((</span><span class="n">TP</span> <span class="o">+</span> <span class="n">FP</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">TP</span> <span class="o">+</span> <span class="n">FN</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">TN</span> <span class="o">+</span> <span class="n">FP</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">TN</span> <span class="o">+</span> <span class="n">FN</span><span class="p">))),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">mcc</span></div>
+
+
+<div class="viewcode-block" id="compute_roc_auc"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_roc_auc">[docs]</a><span class="k">def</span> <span class="nf">compute_roc_auc</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">LabelPrediction</span><span class="p">],</span> <span class="n">target_class</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes area under the Receiver Operating Characteristic curve, for binary</span>
+<span class="sd">    classification. Implementation based off of (and explained at)</span>
+<span class="sd">    https://www.ibm.com/developerworks/community/blogs/jfp/entry/Fast_Computation_of_AUC_ROC_score?lang=en.</span>
+<span class="sd">    """</span>
+    <span class="c1"># Collect scores</span>
+    <span class="n">y_true</span> <span class="o">=</span> <span class="p">[</span><span class="n">expected</span> <span class="o">==</span> <span class="n">target_class</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+    <span class="n">y_score</span> <span class="o">=</span> <span class="p">[</span><span class="n">label_scores</span><span class="p">[</span><span class="n">target_class</span><span class="p">]</span> <span class="k">for</span> <span class="n">label_scores</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+    <span class="n">y_true_sorted</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sort_by_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span>
+
+    <span class="c1"># Compute auc as probability that a positive example is scored higher than</span>
+    <span class="c1"># a negative example.</span>
+    <span class="n">n_false</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">n_correct_pair_order</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">y_true_sorted</span><span class="p">):</span>  <span class="c1"># want low predicted to high predicted</span>
+        <span class="k">if</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">n_correct_pair_order</span> <span class="o">+=</span> <span class="n">n_false</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_false</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">n_true</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span> <span class="o">-</span> <span class="n">n_false</span>
+    <span class="k">if</span> <span class="n">n_true</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n_false</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">n_correct_pair_order</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_true</span> <span class="o">*</span> <span class="n">n_false</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="compute_classification_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_classification_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_classification_metrics</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">LabelPrediction</span><span class="p">],</span>
+    <span class="n">label_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">average_precisions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">recall_at_precision_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">RECALL_AT_PRECISION_THRESHOLDS</span><span class="p">,</span>
+    <span class="n">precision_at_recall_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">PRECISION_AT_RECALL_THRESHOLDS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClassificationMetrics</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    A general function that computes classification metrics given a list of label</span>
+<span class="sd">    predictions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions: Label predictions, including the confidence score for each label.</span>
+<span class="sd">        label_names: Indexed label names.</span>
+<span class="sd">        average_precisions: Whether to compute average precisions for labels or not.</span>
+<span class="sd">            Defaults to True.</span>
+<span class="sd">        recall_at_precision_thresholds: precision thresholds at which</span>
+<span class="sd">                                        to calculate recall</span>
+<span class="sd">        precision_at_recall_thresholds: recall thresholds at which</span>
+<span class="sd">                                        to calculate precision</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ClassificationMetrics which contains various classification metrics.</span>
+<span class="sd">    """</span>
+    <span class="n">num_correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">per_label_confusions</span> <span class="o">=</span> <span class="n">PerLabelConfusions</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+        <span class="n">predicted_label</span> <span class="o">=</span> <span class="n">label_names</span><span class="p">[</span><span class="n">predicted</span><span class="p">]</span>
+        <span class="n">expected_label</span> <span class="o">=</span> <span class="n">label_names</span><span class="p">[</span><span class="n">expected</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">predicted_label</span> <span class="o">==</span> <span class="n">expected_label</span><span class="p">:</span>
+            <span class="n">num_correct</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">expected_label</span><span class="p">,</span> <span class="s2">"TP"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">expected_label</span><span class="p">,</span> <span class="s2">"FN"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">predicted_label</span><span class="p">,</span> <span class="s2">"FP"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">num_correct</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">))</span>
+    <span class="n">macro_prf1_metrics</span> <span class="o">=</span> <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">()</span>
+
+    <span class="n">soft_metrics</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">compute_soft_metrics</span><span class="p">(</span>
+            <span class="n">predictions</span><span class="p">,</span>
+            <span class="n">label_names</span><span class="p">,</span>
+            <span class="n">recall_at_precision_thresholds</span><span class="p">,</span>
+            <span class="n">precision_at_recall_thresholds</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">average_precisions</span>
+        <span class="k">else</span> <span class="bp">None</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">confusion_dict</span> <span class="o">=</span> <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">label_confusions_map</span>
+        <span class="c1"># Since MCC is symmetric, it doesn't matter which label is 0 and which is 1</span>
+        <span class="n">TP</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">TP</span>
+        <span class="n">FP</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">FP</span>
+        <span class="n">FN</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">FN</span>
+        <span class="n">TN</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">TP</span>
+        <span class="n">mcc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_matthews_correlation_coefficients</span><span class="p">(</span><span class="n">TP</span><span class="p">,</span> <span class="n">FP</span><span class="p">,</span> <span class="n">FN</span><span class="p">,</span> <span class="n">TN</span><span class="p">)</span>
+        <span class="n">roc_auc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_roc_auc</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mcc</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">roc_auc</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="n">ClassificationMetrics</span><span class="p">(</span>
+        <span class="n">accuracy</span><span class="o">=</span><span class="n">accuracy</span><span class="p">,</span>
+        <span class="n">macro_prf1_metrics</span><span class="o">=</span><span class="n">macro_prf1_metrics</span><span class="p">,</span>
+        <span class="n">per_label_soft_scores</span><span class="o">=</span><span class="n">soft_metrics</span><span class="p">,</span>
+        <span class="n">mcc</span><span class="o">=</span><span class="n">mcc</span><span class="p">,</span>
+        <span class="n">roc_auc</span><span class="o">=</span><span class="n">roc_auc</span><span class="p">,</span>
+        <span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_multi_label_classification_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_multi_label_classification_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_multi_label_classification_metrics</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">LabelListPrediction</span><span class="p">],</span>
+    <span class="n">label_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">average_precisions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">recall_at_precision_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">RECALL_AT_PRECISION_THRESHOLDS</span><span class="p">,</span>
+    <span class="n">precision_at_recall_thresholds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">PRECISION_AT_RECALL_THRESHOLDS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClassificationMetrics</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    A general function that computes classification metrics given a list of multi-label</span>
+<span class="sd">    predictions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions: multi-label predictions,</span>
+<span class="sd">                     including the confidence score for each label.</span>
+<span class="sd">        label_names: Indexed label names.</span>
+<span class="sd">        average_precisions: Whether to compute average precisions for labels or not.</span>
+<span class="sd">                            Defaults to True.</span>
+<span class="sd">        recall_at_precision_thresholds: precision thresholds at which</span>
+<span class="sd">                                        to calculate recall</span>
+<span class="sd">        precision_at_recall_thresholds: recall thresholds at which</span>
+<span class="sd">                                        to calculate precision</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ClassificationMetrics which contains various classification metrics.</span>
+<span class="sd">    """</span>
+
+    <span class="n">num_correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_expected_labels</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">per_label_confusions</span> <span class="o">=</span> <span class="n">PerLabelConfusions</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+        <span class="c1"># "predicted" is in the format of n_hot_encoding</span>
+        <span class="c1"># Calculate TP &amp; FN</span>
+        <span class="k">for</span> <span class="n">true_label_idx</span> <span class="ow">in</span> <span class="n">expected</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">true_label_idx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># padded label "-1"</span>
+                <span class="k">break</span>
+            <span class="n">num_expected_labels</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">expected_label</span> <span class="o">=</span> <span class="n">label_names</span><span class="p">[</span><span class="n">true_label_idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">predicted</span><span class="p">[</span><span class="n">true_label_idx</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">num_correct</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">expected_label</span><span class="p">,</span> <span class="s2">"TP"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">expected_label</span><span class="p">,</span> <span class="s2">"FN"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Calculate FP</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pred</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predicted</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">pred</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">expected</span><span class="p">:</span>
+                <span class="n">predicted_label</span> <span class="o">=</span> <span class="n">label_names</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">predicted_label</span><span class="p">,</span> <span class="s2">"FP"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">num_correct</span><span class="p">,</span> <span class="n">num_expected_labels</span><span class="p">)</span>
+    <span class="n">macro_prf1_metrics</span> <span class="o">=</span> <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">()</span>
+
+    <span class="n">soft_metrics</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">compute_multi_label_soft_metrics</span><span class="p">(</span>
+            <span class="n">predictions</span><span class="p">,</span>
+            <span class="n">label_names</span><span class="p">,</span>
+            <span class="n">recall_at_precision_thresholds</span><span class="p">,</span>
+            <span class="n">precision_at_recall_thresholds</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">average_precisions</span>
+        <span class="k">else</span> <span class="bp">None</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">confusion_dict</span> <span class="o">=</span> <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">label_confusions_map</span>
+        <span class="c1"># Since MCC is symmetric, it doesn't matter which label is 0 and which is 1</span>
+        <span class="n">TP</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">TP</span>
+        <span class="n">FP</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">FP</span>
+        <span class="n">FN</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">FN</span>
+        <span class="n">TN</span> <span class="o">=</span> <span class="n">confusion_dict</span><span class="p">[</span><span class="n">label_names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">TP</span>
+        <span class="n">mcc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_matthews_correlation_coefficients</span><span class="p">(</span><span class="n">TP</span><span class="p">,</span> <span class="n">FP</span><span class="p">,</span> <span class="n">FN</span><span class="p">,</span> <span class="n">TN</span><span class="p">)</span>
+        <span class="n">roc_auc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_roc_auc</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mcc</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">roc_auc</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="n">ClassificationMetrics</span><span class="p">(</span>
+        <span class="n">accuracy</span><span class="o">=</span><span class="n">accuracy</span><span class="p">,</span>
+        <span class="n">macro_prf1_metrics</span><span class="o">=</span><span class="n">macro_prf1_metrics</span><span class="p">,</span>
+        <span class="n">per_label_soft_scores</span><span class="o">=</span><span class="n">soft_metrics</span><span class="p">,</span>
+        <span class="n">mcc</span><span class="o">=</span><span class="n">mcc</span><span class="p">,</span>
+        <span class="n">roc_auc</span><span class="o">=</span><span class="n">roc_auc</span><span class="p">,</span>
+        <span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_pairwise_ranking_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_pairwise_ranking_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_pairwise_ranking_metrics</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">scores</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PairwiseRankingMetrics</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes metrics for pairwise ranking given sequences of predictions and scores</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions : 1 if ranking was correct, 0 if ranking was incorrect</span>
+<span class="sd">        scores : score(higher-ranked-sample) - score(lower-ranked-sample)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        PairwiseRankingMetrics object</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">PairwiseRankingMetrics</span><span class="p">(</span>
+        <span class="n">num_examples</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span>
+        <span class="n">accuracy</span><span class="o">=</span><span class="n">safe_division</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)),</span>
+        <span class="n">average_score_difference</span><span class="o">=</span><span class="n">safe_division</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)),</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_regression_metrics"><a class="viewcode-back" href="../../modules/pytext.metrics.html#pytext.metrics.compute_regression_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_regression_metrics</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">targets</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegressionMetrics</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes metrics for regression tasks.abs</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions: 1-D sequence of float predictions</span>
+<span class="sd">        targets: 1-D sequence of float labels</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        RegressionMetrics object</span>
+<span class="sd">    """</span>
+    <span class="n">preds</span><span class="p">,</span> <span class="n">targs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+    <span class="n">pred_mean</span><span class="p">,</span> <span class="n">targ_mean</span> <span class="o">=</span> <span class="n">preds</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">targs</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="p">(</span><span class="n">preds</span> <span class="o">-</span> <span class="n">pred_mean</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">targs</span> <span class="o">-</span> <span class="n">targ_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">preds</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">corr</span> <span class="o">=</span> <span class="n">covariance</span> <span class="o">/</span> <span class="n">preds</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">/</span> <span class="n">targs</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+    <span class="n">mse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">preds</span> <span class="o">-</span> <span class="n">targs</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">RegressionMetrics</span><span class="p">(</span><span class="n">num_examples</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">),</span> <span class="n">pearson_correlation</span><span class="o">=</span><span class="n">corr</span><span class="p">,</span> <span class="n">mse</span><span class="o">=</span><span class="n">mse</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../index.html">Documentation overview</a><ul>
+<li><a href="../index.html">Module code</a><ul>
+<li><a href="../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

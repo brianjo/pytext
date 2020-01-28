@@ -1,0 +1,92 @@
+FeatureConfig
+=============
+
+
+
+**Component:** :class:`Module  <pytext.models.module.Module>`\ 
+
+
+.. py:currentmodule:: pytext.config.field_config
+.. py:class:: FeatureConfig
+  :noindex:
+
+  **Bases:** :class:`Module.Config <pytext.models.module.Module.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **word_feat**: :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>` = :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>`\ ()
+    \ 
+
+  **seq_word_feat**: Optional[:doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>`] = ``None``
+    \ 
+
+  **dict_feat**: Optional[:doc:`DictEmbedding.Config <pytext.models.embeddings.dict_embedding.DictEmbedding.Config>`] = ``None``
+    \ 
+
+  **char_feat**: Optional[:doc:`CharacterEmbedding.Config <pytext.models.embeddings.char_embedding.CharacterEmbedding.Config>`] = ``None``
+    \ 
+
+  **dense_feat**: Optional[:doc:`FloatVectorConfig <pytext.config.field_config.FloatVectorConfig>`] = ``None``
+    \ 
+
+  **contextual_token_embedding**: Optional[:doc:`ContextualTokenEmbedding.Config <pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.Config>`] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "word_feat": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "embed_dim": 100,
+          "embedding_init_strategy": "random",
+          "embedding_init_range": null,
+          "export_input_names": [
+              "tokens_vals"
+          ],
+          "pretrained_embeddings_path": "",
+          "vocab_file": "",
+          "vocab_size": 0,
+          "vocab_from_train_data": true,
+          "vocab_from_all_data": false,
+          "vocab_from_pretrained_embeddings": false,
+          "lowercase_tokens": true,
+          "min_freq": 1,
+          "mlp_layer_dims": [],
+          "padding_idx": null,
+          "cpu_only": false,
+          "skip_header": true,
+          "delimiter": " "
+      },
+      "seq_word_feat": null,
+      "dict_feat": null,
+      "char_feat": null,
+      "dense_feat": null,
+      "contextual_token_embedding": null
+  }

@@ -1,0 +1,195 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.ensembles.ensemble</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">create_model</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.exporters</span> <span class="kn">import</span> <span class="n">ModelExporter</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">Model</span>
+
+
+<div class="viewcode-block" id="EnsembleModel"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel">[docs]</a><span class="k">class</span> <span class="nc">EnsembleModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">"""Base class for ensemble models.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (Config): Configuration object specifying all the parameters of</span>
+<span class="sd">            Ensemble.</span>
+<span class="sd">        models (List[Model]): List of sub-model objects.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        output_layer (OutputLayerBase): Responsible for computing loss and predictions.</span>
+<span class="sd">        models (nn.ModuleList]): ModuleList container for sub-model objects.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+        <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inputs</span>
+
+<div class="viewcode-block" id="EnsembleModel.from_config"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="sd">"""Factory method to construct an instance of Ensemble or one its derived</span>
+<span class="sd">        classes from the module's config object and tensorizers</span>
+<span class="sd">        It creates sub-models in the ensemble using the sub-model's configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config (Config): Configuration object specifying all the</span>
+<span class="sd">                parameters of Ensemble.</span>
+<span class="sd">            tensorizers (Dict[str, Tensorizer]): Tensorizer specifying all the</span>
+<span class="sd">                parameters of the input features to the model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            type: An instance of Ensemble.</span>
+
+<span class="sd">        """</span>
+        <span class="n">sub_models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sub_model_config</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="n">sub_model_config</span><span class="o">.</span><span class="n">init_from_saved_state</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">init_from_saved_state</span>
+            <span class="n">sub_models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">create_model</span><span class="p">(</span><span class="n">sub_model_config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">sub_models</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Model</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output_layer</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EnsembleModel.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.merge_sub_models"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.merge_sub_models">[docs]</a>    <span class="k">def</span> <span class="nf">merge_sub_models</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.save_modules"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.save_modules">[docs]</a>    <span class="k">def</span> <span class="nf">save_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""Saves the modules of all sub_models in the `Ensemble`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_path (str): Path of base directory. Defaults to "".</span>
+<span class="sd">            suffix (str): Suffix to add to the file name to save. Defaults to "".</span>
+
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">save_modules</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.arrange_model_inputs"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.arrange_targets"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrange_targets</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.arrange_model_context"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.arrange_model_context">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrange_model_context</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.vocab_to_export"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.vocab_to_export">[docs]</a>    <span class="k">def</span> <span class="nf">vocab_to_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">vocab_to_export</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.get_export_input_names"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.get_export_input_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_export_input_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.get_export_output_names"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.get_export_output_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_output_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_export_output_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.caffe2_export"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.caffe2_export">[docs]</a>    <span class="k">def</span> <span class="nf">caffe2_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">exporter</span> <span class="o">=</span> <span class="n">ModelExporter</span><span class="p">(</span>
+            <span class="n">ModelExporter</span><span class="o">.</span><span class="n">Config</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_export_input_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vocab_to_export</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_export_output_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">exporter</span><span class="o">.</span><span class="n">export_to_caffe2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="n">export_onnx_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.torchscriptify"><a class="viewcode-back" href="../../../../modules/pytext.models.ensembles.html#pytext.models.ensembles.ensemble.EnsembleModel.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">traced_model</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">torchscriptify</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">traced_model</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

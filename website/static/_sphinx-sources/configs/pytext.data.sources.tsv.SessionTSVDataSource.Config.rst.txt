@@ -1,0 +1,60 @@
+SessionTSVDataSource.Config
+===========================
+
+
+
+**Component:** :class:`SessionTSVDataSource  <pytext.data.sources.tsv.SessionTSVDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: SessionTSVDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`TSVDataSource.Config <pytext.data.sources.tsv.TSVDataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+  **train_filename**: Optional[str] = ``None``
+    \ 
+
+  **test_filename**: Optional[str] = ``None``
+    \ 
+
+  **eval_filename**: Optional[str] = ``None``
+    \ 
+
+  **field_names**: Optional[list[str]] = ``None``
+    \ 
+
+  **delimiter**: str = ``'\t'``
+    \ 
+
+  **quoted**: bool = ``False``
+    \ 
+
+  **drop_incomplete_rows**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {},
+      "train_filename": null,
+      "test_filename": null,
+      "eval_filename": null,
+      "field_names": null,
+      "delimiter": "\t",
+      "quoted": false,
+      "drop_incomplete_rows": false
+  }

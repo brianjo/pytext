@@ -1,0 +1,7 @@
+intent_slot_detection_metric_reporter
+=====================================
+
+
+.. toctree::
+
+  pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.Config

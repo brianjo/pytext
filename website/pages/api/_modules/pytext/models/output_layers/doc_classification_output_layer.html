@@ -1,0 +1,279 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.output_layers.doc_classification_output_layer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="kn">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">caffe2.python</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">create_loss</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.fields</span> <span class="kn">import</span> <span class="n">FieldMeta</span>
+<span class="kn">from</span> <span class="nn">pytext.loss</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AUCPRHingeLoss</span><span class="p">,</span>
+    <span class="n">BinaryCrossEntropyLoss</span><span class="p">,</span>
+    <span class="n">CrossEntropyLoss</span><span class="p">,</span>
+    <span class="n">KLDivergenceBCELoss</span><span class="p">,</span>
+    <span class="n">KLDivergenceCELoss</span><span class="p">,</span>
+    <span class="n">LabelSmoothedCrossEntropyLoss</span><span class="p">,</span>
+    <span class="n">MultiLabelSoftMarginLoss</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.label</span> <span class="kn">import</span> <span class="n">get_label_weights</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">jit</span>
+
+<span class="kn">from</span> <span class="nn">.output_layer_base</span> <span class="kn">import</span> <span class="n">OutputLayerBase</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">OutputLayerUtils</span>
+
+
+<div class="viewcode-block" id="ClassificationOutputLayer"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer">[docs]</a><span class="k">class</span> <span class="nc">ClassificationOutputLayer</span><span class="p">(</span><span class="n">OutputLayerBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Output layer for document classification models.</span>
+<span class="sd">    It supports `CrossEntropyLoss` and `BinaryCrossEntropyLoss` per document.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        loss_fn (Union[CrossEntropyLoss, BinaryCrossEntropyLoss]):</span>
+<span class="sd">            The loss function to use for computing loss. Defaults to None.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        loss_fn: The loss function to use for computing loss.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">OutputLayerBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">loss</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">CrossEntropyLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">BinaryCrossEntropyLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">MultiLabelSoftMarginLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">AUCPRHingeLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">KLDivergenceBCELoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">KLDivergenceCELoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">LabelSmoothedCrossEntropyLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">CrossEntropyLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">label_weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="ClassificationOutputLayer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FieldMeta</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Vocabulary</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">vocab</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+            <span class="n">vocab_dict</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">idx</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vocab</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">itos</span>
+            <span class="n">vocab_dict</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">stoi</span>
+
+        <span class="n">label_weights</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">get_label_weights</span><span class="p">(</span><span class="n">vocab_dict</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">label_weights</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">label_weights</span>
+            <span class="k">else</span> <span class="bp">None</span>
+        <span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">create_loss</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">label_weights</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">BinaryCrossEntropyLoss</span><span class="p">):</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="n">BinaryClassificationOutputLayer</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">MultiLabelSoftMarginLoss</span><span class="p">):</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="n">MultiLabelOutputLayer</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="n">MulticlassOutputLayer</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span> <span class="n">create_loss</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">label_weights</span><span class="p">),</span> <span class="n">config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ClassificationOutputLayer.get_pred"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.get_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""Compute and return prediction and scores from the model.</span>
+
+<span class="sd">        Prediction is computed using argmax over the document label/target space.</span>
+
+<span class="sd">        Scores are sigmoid or softmax scores over the model logits depending on</span>
+<span class="sd">        the loss component being used.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            logit (torch.Tensor): Logits returned</span>
+<span class="sd">                :class:`~pytext.models.doc_model.DocModel`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]: Model prediction and scores.</span>
+
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="ClassificationScores"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.ClassificationScores">[docs]</a><span class="k">class</span> <span class="nc">ClassificationScores</span><span class="p">(</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">score_function</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">classes</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_function</span> <span class="o">=</span> <span class="n">score_function</span>
+
+    <span class="nd">@jit.script_method</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="c1"># In pure python, this code would be implemented as follows:</span>
+        <span class="c1">#   scores = self.score_function(logits)</span>
+        <span class="c1">#   return [</span>
+        <span class="c1">#     {class: score for class, score in zip(self.classes, example_scores}</span>
+        <span class="c1">#     for example_scores in scores.tolist()</span>
+        <span class="c1">#   ]</span>
+        <span class="c1"># Extra verbosity is due to jit.script.</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_function</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="p">[])</span>
+        <span class="k">for</span> <span class="n">example_scores</span> <span class="ow">in</span> <span class="n">scores</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)):</span>
+            <span class="n">example_scores</span> <span class="o">=</span> <span class="n">example_scores</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">example_response</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="p">{})</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">)):</span>
+                <span class="n">example_response</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">example_scores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">example_response</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">results</span></div>
+
+
+<div class="viewcode-block" id="BinaryClassificationOutputLayer"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer">[docs]</a><span class="k">class</span> <span class="nc">BinaryClassificationOutputLayer</span><span class="p">(</span><span class="n">ClassificationOutputLayer</span><span class="p">):</span>
+<div class="viewcode-block" id="BinaryClassificationOutputLayer.get_pred"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.get_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""See `OutputLayerBase.get_pred()`."""</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">logit</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">logsigmoid</span><span class="p">(</span><span class="n">logit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">preds</span><span class="p">,</span> <span class="n">scores</span></div>
+
+<div class="viewcode-block" id="BinaryClassificationOutputLayer.torchscript_predictions"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.torchscript_predictions">[docs]</a>    <span class="k">def</span> <span class="nf">torchscript_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ClassificationScores</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_names</span><span class="p">,</span> <span class="n">F</span><span class="o">.</span><span class="n">logsigmoid</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BinaryClassificationOutputLayer.export_to_caffe2"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.export_to_caffe2">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_caffe2</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">workspace</span><span class="p">,</span>
+        <span class="n">init_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">predict_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">model_out</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">BlobReference</span><span class="p">]:</span>
+        <span class="sd">"""See `OutputLayerBase.export_to_caffe2()`."""</span>
+        <span class="n">probability_out</span> <span class="o">=</span> <span class="n">predict_net</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">OutputLayerUtils</span><span class="o">.</span><span class="n">gen_additional_blobs</span><span class="p">(</span>
+            <span class="n">predict_net</span><span class="p">,</span> <span class="n">probability_out</span><span class="p">,</span> <span class="n">model_out</span><span class="p">,</span> <span class="n">output_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_names</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MulticlassOutputLayer"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer">[docs]</a><span class="k">class</span> <span class="nc">MulticlassOutputLayer</span><span class="p">(</span><span class="n">ClassificationOutputLayer</span><span class="p">):</span>
+<div class="viewcode-block" id="MulticlassOutputLayer.get_pred"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.get_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""See `OutputLayerBase.get_pred()`."""</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">logit</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">logit</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">preds</span><span class="p">,</span> <span class="n">scores</span></div>
+
+<div class="viewcode-block" id="MulticlassOutputLayer.torchscript_predictions"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.torchscript_predictions">[docs]</a>    <span class="k">def</span> <span class="nf">torchscript_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ClassificationScores</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_names</span><span class="p">,</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MulticlassOutputLayer.export_to_caffe2"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.export_to_caffe2">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_caffe2</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">workspace</span><span class="p">,</span>
+        <span class="n">init_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">predict_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">model_out</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">BlobReference</span><span class="p">]:</span>
+        <span class="sd">"""See `OutputLayerBase.export_to_caffe2()`."""</span>
+        <span class="n">probability_out</span> <span class="o">=</span> <span class="n">predict_net</span><span class="o">.</span><span class="n">Softmax</span><span class="p">(</span><span class="n">output_name</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">model_out</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">OutputLayerUtils</span><span class="o">.</span><span class="n">gen_additional_blobs</span><span class="p">(</span>
+            <span class="n">predict_net</span><span class="p">,</span> <span class="n">probability_out</span><span class="p">,</span> <span class="n">model_out</span><span class="p">,</span> <span class="n">output_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_names</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MultiLabelOutputLayer"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer">[docs]</a><span class="k">class</span> <span class="nc">MultiLabelOutputLayer</span><span class="p">(</span><span class="n">ClassificationOutputLayer</span><span class="p">):</span>
+<div class="viewcode-block" id="MultiLabelOutputLayer.get_pred"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.get_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""See `OutputLayerBase.get_pred()`."""</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">logit</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">logsigmoid</span><span class="p">(</span><span class="n">logit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">preds</span><span class="p">,</span> <span class="n">scores</span></div>
+
+<div class="viewcode-block" id="MultiLabelOutputLayer.torchscript_predictions"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.torchscript_predictions">[docs]</a>    <span class="k">def</span> <span class="nf">torchscript_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ClassificationScores</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_names</span><span class="p">,</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MultiLabelOutputLayer.export_to_caffe2"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.export_to_caffe2">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_caffe2</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">workspace</span><span class="p">,</span>
+        <span class="n">init_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">predict_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">model_out</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">BlobReference</span><span class="p">]:</span>
+        <span class="sd">"""See `OutputLayerBase.export_to_caffe2()`."""</span>
+        <span class="n">probability_out</span> <span class="o">=</span> <span class="n">predict_net</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">OutputLayerUtils</span><span class="o">.</span><span class="n">gen_additional_blobs</span><span class="p">(</span>
+            <span class="n">predict_net</span><span class="p">,</span> <span class="n">probability_out</span><span class="p">,</span> <span class="n">model_out</span><span class="p">,</span> <span class="n">output_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_names</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

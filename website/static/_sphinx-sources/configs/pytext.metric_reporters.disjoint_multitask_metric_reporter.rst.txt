@@ -1,0 +1,7 @@
+disjoint_multitask_metric_reporter
+==================================
+
+
+.. toctree::
+
+  pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config

@@ -1,0 +1,8 @@
+pandas
+======
+
+
+.. toctree::
+
+  pytext.data.sources.pandas.PandasDataSource.Config
+  pytext.data.sources.pandas.SessionPandasDataSource.Config

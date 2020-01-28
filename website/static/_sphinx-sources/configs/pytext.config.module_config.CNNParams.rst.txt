@@ -1,0 +1,48 @@
+CNNParams
+=========
+
+
+
+.. py:currentmodule:: pytext.config.module_config
+.. py:class:: CNNParams
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **kernel_num**: int = ``100``
+    \ 
+
+  **kernel_sizes**: list[int] = ``[3, 4]``
+    \ 
+
+  **weight_norm**: bool = ``False``
+    \ 
+
+  **dilated**: bool = ``False``
+    \ 
+
+  **causal**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "kernel_num": 100,
+      "kernel_sizes": [
+          3,
+          4
+      ],
+      "weight_norm": false,
+      "dilated": false,
+      "causal": false
+  }

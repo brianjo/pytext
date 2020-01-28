@@ -1,0 +1,7 @@
+swa
+===
+
+
+.. toctree::
+
+  pytext.optimizer.swa.StochasticWeightAveraging.Config

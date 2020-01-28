@@ -1,0 +1,24 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.model
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInputBase <pytext.models.model.ModelInputBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

@@ -1,0 +1,40 @@
+AdamW.Config
+============
+
+
+
+**Component:** :class:`AdamW  <pytext.optimizer.optimizers.AdamW>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.optimizers
+.. py:class:: AdamW.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **lr**: float = ``0.001``
+    \ 
+
+  **weight_decay**: float = ``0.01``
+    \ 
+
+  **eps**: float = ``1e-08``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "eps": 1e-08
+  }

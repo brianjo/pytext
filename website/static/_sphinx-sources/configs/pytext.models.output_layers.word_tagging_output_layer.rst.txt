@@ -1,0 +1,8 @@
+word_tagging_output_layer
+=========================
+
+
+.. toctree::
+
+  pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.Config
+  pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config

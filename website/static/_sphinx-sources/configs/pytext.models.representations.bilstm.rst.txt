@@ -1,0 +1,7 @@
+bilstm
+======
+
+
+.. toctree::
+
+  pytext.models.representations.bilstm.BiLSTM.Config

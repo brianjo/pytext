@@ -1,0 +1,52 @@
+RegressionOutputLayer.Config
+============================
+
+
+
+**Component:** :class:`RegressionOutputLayer  <pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer>`\ 
+
+
+.. py:currentmodule:: pytext.models.output_layers.doc_regression_output_layer
+.. py:class:: RegressionOutputLayer.Config
+  :noindex:
+
+  **Bases:** :class:`OutputLayerBase.Config <pytext.models.output_layers.output_layer_base.OutputLayerBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **loss**: :doc:`MSELoss.Config <pytext.loss.loss.MSELoss.Config>` = :doc:`MSELoss.Config <pytext.loss.loss.MSELoss.Config>`\ ()
+    \ 
+
+  **squash_to_unit_range**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "loss": {},
+      "squash_to_unit_range": false
+  }

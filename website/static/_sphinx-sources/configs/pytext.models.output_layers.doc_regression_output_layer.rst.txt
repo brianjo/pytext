@@ -1,0 +1,7 @@
+doc_regression_output_layer
+===========================
+
+
+.. toctree::
+
+  pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.Config

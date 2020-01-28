@@ -1,0 +1,7 @@
+bilstm_slot_attn
+================
+
+
+.. toctree::
+
+  pytext.models.representations.bilstm_slot_attn.BiLSTMSlotAttention.Config

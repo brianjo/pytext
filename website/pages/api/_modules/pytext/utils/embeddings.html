@@ -1,0 +1,293 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.embeddings</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>  <span class="c1"># noqa: F401</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">PackageFileName</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">EmbedInitStrategy</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.path</span> <span class="kn">import</span> <span class="n">get_absolute_path</span>
+
+
+<div class="viewcode-block" id="PretrainedEmbedding"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.embeddings.PretrainedEmbedding">[docs]</a><span class="k">class</span> <span class="nc">PretrainedEmbedding</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Utility class for loading/caching/initializing word embeddings</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embeddings_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">lowercase_tokens</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">skip_header</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">" "</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">embeddings_path</span><span class="p">:</span>
+            <span class="n">embeddings_path</span> <span class="o">=</span> <span class="n">get_absolute_path</span><span class="p">(</span><span class="n">embeddings_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">embeddings_path</span><span class="p">):</span>
+                <span class="n">serialized_embed_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">embeddings_path</span><span class="p">,</span> <span class="n">PackageFileName</span><span class="o">.</span><span class="n">SERIALIZED_EMBED</span>
+                <span class="p">)</span>
+                <span class="n">raw_embeddings_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">embeddings_path</span><span class="p">,</span> <span class="n">PackageFileName</span><span class="o">.</span><span class="n">RAW_EMBED</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">embeddings_path</span><span class="p">):</span>
+                <span class="n">serialized_embed_path</span> <span class="o">=</span> <span class="s2">""</span>
+                <span class="n">raw_embeddings_path</span> <span class="o">=</span> <span class="n">embeddings_path</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">FileNotFoundError</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"{embeddings_path} not found. Can't load pretrained embeddings."</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">serialized_embed_path</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">load_cached_embeddings</span><span class="p">(</span><span class="n">serialized_embed_path</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s2">"Failed to load cached embeddings, loading the raw file."</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">load_pretrained_embeddings</span><span class="p">(</span>
+                        <span class="n">raw_embeddings_path</span><span class="p">,</span>
+                        <span class="n">lowercase_tokens</span><span class="o">=</span><span class="n">lowercase_tokens</span><span class="p">,</span>
+                        <span class="n">skip_header</span><span class="o">=</span><span class="n">skip_header</span><span class="p">,</span>
+                        <span class="n">delimiter</span><span class="o">=</span><span class="n">delimiter</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">load_pretrained_embeddings</span><span class="p">(</span>
+                    <span class="n">raw_embeddings_path</span><span class="p">,</span>
+                    <span class="n">lowercase_tokens</span><span class="o">=</span><span class="n">lowercase_tokens</span><span class="p">,</span>
+                    <span class="n">skip_header</span><span class="o">=</span><span class="n">skip_header</span><span class="p">,</span>
+                    <span class="n">delimiter</span><span class="o">=</span><span class="n">delimiter</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embed_vocab</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># type: List[str]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stoi</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># type: Dict[str, int]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># type: torch.Tensor</span>
+
+<div class="viewcode-block" id="PretrainedEmbedding.load_pretrained_embeddings"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.embeddings.PretrainedEmbedding.load_pretrained_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">load_pretrained_embeddings</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">raw_embeddings_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">append</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+        <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">lowercase_tokens</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">skip_header</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">" "</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Loading raw embeddings vectors from file in the format:</span>
+<span class="sd">        num_words dim</span>
+<span class="sd">        word_i v0, v1, v2, ...., v_dim</span>
+<span class="sd">        word_2 v0, v1, v2, ...., v_dim</span>
+<span class="sd">        ....</span>
+<span class="sd">        Optionally appends _dialect to every token in the vocabulary</span>
+<span class="sd">        (for XLU embeddings).</span>
+<span class="sd">        """</span>
+        <span class="n">chunk_vocab</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">def</span> <span class="nf">iter_parser</span><span class="p">(</span>
+            <span class="n">skip_header</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">" "</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="nb">type</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+        <span class="p">):</span>
+            <span class="sd">""" Iterator to load numpy 1-d array from multi-row text file,</span>
+<span class="sd">            where format is assumed to be:</span>
+<span class="sd">                word_i v0, v1, v2, ...., v_dim</span>
+<span class="sd">                word_2 v0, v1, v2, ...., v_dim</span>
+<span class="sd">            The iterator will omit the first column (vocabulary) and via closure</span>
+<span class="sd">            store values into the 'chunk_vocab' list.</span>
+<span class="sd">            """</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="c1"># PathManager doesn't support errors="backslashreplace"</span>
+            <span class="c1"># if there are encoding errors, it has to be handled explicitly</span>
+            <span class="c1"># http://python-notes.curiousefficiency.org/en/latest/python3/text_file_processing.html#unicode-error-handlers</span>
+            <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">raw_embeddings_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">txtfile</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_header</span><span class="p">):</span>
+                    <span class="nb">next</span><span class="p">(</span><span class="n">txtfile</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">txtfile</span><span class="p">:</span>
+                    <span class="n">split_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\r\n</span><span class="s2"> "</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">delimiter</span><span class="p">)</span>
+                    <span class="n">token</span> <span class="o">=</span> <span class="n">split_line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">lowercase_tokens</span><span class="p">:</span>
+                        <span class="c1"># lowercase here so that returned matrix doesn't contain</span>
+                        <span class="c1"># the same token twice (lower and upper cases).</span>
+                        <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+                        <span class="n">chunk_vocab</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">split_line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                            <span class="k">yield</span> <span class="n">dtype</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">skip_header</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">skip_header</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">embed_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromiter</span><span class="p">(</span>
+            <span class="n">iter_parser</span><span class="p">(</span><span class="n">skip_header</span><span class="o">=</span><span class="n">skip_header</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">delimiter</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+        <span class="p">)</span>
+        <span class="n">embed_matrix</span> <span class="o">=</span> <span class="n">embed_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk_vocab</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"Rows loaded: "</span><span class="p">,</span> <span class="n">embed_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"; Time: "</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span><span class="p">,</span> <span class="s2">"s."</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">append</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embed_vocab</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stoi</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">dialect</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">chunk_vocab</span> <span class="o">=</span> <span class="p">[</span><span class="n">append_dialect</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">dialect</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">chunk_vocab</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed_vocab</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chunk_vocab</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stoi</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunk_vocab</span><span class="p">)}</span>
+
+        <span class="k">if</span> <span class="n">append</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">embed_matrix</span><span class="p">))</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">embed_matrix</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PretrainedEmbedding.cache_pretrained_embeddings"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.embeddings.PretrainedEmbedding.cache_pretrained_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">cache_pretrained_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Cache the processed embedding vectors and vocab to a file for faster</span>
+<span class="sd">        loading</span>
+<span class="sd">        """</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"loading cached pretrained embedding"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">cache_path</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">embed_vocab</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stoi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span><span class="p">),</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"Embedding loaded: {self.embedding_vectors.size()} in {time.time() - t} s."</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PretrainedEmbedding.load_cached_embeddings"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.embeddings.PretrainedEmbedding.load_cached_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">load_cached_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Load cached embeddings from file</span>
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">cache_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embed_vocab</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stoi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PretrainedEmbedding.initialize_embeddings_weights"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.embeddings.PretrainedEmbedding.initialize_embeddings_weights">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_embeddings_weights</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">str_to_idx</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+        <span class="n">unk</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">init_strategy</span><span class="p">:</span> <span class="n">EmbedInitStrategy</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Initialize embeddings weights of shape (len(str_to_idx), embed_dim) from the</span>
+<span class="sd">        pretrained embeddings vectors. Words that are not in the pretrained</span>
+<span class="sd">        embeddings list will be initialized according to `init_strategy`.</span>
+<span class="sd">        :param str_to_idx: a dict that maps words to indices that the model expects</span>
+<span class="sd">        :param unk: unknown token</span>
+<span class="sd">        :param embed_dim: the embeddings dimension</span>
+<span class="sd">        :param init_strategy: method of initializing new tokens</span>
+<span class="sd">        :returns: a float tensor of dimension (vocab_size, embed_dim)</span>
+<span class="sd">        """</span>
+        <span class="n">pretrained_embeds_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">str_to_idx</span><span class="p">),</span> <span class="n">embed_dim</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">init_strategy</span> <span class="o">==</span> <span class="n">EmbedInitStrategy</span><span class="o">.</span><span class="n">RANDOM</span><span class="p">:</span>
+            <span class="n">pretrained_embeds_weight</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">init_strategy</span> <span class="o">==</span> <span class="n">EmbedInitStrategy</span><span class="o">.</span><span class="n">ZERO</span><span class="p">:</span>
+            <span class="n">pretrained_embeds_weight</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Unknown embedding initialization strategy '{}'"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">init_strategy</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_vocab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">pretrained_embeds_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">),</span> <span class="n">f</span><span class="s2">"shape of pretrained_embeds_weight {pretrained_embeds_weight.shape[-1]} </span><span class="se">\</span>
+<span class="s2">        and embedding_vectors {self.embedding_vectors.shape[-1]} doesn't match!"</span>
+        <span class="n">unk_idx</span> <span class="o">=</span> <span class="n">str_to_idx</span><span class="p">[</span><span class="n">unk</span><span class="p">]</span>
+        <span class="n">oov_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">str_to_idx</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stoi</span> <span class="ow">and</span> <span class="n">idx</span> <span class="o">!=</span> <span class="n">unk_idx</span><span class="p">:</span>
+                <span class="n">pretrained_embeds_weight</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_vectors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stoi</span><span class="p">[</span><span class="n">word</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">oov_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">print</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"{oov_count}/{len(str_to_idx)} tokens were found out of "</span>
+            <span class="n">f</span><span class="s2">"pretrained embedding vocabulary"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pretrained_embeds_weight</span></div></div>
+
+
+<div class="viewcode-block" id="append_dialect"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.embeddings.append_dialect">[docs]</a><span class="k">def</span> <span class="nf">append_dialect</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"-{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dialect</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">word</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s2">"{word}-{dialect}"</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

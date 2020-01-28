@@ -1,0 +1,64 @@
+SquadDataSource.Config
+======================
+
+
+
+**Component:** :class:`SquadDataSource  <pytext.data.sources.squad.SquadDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.data.sources.squad
+.. py:class:: SquadDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`DataSource.Config <pytext.data.sources.data_source.DataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **train_filename**: Optional[str] = ``'train-v2.0.json'``
+    \ 
+
+  **test_filename**: Optional[str] = ``'dev-v2.0.json'``
+    \ 
+
+  **eval_filename**: Optional[str] = ``'dev-v2.0.json'``
+    \ 
+
+  **ignore_impossible**: bool = ``True``
+    \ 
+
+  **max_character_length**: int = ``1048576``
+    \ 
+
+  **min_overlap**: float = ``0.1``
+    \ 
+
+  **delimiter**: str = ``'\t'``
+    \ 
+
+  **quoted**: bool = ``False``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`SquadDataSourceForKD.Config <pytext.data.sources.squad.SquadDataSourceForKD.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "train_filename": "train-v2.0.json",
+      "test_filename": "dev-v2.0.json",
+      "eval_filename": "dev-v2.0.json",
+      "ignore_impossible": true,
+      "max_character_length": 1048576,
+      "min_overlap": 0.1,
+      "delimiter": "\t",
+      "quoted": false
+  }

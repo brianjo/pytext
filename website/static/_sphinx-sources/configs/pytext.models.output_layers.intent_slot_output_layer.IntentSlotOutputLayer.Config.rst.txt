@@ -1,0 +1,73 @@
+IntentSlotOutputLayer.Config
+============================
+
+
+
+**Component:** :class:`IntentSlotOutputLayer  <pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer>`\ 
+
+
+.. py:currentmodule:: pytext.models.output_layers.intent_slot_output_layer
+.. py:class:: IntentSlotOutputLayer.Config
+  :noindex:
+
+  **Bases:** :class:`OutputLayerBase.Config <pytext.models.output_layers.output_layer_base.OutputLayerBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **doc_output**: :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>` = :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`\ ()
+    \ 
+
+  **word_output**: Union[:doc:`WordTaggingOutputLayer.Config <pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config>`, :doc:`CRFOutputLayer.Config <pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.Config>`] = :doc:`WordTaggingOutputLayer.Config <pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "doc_output": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "loss": {
+              "CrossEntropyLoss": {}
+          },
+          "label_weights": null
+      },
+      "word_output": {
+          "WordTaggingOutputLayer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {
+                  "CrossEntropyLoss": {}
+              },
+              "label_weights": {},
+              "ignore_pad_in_loss": true
+          }
+      }
+  }

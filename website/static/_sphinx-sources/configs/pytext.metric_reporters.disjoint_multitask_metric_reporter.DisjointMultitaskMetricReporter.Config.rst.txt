@@ -1,0 +1,40 @@
+DisjointMultitaskMetricReporter.Config
+======================================
+
+
+
+**Component:** :class:`DisjointMultitaskMetricReporter  <pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.disjoint_multitask_metric_reporter
+.. py:class:: DisjointMultitaskMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+  **use_subtask_select_metric**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false,
+      "use_subtask_select_metric": false
+  }

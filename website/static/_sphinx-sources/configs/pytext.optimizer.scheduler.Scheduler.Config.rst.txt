@@ -1,0 +1,40 @@
+Scheduler.Config
+================
+
+
+
+**Component:** :class:`Scheduler  <pytext.optimizer.scheduler.Scheduler>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: Scheduler.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`BatchScheduler.Config <pytext.optimizer.scheduler.BatchScheduler.Config>`\ 
+  - :class:`CosineAnnealingLR.Config <pytext.optimizer.scheduler.CosineAnnealingLR.Config>`\ 
+  - :class:`CyclicLR.Config <pytext.optimizer.scheduler.CyclicLR.Config>`\ 
+  - :class:`ExponentialLR.Config <pytext.optimizer.scheduler.ExponentialLR.Config>`\ 
+  - :class:`LmFineTuning.Config <pytext.optimizer.scheduler.LmFineTuning.Config>`\ 
+  - :class:`PolynomialDecayScheduler.Config <pytext.optimizer.scheduler.PolynomialDecayScheduler.Config>`\ 
+  - :class:`ReduceLROnPlateau.Config <pytext.optimizer.scheduler.ReduceLROnPlateau.Config>`\ 
+  - :class:`SchedulerWithWarmup.Config <pytext.optimizer.scheduler.SchedulerWithWarmup.Config>`\ 
+  - :class:`StepLR.Config <pytext.optimizer.scheduler.StepLR.Config>`\ 
+  - :class:`WarmupScheduler.Config <pytext.optimizer.scheduler.WarmupScheduler.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

@@ -1,0 +1,49 @@
+StochasticWeightAveraging.Config
+================================
+
+
+
+**Component:** :class:`StochasticWeightAveraging  <pytext.optimizer.swa.StochasticWeightAveraging>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.swa
+.. py:class:: StochasticWeightAveraging.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **optimizer**: Union[:doc:`SGD.Config <pytext.optimizer.optimizers.SGD.Config>`, :doc:`Adam.Config <pytext.optimizer.optimizers.Adam.Config>`, :doc:`AdamW.Config <pytext.optimizer.optimizers.AdamW.Config>`, :doc:`Adagrad.Config <pytext.optimizer.optimizers.Adagrad.Config>`, :doc:`RAdam.Config <pytext.optimizer.radam.RAdam.Config>`, :doc:`Lamb.Config <pytext.optimizer.lamb.Lamb.Config>`] = :doc:`SGD.Config <pytext.optimizer.optimizers.SGD.Config>`\ ()
+    \ 
+
+  **start**: int = ``10``
+    \ 
+
+  **frequency**: int = ``5``
+    \ 
+
+  **swa_learning_rate**: Optional[float] = ``0.05``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "optimizer": {
+          "SGD": {
+              "lr": 0.001,
+              "momentum": 0.0
+          }
+      },
+      "start": 10,
+      "frequency": 5,
+      "swa_learning_rate": 0.05
+  }

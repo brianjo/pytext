@@ -1,0 +1,43 @@
+TaskBase.Config
+===============
+
+
+
+**Component:** :class:`TaskBase  <pytext.task.task.TaskBase>`\ 
+
+
+.. py:currentmodule:: pytext.task.task
+.. py:class:: TaskBase.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **features**: :doc:`FeatureConfig <pytext.config.field_config.FeatureConfig>` = :doc:`FeatureConfig <pytext.config.field_config.FeatureConfig>`\ ()
+    \ 
+
+  **featurizer**: :doc:`Featurizer.Config <pytext.data.featurizer.featurizer.Featurizer.Config>` = :doc:`SimpleFeaturizer.Config <pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.Config>`\ ()
+    \ 
+
+  **data_handler**: :doc:`DataHandler.Config <pytext.data.data_handler.DataHandler.Config>`
+    \ 
+
+  **trainer**: :doc:`Trainer.Config <pytext.trainers.trainer.Trainer.Config>` = :doc:`Trainer.Config <pytext.trainers.trainer.Trainer.Config>`\ ()
+    \ 
+
+  **exporter**: Optional[:doc:`ModelExporter.Config <pytext.exporters.exporter.ModelExporter.Config>`] = ``None``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`DisjointMultitask.Config <pytext.task.disjoint_multitask.DisjointMultitask.Config>`\ 
+  - :class:`Task_Deprecated.Config <pytext.task.task.Task_Deprecated.Config>`\ 
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

@@ -1,0 +1,390 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-data-data-structures-package">
+<h1>pytext.data.data_structures package<a class="headerlink" href="#pytext-data-data-structures-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.data.data_structures.annotation">
+<span id="pytext-data-data-structures-annotation-module"></span><h2>pytext.data.data_structures.annotation module<a class="headerlink" href="#module-pytext.data.data_structures.annotation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Annotation">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Annotation</code><span class="sig-paren">(</span><em class="sig-param">annotation_string: str</em>, <em class="sig-param">utterance: str = ''</em>, <em class="sig-param">brackets: str = '[]'</em>, <em class="sig-param">combination_labels: bool = True</em>, <em class="sig-param">add_dict_feat: bool = False</em>, <em class="sig-param">accept_flat_intents_slots: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Annotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Annotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Annotation.build_tree">
+<code class="sig-name descname">build_tree</code><span class="sig-paren">(</span><em class="sig-param">accept_flat_intents_slots: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Annotation.build_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Annotation.build_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Intent">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Intent</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Intent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Intent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.data_structures.annotation.Node" title="pytext.data.data_structures.annotation.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.data_structures.annotation.Node</span></code></a></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Intent.validate_node">
+<code class="sig-name descname">validate_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Intent.validate_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Intent.validate_node" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Node">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.children_flat_str_spans">
+<code class="sig-name descname">children_flat_str_spans</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.children_flat_str_spans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.children_flat_str_spans" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.flat_str">
+<code class="sig-name descname">flat_str</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.flat_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.flat_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.get_info">
+<code class="sig-name descname">get_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.get_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.get_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.get_token_indices">
+<code class="sig-name descname">get_token_indices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.get_token_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.get_token_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.get_token_span">
+<code class="sig-name descname">get_token_span</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.get_token_span"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.get_token_span" title="Permalink to this definition">¶</a></dt>
+<dd><p>0 indexed
+Like array slicing: For the first 3 tokens, returns 0, 3</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.list_ancestors">
+<code class="sig-name descname">list_ancestors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.list_ancestors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.list_ancestors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.list_nonTerminals">
+<code class="sig-name descname">list_nonTerminals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.list_nonTerminals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.list_nonTerminals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all Intent and Slot nodes subordinate to this node</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.list_terminals">
+<code class="sig-name descname">list_terminals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.list_terminals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.list_terminals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all Token nodes</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.list_tokens">
+<code class="sig-name descname">list_tokens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.list_tokens"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.list_tokens" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node.validate_node">
+<code class="sig-name descname">validate_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node.validate_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node.validate_node" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Node_Info">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Node_Info</code><span class="sig-paren">(</span><em class="sig-param">node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node_Info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node_Info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class extracts the essential information for a mode, for use in rules.</p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node_Info.get_parent">
+<code class="sig-name descname">get_parent</code><span class="sig-paren">(</span><em class="sig-param">node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node_Info.get_parent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node_Info.get_parent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Node_Info.get_same_span">
+<code class="sig-name descname">get_same_span</code><span class="sig-paren">(</span><em class="sig-param">node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Node_Info.get_same_span"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Node_Info.get_same_span" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Root">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Root</code><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.data_structures.annotation.Node" title="pytext.data.data_structures.annotation.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.data_structures.annotation.Node</span></code></a></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Root.validate_node">
+<code class="sig-name descname">validate_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Root.validate_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Root.validate_node" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Slot">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Slot</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Slot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Slot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.data_structures.annotation.Node" title="pytext.data.data_structures.annotation.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.data_structures.annotation.Node</span></code></a></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Slot.validate_node">
+<code class="sig-name descname">validate_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Slot.validate_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Slot.validate_node" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Token">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Token</code><span class="sig-paren">(</span><em class="sig-param">label</em>, <em class="sig-param">index</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.data_structures.annotation.Node" title="pytext.data.data_structures.annotation.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.data_structures.annotation.Node</span></code></a></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Token.remove">
+<code class="sig-name descname">remove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Token.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Token.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes this token from the tree</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Token.validate_node">
+<code class="sig-name descname">validate_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Token.validate_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Token.validate_node" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Token_Info">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Token_Info</code><span class="sig-paren">(</span><em class="sig-param">node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Token_Info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Token_Info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class extracts the essential information for a token for use in rules.</p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Token_Info.get_parent">
+<code class="sig-name descname">get_parent</code><span class="sig-paren">(</span><em class="sig-param">node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Token_Info.get_parent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Token_Info.get_parent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.Tree">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">Tree</code><span class="sig-paren">(</span><em class="sig-param">root: pytext.data.data_structures.annotation.Root</em>, <em class="sig-param">combination_labels: bool</em>, <em class="sig-param">utterance: str = ''</em>, <em class="sig-param">validate_tree: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.depth">
+<code class="sig-name descname">depth</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.depth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.depth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.flat_str">
+<code class="sig-name descname">flat_str</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.flat_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.flat_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.list_tokens">
+<code class="sig-name descname">list_tokens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.list_tokens"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.list_tokens" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.lotv_str">
+<code class="sig-name descname">lotv_str</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.lotv_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.lotv_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>LOTV – Limited Output Token Vocabulary
+We map the terminal tokens in the input to a constant output
+(SEQLOGICAL_LOTV_TOKEN) to make the parsing task easier for models where
+the decoding is decoupled from the input (e.g. seq2seq). This way,
+the model can focus on learning to predict the parse tree,
+rather than waste effort learning to replicate terminal tokens.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.print_tree">
+<code class="sig-name descname">print_tree</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.print_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.print_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.recursive_validation">
+<code class="sig-name descname">recursive_validation</code><span class="sig-paren">(</span><em class="sig-param">node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.recursive_validation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.recursive_validation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.to_actions">
+<code class="sig-name descname">to_actions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.to_actions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.to_actions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.Tree.validate_tree">
+<code class="sig-name descname">validate_tree</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#Tree.validate_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.Tree.validate_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a method for checking that roots/intents/slots are
+nested correctly.
+Root( Intent( Slot( Intent( Slot, etc.) ) ) )</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.annotation.TreeBuilder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">TreeBuilder</code><span class="sig-paren">(</span><em class="sig-param">combination_labels: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#TreeBuilder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.TreeBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.TreeBuilder.finalize_tree">
+<code class="sig-name descname">finalize_tree</code><span class="sig-paren">(</span><em class="sig-param">validate_tree=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#TreeBuilder.finalize_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.TreeBuilder.finalize_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.annotation.TreeBuilder.update_tree">
+<code class="sig-name descname">update_tree</code><span class="sig-paren">(</span><em class="sig-param">action</em>, <em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#TreeBuilder.update_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.TreeBuilder.update_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.data.data_structures.annotation.escape_brackets">
+<code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">escape_brackets</code><span class="sig-paren">(</span><em class="sig-param">string: str</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#escape_brackets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.escape_brackets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.data.data_structures.annotation.is_intent_nonterminal">
+<code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">is_intent_nonterminal</code><span class="sig-paren">(</span><em class="sig-param">node_label: str</em><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#is_intent_nonterminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.is_intent_nonterminal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.data.data_structures.annotation.is_slot_nonterminal">
+<code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">is_slot_nonterminal</code><span class="sig-paren">(</span><em class="sig-param">node_label: str</em><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#is_slot_nonterminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.is_slot_nonterminal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.data.data_structures.annotation.is_unsupported">
+<code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">is_unsupported</code><span class="sig-paren">(</span><em class="sig-param">node_label: str</em><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#is_unsupported"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.is_unsupported" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.data.data_structures.annotation.is_valid_nonterminal">
+<code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">is_valid_nonterminal</code><span class="sig-paren">(</span><em class="sig-param">node_label: str</em><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#is_valid_nonterminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.is_valid_nonterminal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.data.data_structures.annotation.list_from_actions">
+<code class="sig-prename descclassname">pytext.data.data_structures.annotation.</code><code class="sig-name descname">list_from_actions</code><span class="sig-paren">(</span><em class="sig-param">tokens_str: List[str], actions_vocab: List[str], actions_indices: List[int]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/annotation.html#list_from_actions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.annotation.list_from_actions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.data.data_structures.node">
+<span id="pytext-data-data-structures-node-module"></span><h2>pytext.data.data_structures.node module<a class="headerlink" href="#module-pytext.data.data_structures.node" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.data_structures.node.Node">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.node.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param">label: str</em>, <em class="sig-param">span: pytext.data.data_structures.node.Span</em>, <em class="sig-param">children: Optional[AbstractSet[Node]] = None</em>, <em class="sig-param">text: str = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/data_structures/node.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.node.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Node in an intent-slot tree, representing either an intent or a slot.</p>
+<dl class="attribute">
+<dt id="pytext.data.data_structures.node.Node.label">
+<code class="sig-name descname">label</code><a class="headerlink" href="#pytext.data.data_structures.node.Node.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Label of the node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.data.data_structures.node.Node.span">
+<code class="sig-name descname">span</code><a class="headerlink" href="#pytext.data.data_structures.node.Node.span" title="Permalink to this definition">¶</a></dt>
+<dd><p>Span of the node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Span</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.data.data_structures.node.Node.children">
+<code class="sig-name descname">children</code><a class="headerlink" href="#pytext.data.data_structures.node.Node.children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Children of the node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set</span></code> of <a class="reference internal" href="#pytext.data.data_structures.node.Node" title="pytext.data.data_structures.node.Node"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">children</code></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.data_structures.node.Node.get_depth">
+<code class="sig-name descname">get_depth</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → int<a class="reference internal" href="../_modules/pytext/data/data_structures/node.html#Node.get_depth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.node.Node.get_depth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">label</code></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">span</code></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.data.data_structures.node.Node.text">
+<code class="sig-name descname">text</code><a class="headerlink" href="#pytext.data.data_structures.node.Node.text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.data_structures.node.Span">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.data_structures.node.</code><code class="sig-name descname">Span</code><a class="reference internal" href="../_modules/pytext/data/data_structures/node.html#Span"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.data_structures.node.Span" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>Span of a node in an intent-slot tree.</p>
+<dl class="attribute">
+<dt id="pytext.data.data_structures.node.Span.start">
+<code class="sig-name descname">start</code><a class="headerlink" href="#pytext.data.data_structures.node.Span.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start position of the node.</p>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.data.data_structures.node.Span.end">
+<code class="sig-name descname">end</code><a class="headerlink" href="#pytext.data.data_structures.node.Span.end" title="Permalink to this definition">¶</a></dt>
+<dd><p>End position of the node (exclusive).</p>
+</dd></dl>
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">end</code></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">start</code></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.data.data_structures">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.data.data_structures" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.data.html">pytext.data package</a><ul>
+<li>Previous: <a href="pytext.data.html" title="previous chapter">pytext.data package</a></li>
+<li>Next: <a href="pytext.data.featurizer.html" title="next chapter">pytext.data.featurizer package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,62 @@
+pytext.data.sources package
+===========================
+
+Submodules
+----------
+
+pytext.data.sources.conllu module
+---------------------------------
+
+.. automodule:: pytext.data.sources.conllu
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.sources.data\_source module
+---------------------------------------
+
+.. automodule:: pytext.data.sources.data_source
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.sources.pandas module
+---------------------------------
+
+.. automodule:: pytext.data.sources.pandas
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.sources.session module
+----------------------------------
+
+.. automodule:: pytext.data.sources.session
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.sources.squad module
+--------------------------------
+
+.. automodule:: pytext.data.sources.squad
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.sources.tsv module
+------------------------------
+
+.. automodule:: pytext.data.sources.tsv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.data.sources
+   :members:
+   :undoc-members:
+   :show-inheritance:

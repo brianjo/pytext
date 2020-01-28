@@ -1,0 +1,30 @@
+FloatTensorizer.Config
+======================
+
+
+
+**Component:** :class:`FloatTensorizer  <pytext.data.tensorizers.FloatTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: FloatTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str
+    The name of the column to parse from the data source.
+    
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

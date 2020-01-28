@@ -1,0 +1,373 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.representations.deepcnn</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">pytext.config.module_config</span> <span class="kn">import</span> <span class="n">Activation</span><span class="p">,</span> <span class="n">CNNParams</span><span class="p">,</span> <span class="n">PoolingType</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.representation_base</span> <span class="kn">import</span> <span class="n">RepresentationBase</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer</span> <span class="kn">import</span> <span class="n">get_activation</span>
+
+
+<div class="viewcode-block" id="pool"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.pool">[docs]</a><span class="k">def</span> <span class="nf">pool</span><span class="p">(</span><span class="n">pooling_type</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+    <span class="c1"># input dims: bsz * seq_len * num_filters</span>
+    <span class="k">if</span> <span class="n">pooling_type</span> <span class="o">==</span> <span class="n">PoolingType</span><span class="o">.</span><span class="n">MEAN</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">words</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">pooling_type</span> <span class="o">==</span> <span class="n">PoolingType</span><span class="o">.</span><span class="n">MAX</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">words</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">pooling_type</span> <span class="o">==</span> <span class="n">PoolingType</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">words</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="Trim1d"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.Trim1d">[docs]</a><span class="k">class</span> <span class="nc">Trim1d</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Trims a 1d convolutional output. Used to implement history-padding</span>
+<span class="sd">    by removing excess padding from the right.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Trim1d</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trim</span> <span class="o">=</span> <span class="n">trim</span>
+
+<div class="viewcode-block" id="Trim1d.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.Trim1d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">trim</span><span class="p">]</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="SeparableConv1d"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.SeparableConv1d">[docs]</a><span class="k">class</span> <span class="nc">SeparableConv1d</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Implements a 1d depthwise separable convolutional layer. In regular convolutional</span>
+<span class="sd">    layers, the input channels are mixed with each other to produce each output channel.</span>
+<span class="sd">    Depthwise separable convolutions decompose this process into two smaller</span>
+<span class="sd">    convolutions -- a depthwise and pointwise convolution.</span>
+
+<span class="sd">    The depthwise convolution spatially convolves each input channel separately,</span>
+<span class="sd">    then the pointwise convolution projects this result into a new channel space.</span>
+<span class="sd">    This process reduces the number of FLOPS used to compute a convolution and also</span>
+<span class="sd">    exhibits a regularization effect. The general behavior -- including the input</span>
+<span class="sd">    parameters -- is equivalent to `nn.Conv1d`.</span>
+
+<span class="sd">    `bottleneck` controls the behavior of the pointwise convolution. Instead of</span>
+<span class="sd">    upsampling directly, we split the pointwise convolution into two pieces: the first</span>
+<span class="sd">    convolution downsamples into a (sufficiently small) low dimension and the</span>
+<span class="sd">    second convolution upsamples into the target (higher) dimension. Creating this</span>
+<span class="sd">    bottleneck significantly cuts the number of parameters with minimal loss</span>
+<span class="sd">    in performance.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">padding</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dilation</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">bottleneck</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SeparableConv1d</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="n">conv_layers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span>
+                <span class="n">input_channels</span><span class="p">,</span>
+                <span class="n">input_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="p">,</span>
+                <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">,</span>
+                <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
+                <span class="n">groups</span><span class="o">=</span><span class="n">input_channels</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">bottleneck</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">conv_layers</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span><span class="n">input_channels</span><span class="p">,</span> <span class="n">bottleneck</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span><span class="n">bottleneck</span><span class="p">,</span> <span class="n">output_channels</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conv_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span><span class="n">input_channels</span><span class="p">,</span> <span class="n">output_channels</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">conv_layers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SeparableConv1d.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.SeparableConv1d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="create_conv_package"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.create_conv_package">[docs]</a><span class="k">def</span> <span class="nf">create_conv_package</span><span class="p">(</span>
+    <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">activation</span><span class="p">:</span> <span class="n">Activation</span><span class="p">,</span>
+    <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">causal</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">dilated</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">separable</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">bottleneck</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">weight_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Creates a convolutional layer with the specified arguments.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        index (int): Index of a convolutional layer in the stack.</span>
+<span class="sd">        activation (Activation): Activation function.</span>
+<span class="sd">        in_channels (int): Number of input channels.</span>
+<span class="sd">        out_channels (int): Number of output channels.</span>
+<span class="sd">        kernel_size (int): Size of 1d convolutional filter.</span>
+<span class="sd">        causal (bool): Whether the convolution is causal or not. If set, it</span>
+<span class="sd">        accounts for the temporal ordering of the inputs.</span>
+<span class="sd">        dilated (bool): Whether the convolution is dilated or not. If set,</span>
+<span class="sd">        the receptive field of the convolutional stack grows exponentially.</span>
+<span class="sd">        separable (bool): Whether to use depthwise separable convolutions</span>
+<span class="sd">        or not -- see `SeparableConv1d`.</span>
+<span class="sd">        bottleneck (int): Bottleneck channel dimension for depthwise separable</span>
+<span class="sd">        convolutions. See `SeparableConv1d` for an in-depth explanation.</span>
+<span class="sd">        weight_norm (bool): Whether to add weight normalization to the</span>
+<span class="sd">        regular convolutions or not.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">separable</span> <span class="ow">and</span> <span class="n">bottleneck</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"Bottleneck layers can only be used with separable convolutions"</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">separable</span> <span class="ow">and</span> <span class="n">weight_norm</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"Weight normalization is not supported for separable convolutions"</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute_dilation</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dilated</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        If set, the dilation factor increases by a factor of two for each</span>
+<span class="sd">        successive convolution to increase the receptive field exponentially.</span>
+
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">dilated</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">index</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">_compute_padding</span><span class="p">(</span><span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">causal</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Non-causal convolutions are centered, so they will consume ((k - 1) // 2) * d</span>
+<span class="sd">        padding on both the left and the right of the sequence. Causal convolutions</span>
+<span class="sd">        are shifted to the left (to account for temporal ordering), so they will</span>
+<span class="sd">        only consume padding from the left. Therefore, we pad this side with the</span>
+<span class="sd">        full amount (k - 1) * d and remove the excess right-padding with `Trim1d`.</span>
+
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">causal</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dilation</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dilation</span>
+
+    <span class="k">def</span> <span class="nf">_compute_out_channels</span><span class="p">(</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">activation</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Gated Linear Unit (GLU) activations train two groups of convolutions,</span>
+<span class="sd">        then linearly combine their outputs through a gating mechanism. We</span>
+<span class="sd">        double the number of `out_channels` to mimic these two groups.</span>
+
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="n">Activation</span><span class="o">.</span><span class="n">GLU</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out_channels</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">out_channels</span>
+
+    <span class="n">package</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dilation</span> <span class="o">=</span> <span class="n">_compute_dilation</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dilated</span><span class="p">)</span>
+    <span class="n">padding</span> <span class="o">=</span> <span class="n">_compute_padding</span><span class="p">(</span><span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">causal</span><span class="p">)</span>
+    <span class="n">out_channels</span> <span class="o">=</span> <span class="n">_compute_out_channels</span><span class="p">(</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">separable</span><span class="p">:</span>
+        <span class="n">package</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">SeparableConv1d</span><span class="p">(</span>
+                <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">padding</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bottleneck</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">,</span> <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">weight_norm</span><span class="p">:</span>
+            <span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">weight_norm</span><span class="p">(</span><span class="n">conv</span><span class="p">)</span>
+        <span class="n">package</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">conv</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">causal</span><span class="p">:</span>
+        <span class="n">package</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Trim1d</span><span class="p">(</span><span class="n">padding</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">package</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">package</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">package</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DeepCNNRepresentation"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.DeepCNNRepresentation">[docs]</a><span class="k">class</span> <span class="nc">DeepCNNRepresentation</span><span class="p">(</span><span class="n">RepresentationBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    `DeepCNNRepresentation` implements CNN representation layer</span>
+<span class="sd">    preceded by a dropout layer. CNN representation layer is based on the encoder</span>
+<span class="sd">    in the architecture proposed by Gehring et. al. in Convolutional Sequence to</span>
+<span class="sd">    Sequence Learning.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (Config): Configuration object of type DeepCNNRepresentation.Config.</span>
+<span class="sd">        embed_dim (int): The number of expected features in the input.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RepresentationBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">cnn</span><span class="p">:</span> <span class="n">CNNParams</span> <span class="o">=</span> <span class="n">CNNParams</span><span class="p">()</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">Activation</span> <span class="o">=</span> <span class="n">Activation</span><span class="o">.</span><span class="n">GLU</span>
+        <span class="n">separable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">bottleneck</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">pooling_type</span><span class="p">:</span> <span class="n">PoolingType</span> <span class="o">=</span> <span class="n">PoolingType</span><span class="o">.</span><span class="n">NONE</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="n">out_channels</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">kernel_num</span>
+        <span class="n">kernel_sizes</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">kernel_sizes</span>
+        <span class="n">weight_norm</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">weight_norm</span>
+        <span class="n">dilated</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">dilated</span>
+        <span class="n">causal</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">cnn</span><span class="o">.</span><span class="n">causal</span>
+
+        <span class="n">activation</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">activation</span>
+        <span class="n">pooling_type</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pooling_type</span>
+        <span class="n">separable</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">separable</span>
+        <span class="n">bottleneck</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">bottleneck</span>
+
+        <span class="n">conv_layers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">linear_layers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">in_channels</span> <span class="o">=</span> <span class="n">embed_dim</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">kernel_sizes</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+
+            <span class="k">if</span> <span class="n">in_channels</span> <span class="o">!=</span> <span class="n">out_channels</span><span class="p">:</span>
+                <span class="n">linear_layers</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">)</span>
+
+            <span class="n">single_conv</span> <span class="o">=</span> <span class="n">create_conv_package</span><span class="p">(</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                <span class="n">causal</span><span class="o">=</span><span class="n">causal</span><span class="p">,</span>
+                <span class="n">dilated</span><span class="o">=</span><span class="n">dilated</span><span class="p">,</span>
+                <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
+                <span class="n">bottleneck</span><span class="o">=</span><span class="n">bottleneck</span><span class="p">,</span>
+                <span class="n">weight_norm</span><span class="o">=</span><span class="n">weight_norm</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">conv_layers</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">single_conv</span>
+
+            <span class="n">in_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">convs</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">(</span><span class="n">conv_layers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projections</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">(</span><span class="n">linear_layers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">get_activation</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooling_type</span> <span class="o">=</span> <span class="n">pooling_type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">=</span> <span class="n">out_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DeepCNNRepresentation.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.deepcnn.DeepCNNRepresentation.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="c1"># bsz * seq_len * embed_dim -&gt; bsz * embed_dim * seq_len</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">convs_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">projections_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projections</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="c1"># Extra verbosity is due to jit.script.</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">convs_keys</span><span class="p">:</span>
+            <span class="n">conv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">projections_keys</span><span class="p">:</span>
+                <span class="n">residual</span> <span class="o">=</span> <span class="n">words</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">proj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projections</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">tranposed</span> <span class="o">=</span> <span class="n">words</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">residual</span> <span class="o">=</span> <span class="n">proj</span><span class="p">(</span><span class="n">tranposed</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="n">conv</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="p">(</span><span class="n">words</span> <span class="o">+</span> <span class="n">residual</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">words</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pooling_type</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

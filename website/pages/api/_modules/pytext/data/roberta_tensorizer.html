@@ -1,0 +1,280 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.roberta_tensorizer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">create_component</span>
+<span class="kn">from</span> <span class="nn">pytext.data.bert_tensorizer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BERTTensorizerBase</span><span class="p">,</span>
+    <span class="n">BERTTensorizerBaseScriptImpl</span><span class="p">,</span>
+    <span class="n">build_fairseq_vocab</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tokenizers</span> <span class="kn">import</span> <span class="n">GPT2BPETokenizer</span><span class="p">,</span> <span class="n">Tokenizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">BOS</span><span class="p">,</span> <span class="n">EOS</span><span class="p">,</span> <span class="n">MASK</span><span class="p">,</span> <span class="n">PAD</span><span class="p">,</span> <span class="n">UNK</span><span class="p">,</span> <span class="n">VocabBuilder</span><span class="p">,</span> <span class="n">pad_and_tensorize</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.tensorizer</span> <span class="kn">import</span> <span class="n">ScriptRoBERTaTensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.vocab</span> <span class="kn">import</span> <span class="n">ScriptVocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+
+
+<span class="n">RoBERTaTensorizerScriptImpl</span> <span class="o">=</span> <span class="n">BERTTensorizerBaseScriptImpl</span>
+
+
+<span class="k">class</span> <span class="nc">RoBERTaTensorizer</span><span class="p">(</span><span class="n">BERTTensorizerBase</span><span class="p">):</span>
+
+    <span class="n">__TENSORIZER_SCRIPT_IMPL__</span> <span class="o">=</span> <span class="n">RoBERTaTensorizerScriptImpl</span>
+
+<div class="viewcode-block" id="RoBERTaTensorizer.Config"><a class="viewcode-back" href="../../../configs/pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config.html#pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BERTTensorizerBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">vocab_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"manifold://pytext_training/tree/static/vocabs/bpe/gpt2/dict.txt"</span>
+        <span class="p">)</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">GPT2BPETokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">TOKENIZER</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">)</span>
+        <span class="n">base_tokenizer</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">base_tokenizer</span><span class="p">:</span>
+            <span class="n">base_tokenizer</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+                <span class="n">ComponentType</span><span class="o">.</span><span class="n">TOKENIZER</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">base_tokenizer</span>
+            <span class="p">)</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">vocab</span> <span class="o">=</span> <span class="n">build_fairseq_vocab</span><span class="p">(</span>
+                <span class="n">vocab_file</span><span class="o">=</span><span class="n">f</span><span class="p">,</span>
+                <span class="n">special_token_replacements</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"&lt;pad&gt;"</span><span class="p">:</span> <span class="n">PAD</span><span class="p">,</span>
+                    <span class="s2">"&lt;s&gt;"</span><span class="p">:</span> <span class="n">BOS</span><span class="p">,</span>
+                    <span class="s2">"&lt;/s&gt;"</span><span class="p">:</span> <span class="n">EOS</span><span class="p">,</span>
+                    <span class="s2">"&lt;unk&gt;"</span><span class="p">:</span> <span class="n">UNK</span><span class="p">,</span>
+                    <span class="s2">"&lt;mask&gt;"</span><span class="p">:</span> <span class="n">MASK</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+            <span class="n">base_tokenizer</span><span class="o">=</span><span class="n">base_tokenizer</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RoBERTaTokenLevelTensorizer</span><span class="p">(</span><span class="n">RoBERTaTensorizer</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Tensorizer for token level classification tasks such as NER, POS etc</span>
+<span class="sd">    using RoBERTa. Here each token has an associated label and the tensorizer</span>
+<span class="sd">    should output a label tensor as well. The input for this tensorizer comes</span>
+<span class="sd">    from the CoNLLUNERDataSource data source.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="RoBERTaTokenLevelTensorizer.Config"><a class="viewcode-back" href="../../../configs/pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config.html#pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RoBERTaTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1"># label identifiers for extracting the label from a row of data</span>
+        <span class="c1"># during numberize and for modifying the schema</span>
+        <span class="n">labels_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"label"</span><span class="p">]</span>
+        <span class="c1"># label space for the task</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">TOKENIZER</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">vocab</span> <span class="o">=</span> <span class="n">build_fairseq_vocab</span><span class="p">(</span>
+                <span class="n">vocab_file</span><span class="o">=</span><span class="n">f</span><span class="p">,</span>
+                <span class="n">special_token_replacements</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"&lt;pad&gt;"</span><span class="p">:</span> <span class="n">PAD</span><span class="p">,</span>
+                    <span class="s2">"&lt;s&gt;"</span><span class="p">:</span> <span class="n">BOS</span><span class="p">,</span>
+                    <span class="s2">"&lt;/s&gt;"</span><span class="p">:</span> <span class="n">EOS</span><span class="p">,</span>
+                    <span class="s2">"&lt;unk&gt;"</span><span class="p">:</span> <span class="n">UNK</span><span class="p">,</span>
+                    <span class="s2">"&lt;mask&gt;"</span><span class="p">:</span> <span class="n">MASK</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+            <span class="n">labels_columns</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">labels_columns</span><span class="p">,</span>
+            <span class="n">labels</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">vocab</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+        <span class="n">labels_columns</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">labels_columns</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Only support single sentences for token level tasks."</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Label set should not be empty."</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="n">max_seq_len</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels_columns</span> <span class="o">=</span> <span class="n">labels_columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels_vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_label_vocab</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels_pad_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_build_label_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="n">labels_vocab_builder</span> <span class="o">=</span> <span class="n">VocabBuilder</span><span class="p">()</span>
+        <span class="n">labels_vocab_builder</span><span class="o">.</span><span class="n">use_pad</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">labels_vocab_builder</span><span class="o">.</span><span class="n">use_unk</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="n">labels_vocab_builder</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">labels_vocab_builder</span><span class="o">.</span><span class="n">make_vocab</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">column_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">column_schema</span>
+        <span class="n">schema</span> <span class="o">+=</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels_columns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">schema</span>
+
+    <span class="k">def</span> <span class="nf">numberize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Numberize both the tokens and labels. Since we break up tokens, the label</span>
+<span class="sd">        for anything other than the first sub-word is assigned the padding idx.</span>
+<span class="sd">        """</span>
+        <span class="c1"># The relevant data source outputs a list of strings for both</span>
+        <span class="c1"># the tokens and labels</span>
+        <span class="n">raw_tokens</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">raw_labels</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">labels_columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="n">numberized_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">numberized_labels</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">raw_tokens</span><span class="p">,</span> <span class="n">raw_labels</span><span class="p">):</span>
+            <span class="n">sub_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+            <span class="c1"># convert token level labels to sub-word level labels</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sub_tokens</span><span class="p">)):</span>
+                <span class="n">sub_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">lookup_all</span><span class="p">(</span><span class="n">sub_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">label_id</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">labels_vocab</span><span class="o">.</span><span class="n">lookup_all</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span>
+                    <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_pad_idx</span>
+                <span class="p">)</span>
+
+                <span class="n">numberized_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_token_id</span><span class="p">)</span>
+                <span class="n">numberized_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label_id</span><span class="p">)</span>
+
+        <span class="c1"># Ensure the numberized labels and tokens are wrapped correctly</span>
+        <span class="n">numberized_sentences</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_bos_index</span><span class="p">()]</span>
+            <span class="o">+</span> <span class="n">numberized_tokens</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_eos_index</span><span class="p">()]</span>
+        <span class="p">]</span>
+        <span class="n">numberized_labels</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">labels_pad_idx</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">numberized_labels</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">labels_pad_idx</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">seq_lens</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">numberized_sentences</span><span class="p">)</span>
+        <span class="n">segment_labels</span> <span class="o">=</span> <span class="p">([</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">seq_len</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">))</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">numberized_sentences</span><span class="p">))</span>
+        <span class="n">segment_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">segment_labels</span><span class="p">))</span>
+        <span class="n">seq_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">numberized_labels</span>
+
+    <span class="k">def</span> <span class="nf">tensorize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">())</span>
+        <span class="n">pad_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">())</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+        <span class="n">segment_labels</span> <span class="o">=</span> <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">segment_labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">())</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="n">padded_labels</span> <span class="o">=</span> <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_pad_idx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">pad_mask</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">padded_labels</span>
+
+    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ScriptRoBERTaTensorizer</span><span class="p">(</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">torchscriptify</span><span class="p">(),</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="n">ScriptVocabulary</span><span class="p">(</span>
+                <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+                <span class="n">pad_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span>
+                <span class="n">bos_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_bos_index</span><span class="p">(),</span>
+                <span class="n">eos_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_eos_index</span><span class="p">(),</span>
+            <span class="p">),</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,64 @@
+PairwiseCosineDistanceOutputLayer.Config
+========================================
+
+
+
+**Component:** :class:`PairwiseCosineDistanceOutputLayer  <pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer>`\ 
+
+
+.. py:currentmodule:: pytext.models.output_layers.distance_output_layer
+.. py:class:: PairwiseCosineDistanceOutputLayer.Config
+  :noindex:
+
+  **Bases:** :class:`OutputLayerBase.Config <pytext.models.output_layers.output_layer_base.OutputLayerBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **loss**: Union[:doc:`BinaryCrossEntropyLoss.Config <pytext.loss.loss.BinaryCrossEntropyLoss.Config>`, :doc:`CosineEmbeddingLoss.Config <pytext.loss.loss.CosineEmbeddingLoss.Config>`, :doc:`MAELoss.Config <pytext.loss.loss.MAELoss.Config>`, :doc:`MSELoss.Config <pytext.loss.loss.MSELoss.Config>`, :doc:`NLLLoss.Config <pytext.loss.loss.NLLLoss.Config>`] = :doc:`CosineEmbeddingLoss.Config <pytext.loss.loss.CosineEmbeddingLoss.Config>`\ ()
+    \ 
+
+  **score_threshold**: float = ``0.9``
+    \ 
+
+  **score_type**: OutputScore = ``<OutputScore.norm_cosine: 2>``
+    \ 
+
+  **label_weights**: Optional[dict[str, float]] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "loss": {
+          "CosineEmbeddingLoss": {
+              "margin": 0.0
+          }
+      },
+      "score_threshold": 0.9,
+      "score_type": 2,
+      "label_weights": null
+  }

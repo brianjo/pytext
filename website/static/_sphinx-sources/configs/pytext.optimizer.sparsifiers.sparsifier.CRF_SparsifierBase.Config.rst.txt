@@ -1,0 +1,41 @@
+CRF_SparsifierBase.Config
+=========================
+
+
+
+**Component:** :class:`CRF_SparsifierBase  <pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.sparsifiers.sparsifier
+.. py:class:: CRF_SparsifierBase.Config
+  :noindex:
+
+  **Bases:** :class:`Sparsifier.Config <pytext.optimizer.sparsifiers.sparsifier.Sparsifier.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **starting_epoch**: int = ``1``
+    \ 
+
+  **frequency**: int = ``1``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`CRF_L1_SoftThresholding.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.Config>`\ 
+  - :class:`CRF_MagnitudeThresholding.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "starting_epoch": 1,
+      "frequency": 1
+  }

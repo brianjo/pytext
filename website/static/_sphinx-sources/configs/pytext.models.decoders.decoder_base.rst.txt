@@ -1,0 +1,7 @@
+decoder_base
+============
+
+
+.. toctree::
+
+  pytext.models.decoders.decoder_base.DecoderBase.Config

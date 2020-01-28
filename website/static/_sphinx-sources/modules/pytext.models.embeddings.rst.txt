@@ -1,0 +1,62 @@
+pytext.models.embeddings package
+================================
+
+Submodules
+----------
+
+pytext.models.embeddings.char\_embedding module
+-----------------------------------------------
+
+.. automodule:: pytext.models.embeddings.char_embedding
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.embeddings.contextual\_token\_embedding module
+------------------------------------------------------------
+
+.. automodule:: pytext.models.embeddings.contextual_token_embedding
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.embeddings.dict\_embedding module
+-----------------------------------------------
+
+.. automodule:: pytext.models.embeddings.dict_embedding
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.embeddings.embedding\_base module
+-----------------------------------------------
+
+.. automodule:: pytext.models.embeddings.embedding_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.embeddings.embedding\_list module
+-----------------------------------------------
+
+.. automodule:: pytext.models.embeddings.embedding_list
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.embeddings.word\_embedding module
+-----------------------------------------------
+
+.. automodule:: pytext.models.embeddings.word_embedding
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.embeddings
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,221 @@
+pytext.models.representations package
+=====================================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pytext.models.representations.transformer
+
+Submodules
+----------
+
+pytext.models.representations.attention module
+----------------------------------------------
+
+.. automodule:: pytext.models.representations.attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.augmented\_lstm module
+----------------------------------------------------
+
+.. automodule:: pytext.models.representations.augmented_lstm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.bilstm module
+-------------------------------------------
+
+.. automodule:: pytext.models.representations.bilstm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.bilstm\_doc\_attention module
+-----------------------------------------------------------
+
+.. automodule:: pytext.models.representations.bilstm_doc_attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.bilstm\_doc\_slot\_attention module
+-----------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.bilstm_doc_slot_attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.bilstm\_slot\_attn module
+-------------------------------------------------------
+
+.. automodule:: pytext.models.representations.bilstm_slot_attn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.biseqcnn module
+---------------------------------------------
+
+.. automodule:: pytext.models.representations.biseqcnn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.contextual\_intent\_slot\_rep module
+------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.contextual_intent_slot_rep
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.deepcnn module
+--------------------------------------------
+
+.. automodule:: pytext.models.representations.deepcnn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.docnn module
+------------------------------------------
+
+.. automodule:: pytext.models.representations.docnn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.huggingface\_bert\_sentence\_encoder module
+-------------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.huggingface_bert_sentence_encoder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.jointcnn\_rep module
+--------------------------------------------------
+
+.. automodule:: pytext.models.representations.jointcnn_rep
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.ordered\_neuron\_lstm module
+----------------------------------------------------------
+
+.. automodule:: pytext.models.representations.ordered_neuron_lstm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.pair\_rep module
+----------------------------------------------
+
+.. automodule:: pytext.models.representations.pair_rep
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.pass\_through module
+--------------------------------------------------
+
+.. automodule:: pytext.models.representations.pass_through
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.pooling module
+--------------------------------------------
+
+.. automodule:: pytext.models.representations.pooling
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.pure\_doc\_attention module
+---------------------------------------------------------
+
+.. automodule:: pytext.models.representations.pure_doc_attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.representation\_base module
+---------------------------------------------------------
+
+.. automodule:: pytext.models.representations.representation_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.seq\_rep module
+---------------------------------------------
+
+.. automodule:: pytext.models.representations.seq_rep
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.slot\_attention module
+----------------------------------------------------
+
+.. automodule:: pytext.models.representations.slot_attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.sparse\_transformer\_sentence\_encoder module
+---------------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.sparse_transformer_sentence_encoder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.stacked\_bidirectional\_rnn module
+----------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.stacked_bidirectional_rnn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.traced\_transformer\_encoder module
+-----------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.traced_transformer_encoder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.transformer\_sentence\_encoder module
+-------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer_sentence_encoder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.transformer\_sentence\_encoder\_base module
+-------------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer_sentence_encoder_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.representations
+   :members:
+   :undoc-members:
+   :show-inheritance:

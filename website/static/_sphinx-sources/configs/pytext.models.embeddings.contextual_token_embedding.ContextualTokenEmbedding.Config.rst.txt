@@ -1,0 +1,42 @@
+ContextualTokenEmbedding.Config
+===============================
+
+
+
+**Component:** :class:`ContextualTokenEmbedding  <pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding>`\ 
+
+
+.. py:currentmodule:: pytext.config.field_config
+.. py:class:: ContextualTokenEmbedding.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **embed_dim**: int = ``0``
+    \ 
+
+  **model_paths**: Optional[dict[str, str]] = ``None``
+    \ 
+
+  **export_input_names**: list[str] = ``['contextual_token_embedding']``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "embed_dim": 0,
+      "model_paths": null,
+      "export_input_names": [
+          "contextual_token_embedding"
+      ]
+  }

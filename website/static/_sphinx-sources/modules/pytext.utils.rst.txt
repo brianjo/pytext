@@ -1,0 +1,174 @@
+pytext.utils package
+====================
+
+Submodules
+----------
+
+pytext.utils.ascii\_table module
+--------------------------------
+
+.. automodule:: pytext.utils.ascii_table
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.cuda module
+------------------------
+
+.. automodule:: pytext.utils.cuda
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.data module
+------------------------
+
+.. automodule:: pytext.utils.data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.distributed module
+-------------------------------
+
+.. automodule:: pytext.utils.distributed
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.documentation module
+---------------------------------
+
+.. automodule:: pytext.utils.documentation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.embeddings module
+------------------------------
+
+.. automodule:: pytext.utils.embeddings
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.file\_io module
+----------------------------
+
+.. automodule:: pytext.utils.file_io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.label module
+-------------------------
+
+.. automodule:: pytext.utils.label
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.lazy module
+------------------------
+
+.. automodule:: pytext.utils.lazy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.loss module
+------------------------
+
+.. automodule:: pytext.utils.loss
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.meter module
+-------------------------
+
+.. automodule:: pytext.utils.meter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.mobile\_onnx module
+--------------------------------
+
+.. automodule:: pytext.utils.mobile_onnx
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.model module
+-------------------------
+
+.. automodule:: pytext.utils.model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.onnx module
+------------------------
+
+.. automodule:: pytext.utils.onnx
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.path module
+------------------------
+
+.. automodule:: pytext.utils.path
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.precision module
+-----------------------------
+
+.. automodule:: pytext.utils.precision
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.tensor module
+--------------------------
+
+.. automodule:: pytext.utils.tensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.test module
+------------------------
+
+.. automodule:: pytext.utils.test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.timing module
+--------------------------
+
+.. automodule:: pytext.utils.timing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.utils.torch module
+-------------------------
+
+.. automodule:: pytext.utils.torch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

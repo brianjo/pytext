@@ -1,0 +1,30 @@
+pytext.data.featurizer package
+==============================
+
+Submodules
+----------
+
+pytext.data.featurizer.featurizer module
+----------------------------------------
+
+.. automodule:: pytext.data.featurizer.featurizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.featurizer.simple\_featurizer module
+------------------------------------------------
+
+.. automodule:: pytext.data.featurizer.simple_featurizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.data.featurizer
+   :members:
+   :undoc-members:
+   :show-inheritance:

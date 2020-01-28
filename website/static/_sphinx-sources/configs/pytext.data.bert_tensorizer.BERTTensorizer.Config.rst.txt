@@ -1,0 +1,67 @@
+BERTTensorizer.Config
+=====================
+
+
+
+**Component:** :class:`BERTTensorizer  <pytext.data.bert_tensorizer.BERTTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.bert_tensorizer
+.. py:class:: BERTTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`BERTTensorizerBase.Config <pytext.data.bert_tensorizer.BERTTensorizerBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **columns**: list[str] = ``['text']``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`WordPieceTokenizer.Config <pytext.data.tokenizers.tokenizer.WordPieceTokenizer.Config>`\ ()
+    \ 
+
+  **base_tokenizer**: Optional[:doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`] = ``None``
+    \ 
+
+  **vocab_file**: str = ``'/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt'``
+    \ 
+
+  **max_seq_len**: int = ``256``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`SquadForBERTTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config>`\ 
+  - :class:`SquadForBERTTensorizerForKD.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizerForKD.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "columns": [
+          "text"
+      ],
+      "tokenizer": {
+          "WordPieceTokenizer": {
+              "basic_tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              },
+              "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+          }
+      },
+      "base_tokenizer": null,
+      "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+      "max_seq_len": 256
+  }

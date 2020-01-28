@@ -1,0 +1,433 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.sources.data_source</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">shard</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.data</span> <span class="kn">import</span> <span class="n">Slot</span><span class="p">,</span> <span class="n">parse_slot_string</span>
+
+
+<span class="n">Schema</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="RawExample"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RawExample">[docs]</a><span class="k">class</span> <span class="nc">RawExample</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">"""A wrapper class for a single example row with a dict interface.</span>
+<span class="sd">    This is here for any logic we want row objects to have that dicts don't do."""</span></div>
+
+
+<div class="viewcode-block" id="SafeFileWrapper"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.SafeFileWrapper">[docs]</a><span class="k">class</span> <span class="nc">SafeFileWrapper</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    A simple wrapper class for files which allows filedescriptors to be managed</span>
+<span class="sd">    with normal Python ref counts.</span>
+<span class="sd">    Without using this, if you create a file in a from_config you will see a warning</span>
+<span class="sd">    along the lines of "ResourceWarning: self._file is acquired but not always released"</span>
+<span class="sd">    this is because we're opening a file not in a context manager (with statement).</span>
+<span class="sd">    We want to do it this way because it lets us pass a file object to the DataSource,</span>
+<span class="sd">    rather than a filename. This exposes a ton more flexibility and testability, passing</span>
+<span class="sd">    filenames is one of the paths towards pain.</span>
+
+<span class="sd">    However, we don't have a clear resource management system set up for configuration.</span>
+<span class="sd">    from_config functions are the tool that we have to allow objects to specify how they</span>
+<span class="sd">    should be created from a configuration, which generally should only happen from the</span>
+<span class="sd">    command line, whereas in eg. a notebook you should build the objects with</span>
+<span class="sd">    constructors directly. If building from constructors, you can just open a file and</span>
+<span class="sd">    pass it, but from_config here needs to create a file object from a configured</span>
+<span class="sd">    filename. Python files don't close automatically, so you also need a system that</span>
+<span class="sd">    will close them when the python interpreter shuts down. If you don't, it will print</span>
+<span class="sd">    a resource warning at runtime, as the interpreter manually closes the filehandles</span>
+<span class="sd">    (although modern OSs are pretty okay with having open file handles, it's hard for me</span>
+<span class="sd">    to justify exactly why Python is so strict about this; I think one of the main</span>
+<span class="sd">    reasons you might actually care is if you have a writeable file handle it might not</span>
+<span class="sd">    have flushed properly when the C runtime exits, but Python doesn't actually</span>
+<span class="sd">    distinguish between writeable and non-writeable file handles).</span>
+
+<span class="sd">    This class is a wrapper that creates a system for (sort-of) safely closing the file</span>
+<span class="sd">    handles before the runtime exits. It does this by closing the file when the object's</span>
+<span class="sd">    deleter is called. Although the python standard doesn't actually make any guarantees</span>
+<span class="sd">    about when deleters are called, CPython is reference counted and so as an</span>
+<span class="sd">    mplementation detail will call a deleter whenever the last reference to it is</span>
+<span class="sd">    removed, which generally will happen to all objects created during program execution</span>
+<span class="sd">    as long as there aren't reference cycles (I don't actually know off-hand whether the</span>
+<span class="sd">    cycle collection is run before shutdown, and anyway the cycles would have to include</span>
+<span class="sd">    objects that the runtime itself maintains pointers to, which seems like you'd have</span>
+<span class="sd">    to work hard to do and wouldn't do accidentally). This isn't true for other python</span>
+<span class="sd">    systems like PyPy or Jython which use generational garbage collection and so don't</span>
+<span class="sd">    actually always call destructors before the system shuts down, but again this is</span>
+<span class="sd">    only really relevant for mutable files.</span>
+
+<span class="sd">    An alternative implementation would be to build a resource management system into</span>
+<span class="sd">    PyText, something like a function that we use for opening system resources that</span>
+<span class="sd">    registers the resources and then we make sure are all closed before system shutdown.</span>
+<span class="sd">    That would probably technically be the right solution, but I didn't really think of</span>
+<span class="sd">    that first and also it's a bit longer to implement.</span>
+
+<span class="sd">    If you are seeing resource warnings on your system, please file a github issue.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Some file utilities check hasattr(o, "__iter__") explicitly."""</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_file</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_file</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GeneratorIterator"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.GeneratorIterator">[docs]</a><span class="k">class</span> <span class="nc">GeneratorIterator</span><span class="p">:</span>
+    <span class="sd">"""Create an object which can be iterated over multiple times from a</span>
+<span class="sd">    generator call. Each iteration will call the generator and allow iterating</span>
+<span class="sd">    over it. This is unsafe to use on generators which have side effects, such</span>
+<span class="sd">    as file readers; it's up to the callers to safely manage these scenarios.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">generator</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">generator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GeneratorMethodProperty"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.GeneratorMethodProperty">[docs]</a><span class="k">class</span> <span class="nc">GeneratorMethodProperty</span><span class="p">:</span>
+    <span class="sd">"""Identify a generator method as a property. This will allow instances to iterate</span>
+<span class="sd">    over the property multiple times, and not consume the generator. It accomplishes</span>
+<span class="sd">    this by wrapping the generator and creating multiple generator instances if</span>
+<span class="sd">    iterated over multiple times.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">generator</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">generator</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">objtype</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">GeneratorIterator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span></div>
+
+
+<span class="c1"># Use the more typical property decorator style</span>
+<span class="n">generator_property</span> <span class="o">=</span> <span class="n">GeneratorMethodProperty</span>
+
+
+<div class="viewcode-block" id="DataSource"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.DataSource">[docs]</a><span class="k">class</span> <span class="nc">DataSource</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Data sources are simple components that stream data from somewhere using Python's</span>
+<span class="sd">    iteration interface. It should expose 3 iterators, "train", "test", and "eval".</span>
+<span class="sd">    Each of these should be able to be iterated over any number of times, and iterating</span>
+<span class="sd">    over it should yield dictionaries whose values are deserialized python types.</span>
+
+<span class="sd">    Simply, these data sources exist as an interface to read through datasets</span>
+<span class="sd">    in a pythonic way, with pythonic types, and abstract away the form that they are</span>
+<span class="sd">    stored in.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_SOURCE</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">Schema</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="n">schema</span>
+
+<div class="viewcode-block" id="DataSource.train"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.DataSource.train">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="DataSource.test"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.DataSource.test">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="DataSource.eval"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.DataSource.eval">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="ShardedDataSource"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.ShardedDataSource">[docs]</a><span class="k">class</span> <span class="nc">ShardedDataSource</span><span class="p">(</span><span class="n">DataSource</span><span class="p">):</span>
+    <span class="sd">"""Base class for sharded data sources."""</span></div>
+
+
+<div class="viewcode-block" id="RowShardedDataSource"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RowShardedDataSource">[docs]</a><span class="k">class</span> <span class="nc">RowShardedDataSource</span><span class="p">(</span><span class="n">ShardedDataSource</span><span class="p">):</span>
+    <span class="s2">"Shards a given datasource by row."</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_source</span><span class="p">:</span> <span class="n">DataSource</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data_source</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span> <span class="o">=</span> <span class="n">data_source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">rank</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">world_size</span> <span class="o">=</span> <span class="n">world_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval</span> <span class="o">=</span> <span class="n">data_source</span><span class="o">.</span><span class="n">eval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test</span> <span class="o">=</span> <span class="n">data_source</span><span class="o">.</span><span class="n">test</span>
+
+<div class="viewcode-block" id="RowShardedDataSource.train"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RowShardedDataSource.train">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">shard</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_source</span><span class="o">.</span><span class="n">train</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">world_size</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowShardedDataSource.train_unsharded"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RowShardedDataSource.train_unsharded">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">train_unsharded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Used to initialize tensorizer on the intire dataset."""</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_source</span><span class="o">.</span><span class="n">train</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RootDataSource"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource">[docs]</a><span class="k">class</span> <span class="nc">RootDataSource</span><span class="p">(</span><span class="n">DataSource</span><span class="p">):</span>
+    <span class="sd">"""A data source which actually loads data from a location. This data source</span>
+<span class="sd">    needs to be responsible for converting types based on a schema, because it should</span>
+<span class="sd">    be the only part of the system that actually needs to understand details about</span>
+<span class="sd">    the underlying storage system.</span>
+
+<span class="sd">    RootDataSource presents a simpler abstraction than DataSource where the rows</span>
+<span class="sd">    are automatically converted to the right DataTypes.</span>
+
+<span class="sd">    A RootDataSource should implement `raw_train_data_generator`,</span>
+<span class="sd">    `raw_test_data_generator`, and `raw_eval_data_generator`. These functions</span>
+<span class="sd">    should yield dictionaries of raw objects which the loading system can</span>
+<span class="sd">    convert using the schema loading functions.</span>
+<span class="sd">    """</span>
+
+    <span class="n">DATA_SOURCE_TYPES</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: An optional column mapping, allowing the columns in the raw data source</span>
+        <span class="c1">#: to not map directly to the column names in the schema. This mapping will</span>
+        <span class="c1">#: remap names from the raw data source to names in the schema.</span>
+        <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">Schema</span><span class="p">,</span> <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">()):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_mapping</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">column_mapping</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_read_example</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+        <span class="n">example</span> <span class="o">=</span> <span class="n">RawExample</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">column_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">:</span>
+                <span class="n">example</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">example</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">):</span>
+            <span class="c1"># We might need to re-evaluate this for multi-task training</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"Skipping row missing values: row {} -&gt; schema {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="nb">list</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">example</span>
+
+    <span class="k">def</span> <span class="nf">_convert_raw_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">"""Convert a raw iterable source, ie. from</span>
+<span class="sd">        `DataSource.raw_train_data_generator`, to an iterable that will yield</span>
+<span class="sd">        `pytext.data.type.DataType` objects according to the schema and the</span>
+<span class="sd">        converters for this DataSource.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+            <span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_example</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">example</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">yield</span> <span class="n">example</span>
+
+<div class="viewcode-block" id="RootDataSource.register_type"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.register_type">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">register_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="c1"># Make sure we don't accidentally use RootDataSource's registry</span>
+        <span class="k">if</span> <span class="s2">"DATA_SOURCE_TYPES"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">DATA_SOURCE_TYPES</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">DATA_SOURCE_TYPES</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span>
+            <span class="k">return</span> <span class="n">fn</span>
+
+        <span class="k">return</span> <span class="n">decorator</span></div>
+
+<div class="viewcode-block" id="RootDataSource.load"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">schema_type</span><span class="p">):</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">schema_type</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"DATA_SOURCE_TYPES"</span><span class="p">,</span> <span class="p">{}):</span>
+                <span class="n">converter</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DATA_SOURCE_TYPES</span><span class="p">[</span><span class="n">schema_type</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">converter</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s1">'Type not registered in data source: "{schema_type}"'</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RootDataSource.raw_train_data_generator"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.raw_train_data_generator">[docs]</a>    <span class="k">def</span> <span class="nf">raw_train_data_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns a generator that yields the TRAIN data one item at a time</span>
+<span class="sd">        in a dictionary where each key is a field and the value is of the</span>
+<span class="sd">        raw type from the source.</span>
+<span class="sd">        DataSources need to implement this.</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="RootDataSource.raw_test_data_generator"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.raw_test_data_generator">[docs]</a>    <span class="k">def</span> <span class="nf">raw_test_data_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns a generator that yields the TEST data one item at a time</span>
+<span class="sd">        in a dictionary where each key is a field and the value is of the</span>
+<span class="sd">        raw type from the source.</span>
+<span class="sd">        DataSources need to implement this.</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="RootDataSource.raw_eval_data_generator"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.raw_eval_data_generator">[docs]</a>    <span class="k">def</span> <span class="nf">raw_eval_data_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns a generator that yields the EVAL data one item at a time</span>
+<span class="sd">        in a dictionary where each key is a field and the value is of the</span>
+<span class="sd">        raw type from the source.</span>
+<span class="sd">        DataSources need to implement this.</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="RootDataSource.train"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.train">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_raw_source</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_train_data_generator</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="RootDataSource.test"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.test">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_raw_source</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_test_data_generator</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="RootDataSource.eval"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.RootDataSource.eval">[docs]</a>    <span class="nd">@generator_property</span>
+    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_raw_source</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_eval_data_generator</span><span class="p">())</span></div></div>
+
+
+<div class="viewcode-block" id="load_text"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_text">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">Any</span><span class="p">)</span>
+<span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_text</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="load_slots"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_slots">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Slot</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">load_slots</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">parse_slot_string</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+
+
+<span class="n">Gazetteer</span> <span class="o">=</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span>
+<span class="n">JSONString</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"JSONString"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="load_json"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_json">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">Gazetteer</span><span class="p">)</span>
+<span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+<span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">load_json</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">List</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_float_list"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_float_list">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">load_float_list</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">List</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="c1"># replace spaces between float numbers with commas (regex101.com/r/C2705x/1)</span>
+    <span class="n">processed</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?&lt;=[\d.])\s*,?\s+(?=[+-]?[\d.])"</span><span class="p">,</span> <span class="s2">","</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="c1"># remove dot not followed with a digit (regex101.com/r/goSmuG/1/)</span>
+    <span class="n">processed</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?&lt;=\d)\.(?![\d])"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">processed</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">processed</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"Unable to parse float list `{s}` (normalized to `{processed}`)"</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s2">"Expected float list for float feature, got {parsed}"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="load_json_string"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_json_string">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="n">JSONString</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_json_string</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">"Expected input to be parsed into a string object. "</span>
+            <span class="o">+</span> <span class="n">f</span><span class="s2">"Got {type(parsed)} type.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="n">f</span><span class="s2">"Original: &lt;&lt;{s}&gt;&gt;, Parsed: &lt;&lt;{parsed}&gt;&gt;"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">parsed</span></div>
+
+
+<div class="viewcode-block" id="load_float"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_float">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_float</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_int"><a class="viewcode-back" href="../../../../modules/pytext.data.sources.html#pytext.data.sources.data_source.load_int">[docs]</a><span class="nd">@RootDataSource.register_type</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_int</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

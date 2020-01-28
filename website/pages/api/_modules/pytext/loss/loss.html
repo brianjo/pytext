@@ -1,0 +1,619 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.loss.loss</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="kn">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">loss</span> <span class="k">as</span> <span class="n">loss_utils</span><span class="p">,</span> <span class="n">precision</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.cuda</span> <span class="kn">import</span> <span class="n">FloatTensor</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+
+
+<div class="viewcode-block" id="Loss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.Loss">[docs]</a><span class="k">class</span> <span class="nc">Loss</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""Base class for loss functions"""</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">LOSS</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="CrossEntropyLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.CrossEntropyLoss">[docs]</a><span class="k">class</span> <span class="nc">CrossEntropyLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span> <span class="o">=</span> <span class="n">ignore_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c1"># Don't change to F.cross_entropy() because @barlaso suggested not doing so.</span>
+        <span class="c1"># There's some wisdom from fairseq folks that it's the preferred way.</span>
+        <span class="c1"># Needs more testing before we can change to using F.cross_entropy().</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">nll_loss</span><span class="p">(</span>
+            <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+            <span class="n">targets</span><span class="p">,</span>
+            <span class="n">weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+            <span class="n">ignore_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span><span class="p">,</span>
+            <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NLLLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.NLLLoss">[docs]</a><span class="k">class</span> <span class="nc">NLLLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span> <span class="o">=</span> <span class="n">ignore_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_probs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">nll_loss</span><span class="p">(</span>
+            <span class="n">log_probs</span><span class="p">,</span>
+            <span class="n">targets</span><span class="p">,</span>
+            <span class="n">ignore_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span><span class="p">,</span>
+            <span class="n">reduction</span><span class="o">=</span><span class="s2">"elementwise_mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+            <span class="n">weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BinaryCrossEntropyLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.BinaryCrossEntropyLoss">[docs]</a><span class="k">class</span> <span class="nc">BinaryCrossEntropyLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">reweight_negative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="nb">reduce</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Computes 1-vs-all binary cross entropy loss for multiclass</span>
+<span class="sd">        classification.</span>
+<span class="sd">        """</span>
+        <span class="c1"># Converts targets to one-hot representation. Dim: [batch, n_classes]</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">FloatTensor</span><span class="p">(</span><span class="n">targets</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                <span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">scatter_</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">targets</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">1</span>  <span class="c1"># If multi-class classification.</span>
+            <span class="k">else</span> <span class="n">targets</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="sd">"""</span>
+<span class="sd">        `F.binary_cross_entropy` or `torch.nn.BCELoss.` requires the</span>
+<span class="sd">        output of the previous function be already a FloatTensor.</span>
+<span class="sd">        """</span>
+        <span class="c1"># This weighting applies uniform class weights.</span>
+        <span class="c1"># examples_per_class = one_hot_target.sum(0).clamp(min=1)</span>
+        <span class="c1"># total_positive = examples_per_class.sum()</span>
+        <span class="c1"># weights = total_positive.unsqueeze(0) / examples_per_class</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">binary_cross_entropy_with_logits</span><span class="p">(</span>
+            <span class="n">precision</span><span class="o">.</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">logits</span><span class="p">),</span> <span class="n">targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"none"</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reweight_negative</span><span class="p">:</span>
+            <span class="c1"># This makes sure we have same weights for all negative classes and</span>
+            <span class="c1"># single positive class. Weight is 1 for the correct class and</span>
+            <span class="c1"># 1 / (n - 1) for other ones.</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">targets</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">targets</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">targets</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">weights</span>
+
+        <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="n">loss</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CosineEmbeddingLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.CosineEmbeddingLoss">[docs]</a><span class="k">class</span> <span class="nc">CosineEmbeddingLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">margin</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">margin</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"Number of embeddings must be 2. Found {len(embeddings)} embeddings."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">cosine_embedding_loss</span><span class="p">(</span>
+            <span class="n">embeddings</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">embeddings</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">targets</span><span class="p">,</span>
+            <span class="n">margin</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">margin</span><span class="p">,</span>
+            <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MultiLabelSoftMarginLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.MultiLabelSoftMarginLoss">[docs]</a><span class="k">class</span> <span class="nc">MultiLabelSoftMarginLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m_out</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Computes multi-label classification loss</span>
+<span class="sd">        see details in torch.nn.MultiLabelSoftMarginLoss</span>
+<span class="sd">        """</span>
+
+        <span class="n">num_classes</span> <span class="o">=</span> <span class="n">m_out</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">target_labels</span> <span class="o">=</span> <span class="n">targets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1">#  each label list is padded by -1 to make every</span>
+        <span class="c1"># observation example has the same length of list of labels</span>
+        <span class="c1">#  since -1 is out of the index range</span>
+        <span class="c1"># add 1 to target_labels temporarily</span>
+        <span class="n">tmp_target_labels</span> <span class="o">=</span> <span class="n">target_labels</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1">#  the idea is similar to one_hot_targets</span>
+        <span class="c1">#  the following encoding supports multi-label task</span>
+        <span class="c1">#  need to delete the first-column endoing since</span>
+        <span class="c1">#  it's for the padded label -1</span>
+        <span class="n">n_hot_targets</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">FloatTensor</span><span class="p">(</span><span class="n">target_labels</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">num_classes</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">scatter_</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">tmp_target_labels</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">)[:,</span> <span class="mi">1</span><span class="p">:]</span>
+
+        <span class="sd">"""</span>
+<span class="sd">        `F.multilabel_soft_margin_loss` or `torch.nn.MultiLabelSoftMarginLoss.`</span>
+<span class="sd">        requires the</span>
+<span class="sd">        output of the previous function be already a FloatTensor.</span>
+<span class="sd">        """</span>
+
+        <span class="c1">#  default: equal weight for each class</span>
+        <span class="c1">#  the losses are averaged over observations for each mini-batch</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">multilabel_soft_margin_loss</span><span class="p">(</span>
+            <span class="n">precision</span><span class="o">.</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">m_out</span><span class="p">),</span> <span class="n">n_hot_targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">loss</span></div>
+
+
+<div class="viewcode-block" id="AUCPRHingeLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.AUCPRHingeLoss">[docs]</a><span class="k">class</span> <span class="nc">AUCPRHingeLoss</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Loss</span><span class="p">):</span>
+    <span class="sd">"""area under the precision-recall curve loss,</span>
+<span class="sd">    Reference: "Scalable Learning of Non-Decomposable Objectives", Section 5 \</span>
+<span class="sd">    TensorFlow Implementation: \</span>
+<span class="sd">    https://github.com/tensorflow/models/tree/master/research/global_objectives\</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            precision_range_lower (float): the lower range of precision values over</span>
+<span class="sd">                which to compute AUC. Must be nonnegative, `\leq precision_range_upper`,</span>
+<span class="sd">                and `leq 1.0`.</span>
+<span class="sd">            precision_range_upper (float): the upper range of precision values over</span>
+<span class="sd">                which to compute AUC. Must be nonnegative, `\geq precision_range_lower`,</span>
+<span class="sd">                and `leq 1.0`.</span>
+<span class="sd">            num_classes (int): number of classes(aka labels)</span>
+<span class="sd">            num_anchors (int): The number of grid points used to approximate the</span>
+<span class="sd">                Riemann sum.</span>
+<span class="sd">        """</span>
+
+        <span class="n">precision_range_lower</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">precision_range_upper</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">num_classes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">num_anchors</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""Args:</span>
+<span class="sd">            config: Config containing `precision_range_lower`, `precision_range_upper`,</span>
+<span class="sd">                `num_classes`, `num_anchors`</span>
+<span class="sd">        """</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">Loss</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_classes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_anchors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_anchors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precision_range</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">precision_range_lower</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">precision_range_upper</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Create precision anchor values and distance between anchors.</span>
+        <span class="c1"># coresponding to [alpha_t] and [delta_t] in the paper.</span>
+        <span class="c1"># precision_values: 1D `Tensor` of shape [K], where `K = num_anchors`</span>
+        <span class="c1"># delta: Scalar (since we use equal distance between anchors)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precision_values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">loss_utils</span><span class="o">.</span><span class="n">range_to_anchors_and_delta</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_range</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_anchors</span>
+        <span class="p">)</span>
+
+        <span class="c1"># notation is [b_k] in paper, Parameter of shape [C, K]</span>
+        <span class="c1"># where `C = number of classes` `K = num_anchors`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">biases</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+            <span class="n">FloatTensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_classes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_anchors</span><span class="p">)</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+            <span class="n">FloatTensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_classes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_anchors</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span>
+                <span class="mf">1.0</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="AUCPRHingeLoss.forward"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.AUCPRHingeLoss.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">size_average</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Args:</span>
+<span class="sd">            logits: Variable :math:`(N, C)` where `C = number of classes`</span>
+<span class="sd">            targets: Variable :math:`(N)` where each value is</span>
+<span class="sd">                `0 &lt;= targets[i] &lt;= C-1`</span>
+<span class="sd">            weights: Coefficients for the loss. Must be a `Tensor` of shape</span>
+<span class="sd">                [N] or [N, C], where `N = batch_size`, `C = number of classes`.</span>
+<span class="sd">            size_average (bool, optional): By default, the losses are averaged</span>
+<span class="sd">                    over observations for each minibatch. However, if the field</span>
+<span class="sd">                    sizeAverage is set to False, the losses are instead summed</span>
+<span class="sd">                    for each minibatch. Default: ``True``</span>
+<span class="sd">            reduce (bool, optional): By default, the losses are averaged or summed over</span>
+<span class="sd">                observations for each minibatch depending on size_average. When reduce</span>
+<span class="sd">                is False, returns a loss per input/target element instead and ignores</span>
+<span class="sd">                size_average. Default: True</span>
+<span class="sd">        """</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">logits</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">!=</span> <span class="n">C</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"num classes is </span><span class="si">%d</span><span class="s2"> while logits width is </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">labels</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">AUCPRHingeLoss</span><span class="o">.</span><span class="n">_prepare_labels_weights</span><span class="p">(</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Lagrange multipliers</span>
+        <span class="c1"># Lagrange multipliers are required to be nonnegative.</span>
+        <span class="c1"># Their gradient is reversed so that they are maximized</span>
+        <span class="c1"># (rather than minimized) by the optimizer.</span>
+        <span class="c1"># 1D `Tensor` of shape [K], where `K = num_anchors`</span>
+        <span class="n">lambdas</span> <span class="o">=</span> <span class="n">loss_utils</span><span class="o">.</span><span class="n">lagrange_multiplier</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">)</span>
+        <span class="c1"># print("lambdas: {}".format(lambdas))</span>
+
+        <span class="c1"># A `Tensor` of Shape [N, C, K]</span>
+        <span class="n">hinge_loss</span> <span class="o">=</span> <span class="n">loss_utils</span><span class="o">.</span><span class="n">weighted_hinge_loss</span><span class="p">(</span>
+            <span class="n">labels</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">logits</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">biases</span><span class="p">,</span>
+            <span class="n">positive_weights</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">lambdas</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_values</span><span class="p">),</span>
+            <span class="n">negative_weights</span><span class="o">=</span><span class="n">lambdas</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_values</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># 1D tensor of shape [C]</span>
+        <span class="n">class_priors</span> <span class="o">=</span> <span class="n">loss_utils</span><span class="o">.</span><span class="n">build_class_priors</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+
+        <span class="c1"># lambda_term: Tensor[C, K]</span>
+        <span class="c1"># according to paper, lambda_term = lambda * (1 - precision) * |Y^+|</span>
+        <span class="c1"># where |Y^+| is number of postive examples = N * class_priors</span>
+        <span class="n">lambda_term</span> <span class="o">=</span> <span class="n">class_priors</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">lambdas</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_values</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">per_anchor_loss</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">hinge_loss</span> <span class="o">-</span> <span class="n">lambda_term</span>
+
+        <span class="c1"># Riemann sum over anchors, and normalized by precision range</span>
+        <span class="c1"># loss: Tensor[N, C]</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">per_anchor_loss</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span>
+        <span class="n">loss</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">reduce</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">loss</span>
+        <span class="k">elif</span> <span class="n">size_average</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_prepare_labels_weights</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Args:</span>
+<span class="sd">            logits: Variable :math:`(N, C)` where `C = number of classes`</span>
+<span class="sd">            targets: Variable :math:`(N)` where each value is</span>
+<span class="sd">                `0 &lt;= targets[i] &lt;= C-1`</span>
+<span class="sd">            weights: Coefficients for the loss. Must be a `Tensor` of shape</span>
+<span class="sd">                [N] or [N, C], where `N = batch_size`, `C = number of classes`.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            labels: Tensor of shape [N, C], one-hot representation</span>
+<span class="sd">            weights: Tensor of shape broadcastable to labels</span>
+<span class="sd">        """</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="c1"># Converts targets to one-hot representation. Dim: [N, C]</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">FloatTensor</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">targets</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">FloatTensor</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">weights</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">weights</span><span class="o">.</span><span class="n">unsqueeze_</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">labels</span><span class="p">,</span> <span class="n">weights</span></div>
+
+
+<div class="viewcode-block" id="KLDivergenceBCELoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.KLDivergenceBCELoss">[docs]</a><span class="k">class</span> <span class="nc">KLDivergenceBCELoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">hard_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span> <span class="o">=</span> <span class="n">ignore_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">hard_weight</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Computes Kullback-Leibler divergence loss for multiclass classification</span>
+<span class="sd">        probability distribution computed by BinaryCrossEntropyLoss loss</span>
+<span class="sd">        """</span>
+        <span class="n">hard_targets</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">soft_targets_logits</span> <span class="o">=</span> <span class="n">targets</span>
+        <span class="c1"># we clamp the probability between (1e-20, 1 - 1e-20) to avoid log(0) problem</span>
+        <span class="c1"># in the calculation of KLDivergence</span>
+        <span class="n">soft_targets</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">FloatTensor</span><span class="p">(</span><span class="n">soft_targets_logits</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span>
+            <span class="mf">1e-20</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-20</span>
+        <span class="p">)</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">logits</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mf">1e-20</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-20</span><span class="p">)</span>
+        <span class="n">probs_neg</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="n">neg</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mf">1e-20</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-20</span><span class="p">)</span>
+        <span class="n">soft_targets_neg</span> <span class="o">=</span> <span class="n">soft_targets</span><span class="o">.</span><span class="n">neg</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mf">1e-20</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-20</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">soft_loss</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">log</span><span class="p">(),</span> <span class="n">soft_targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+                <span class="o">+</span> <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span><span class="n">probs_neg</span><span class="o">.</span><span class="n">log</span><span class="p">(),</span> <span class="n">soft_targets_neg</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">reduce</span><span class="p">:</span>
+                <span class="n">soft_loss</span> <span class="o">=</span> <span class="n">soft_loss</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">soft_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span>
+                <span class="n">probs</span><span class="o">.</span><span class="n">log</span><span class="p">(),</span> <span class="n">soft_targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span>
+            <span class="p">)</span> <span class="o">+</span> <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span>
+                <span class="n">probs_neg</span><span class="o">.</span><span class="n">log</span><span class="p">(),</span>
+                <span class="n">soft_targets_neg</span><span class="p">,</span>
+                <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">soft_loss</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">**</span> <span class="mi">2</span>  <span class="c1"># see https://arxiv.org/pdf/1503.02531.pdf</span>
+
+        <span class="n">hard_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">one_hot_targets</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">FloatTensor</span><span class="p">(</span><span class="n">hard_targets</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                <span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">scatter_</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">hard_targets</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">hard_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">binary_cross_entropy_with_logits</span><span class="p">(</span>
+                <span class="n">logits</span><span class="p">,</span>
+                <span class="n">one_hot_targets</span><span class="p">,</span>
+                <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+                <span class="n">weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_loss</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">*</span> <span class="n">hard_loss</span></div>
+
+
+<div class="viewcode-block" id="KLDivergenceCELoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.KLDivergenceCELoss">[docs]</a><span class="k">class</span> <span class="nc">KLDivergenceCELoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">hard_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># ignore_index not easily added to kl_div loss, don't support this until needed</span>
+        <span class="k">assert</span> <span class="n">ignore_index</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">hard_weight</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">combine_loss</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Computes Kullback-Leibler divergence loss for multiclass classification</span>
+<span class="sd">        probability distribution computed by CrossEntropyLoss loss.</span>
+<span class="sd">        For, KL-divergence, batchmean is the right way to reduce, not just mean.</span>
+<span class="sd">        """</span>
+        <span class="n">hard_targets</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">soft_targets_logits</span> <span class="o">=</span> <span class="n">targets</span>
+        <span class="n">soft_targets</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">soft_targets_logits</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">soft_targets</span> <span class="o">=</span> <span class="n">soft_targets</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-10</span><span class="p">)</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">logits</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">soft_loss</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span><span class="n">log_probs</span><span class="p">,</span> <span class="n">soft_targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+            <span class="p">)</span>
+            <span class="c1"># soft_loss dim is batch_size * num_labels, while hard_loss is just</span>
+            <span class="c1"># batch size, we have to still reduce soft_loss by the labels</span>
+            <span class="c1"># dimension in order to be able to add the two losses.</span>
+            <span class="n">soft_loss</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">soft_loss</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">reduce</span>
+                <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">soft_loss</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">soft_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span>
+                <span class="n">log_probs</span><span class="p">,</span> <span class="n">soft_targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"batchmean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span>
+            <span class="p">)</span>
+
+        <span class="n">soft_loss</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">**</span> <span class="mi">2</span>  <span class="c1"># See https://arxiv.org/pdf/1503.02531.pdf</span>
+        <span class="n">hard_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">hard_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span>
+                <span class="n">logits</span><span class="p">,</span>
+                <span class="n">hard_targets</span><span class="p">,</span>
+                <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+                <span class="n">weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_loss</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hard_weight</span> <span class="o">*</span> <span class="n">hard_loss</span>
+            <span class="k">if</span> <span class="n">combine_loss</span>
+            <span class="k">else</span> <span class="p">(</span><span class="n">soft_loss</span><span class="p">,</span> <span class="n">hard_loss</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PairwiseRankingLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.PairwiseRankingLoss">[docs]</a><span class="k">class</span> <span class="nc">PairwiseRankingLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given embeddings for a query, positive response and negative response</span>
+<span class="sd">    computes pairwise ranking hinge loss</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<div class="viewcode-block" id="PairwiseRankingLoss.get_similarities"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.PairwiseRankingLoss.get_similarities">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_similarities</span><span class="p">(</span><span class="n">embeddings</span><span class="p">):</span>
+        <span class="n">pos_embed</span><span class="p">,</span> <span class="n">neg_embed</span><span class="p">,</span> <span class="n">query_embed</span> <span class="o">=</span> <span class="n">embeddings</span>
+        <span class="n">pos_similarity</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cosine_similarity</span><span class="p">(</span><span class="n">query_embed</span><span class="p">,</span> <span class="n">pos_embed</span><span class="p">)</span>
+        <span class="n">neg_similarity</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cosine_similarity</span><span class="p">(</span><span class="n">query_embed</span><span class="p">,</span> <span class="n">neg_embed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pos_similarity</span><span class="p">,</span> <span class="n">neg_similarity</span><span class="p">,</span> <span class="n">query_embed</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="n">pos_similarity</span><span class="p">,</span> <span class="n">neg_similarity</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_similarities</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+        <span class="n">targets_local</span> <span class="o">=</span> <span class="n">FloatTensor</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="n">targets_local</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># 1: pos_similarity should be higher than neg_similarity</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">margin_ranking_loss</span><span class="p">(</span>
+            <span class="n">pos_similarity</span><span class="p">,</span> <span class="n">neg_similarity</span><span class="p">,</span> <span class="n">targets_local</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">margin</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MAELoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.MAELoss">[docs]</a><span class="k">class</span> <span class="nc">MAELoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Mean absolute error or L1 loss, for regression tasks.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">l1_loss</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MSELoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.MSELoss">[docs]</a><span class="k">class</span> <span class="nc">MSELoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Mean squared error or L2 loss, for regression tasks.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">mse_loss</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LabelSmoothedCrossEntropyLoss"><a class="viewcode-back" href="../../../modules/pytext.loss.html#pytext.loss.loss.LabelSmoothedCrossEntropyLoss">[docs]</a><span class="k">class</span> <span class="nc">LabelSmoothedCrossEntropyLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">from_logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">use_entropy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># weight values other than 1.0 gives inconsistent behavior</span>
+        <span class="c1"># Refer: https://github.com/pytorch/pytorch/issues/17577</span>
+        <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">weight</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-7</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span> <span class="o">=</span> <span class="n">ignore_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">beta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">from_logits</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">from_logits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_entropy</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">use_entropy</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        If use_entropy is False, returns the cross-entropy loss alongwith the KL divergence of the</span>
+<span class="sd">        discrete uniform distribution with the logits. Refer to section 3.2</span>
+<span class="sd">        If use_entopy is True, uses the entropy of the output distribution as</span>
+<span class="sd">        the smoothing loss (i.e., higher entropy, better). Refer to section 3</span>
+<span class="sd">        https://arxiv.org/pdf/1701.06548.pdf</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_entropy</span><span class="p">:</span>
+            <span class="c1"># loss is negative of entropy</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">log_probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+            <span class="n">label_smoothing_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">log_probs</span> <span class="o">*</span> <span class="n">probs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># negative KL-div has an additional log(num_classes) term but ignored</span>
+            <span class="c1"># here because it doesn't contribute to optimization</span>
+            <span class="n">log_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_logits</span> <span class="k">else</span> <span class="n">logits</span>
+            <span class="n">label_smoothing_loss</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">log_probs</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">reduce</span><span class="p">:</span>
+            <span class="n">label_smoothing_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                <span class="n">label_smoothing_loss</span><span class="p">[</span><span class="n">targets</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="n">cross_entropy_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">nll_loss</span><span class="p">(</span>
+            <span class="n">log_probs</span><span class="p">,</span>
+            <span class="n">targets</span><span class="p">,</span>
+            <span class="n">ignore_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_index</span><span class="p">,</span>
+            <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span> <span class="k">if</span> <span class="nb">reduce</span> <span class="k">else</span> <span class="s2">"none"</span><span class="p">,</span>
+            <span class="n">weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">cross_entropy_loss</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="n">label_smoothing_loss</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

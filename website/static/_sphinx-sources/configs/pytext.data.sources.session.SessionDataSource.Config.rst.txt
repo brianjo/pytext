@@ -1,0 +1,32 @@
+SessionDataSource.Config
+========================
+
+
+
+**Component:** :class:`SessionDataSource  <pytext.data.sources.session.SessionDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: SessionDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`RootDataSource.Config <pytext.data.sources.data_source.RootDataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {}
+  }

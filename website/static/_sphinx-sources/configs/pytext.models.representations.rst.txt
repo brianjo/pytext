@@ -1,0 +1,28 @@
+representations
+===============
+
+
+.. toctree::
+
+  pytext.models.representations.attention
+  pytext.models.representations.bilstm
+  pytext.models.representations.bilstm_doc_attention
+  pytext.models.representations.bilstm_doc_slot_attention
+  pytext.models.representations.bilstm_slot_attn
+  pytext.models.representations.biseqcnn
+  pytext.models.representations.contextual_intent_slot_rep
+  pytext.models.representations.deepcnn
+  pytext.models.representations.docnn
+  pytext.models.representations.huggingface_bert_sentence_encoder
+  pytext.models.representations.jointcnn_rep
+  pytext.models.representations.ordered_neuron_lstm
+  pytext.models.representations.pass_through
+  pytext.models.representations.pooling
+  pytext.models.representations.pure_doc_attention
+  pytext.models.representations.representation_base
+  pytext.models.representations.seq_rep
+  pytext.models.representations.slot_attention
+  pytext.models.representations.sparse_transformer_sentence_encoder
+  pytext.models.representations.stacked_bidirectional_rnn
+  pytext.models.representations.transformer_sentence_encoder
+  pytext.models.representations.transformer_sentence_encoder_base

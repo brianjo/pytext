@@ -1,0 +1,94 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.query_document_pairwise_ranking_model
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **pos_response**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ (column=\ ``'pos_response'``\ )
+    \ 
+
+  **neg_response**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ (column=\ ``'neg_response'``\ )
+    \ 
+
+  **query**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ (column=\ ``'query'``\ )
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "pos_response": {
+          "is_input": true,
+          "column": "pos_response",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      },
+      "neg_response": {
+          "is_input": true,
+          "column": "neg_response",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      },
+      "query": {
+          "is_input": true,
+          "column": "query",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      }
+  }

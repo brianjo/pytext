@@ -1,0 +1,12 @@
+tokenizer
+=========
+
+
+.. toctree::
+
+  pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.Config
+  pytext.data.tokenizers.tokenizer.DoNothingTokenizer.Config
+  pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.Config
+  pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.Config
+  pytext.data.tokenizers.tokenizer.Tokenizer.Config
+  pytext.data.tokenizers.tokenizer.WordPieceTokenizer.Config

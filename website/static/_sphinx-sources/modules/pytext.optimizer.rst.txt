@@ -1,0 +1,85 @@
+pytext.optimizer package
+========================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pytext.optimizer.sparsifiers
+
+Submodules
+----------
+
+pytext.optimizer.activations module
+-----------------------------------
+
+.. automodule:: pytext.optimizer.activations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.fairseq\_fp16\_utils module
+--------------------------------------------
+
+.. automodule:: pytext.optimizer.fairseq_fp16_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.fp16\_optimizer module
+---------------------------------------
+
+.. automodule:: pytext.optimizer.fp16_optimizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.lamb module
+----------------------------
+
+.. automodule:: pytext.optimizer.lamb
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.optimizers module
+----------------------------------
+
+.. automodule:: pytext.optimizer.optimizers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.radam module
+-----------------------------
+
+.. automodule:: pytext.optimizer.radam
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.scheduler module
+---------------------------------
+
+.. automodule:: pytext.optimizer.scheduler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.optimizer.swa module
+---------------------------
+
+.. automodule:: pytext.optimizer.swa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.optimizer
+   :members:
+   :undoc-members:
+   :show-inheritance:

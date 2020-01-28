@@ -1,0 +1,13 @@
+optimizer
+=========
+
+
+.. toctree::
+
+  pytext.optimizer.fp16_optimizer
+  pytext.optimizer.lamb
+  pytext.optimizer.optimizers
+  pytext.optimizer.radam
+  pytext.optimizer.scheduler
+  pytext.optimizer.sparsifiers
+  pytext.optimizer.swa

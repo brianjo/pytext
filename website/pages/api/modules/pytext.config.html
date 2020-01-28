@@ -1,0 +1,1179 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-config-package">
+<h1>pytext.config package<a class="headerlink" href="#pytext-config-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.config.component">
+<span id="pytext-config-component-module"></span><h2>pytext.config.component module<a class="headerlink" href="#module-pytext.config.component" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.component.Component">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">Component</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#Component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.config.component.Component.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#Component.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Component.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.component.ComponentMeta">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">ComponentMeta</code><a class="reference internal" href="../_modules/pytext/config/component.html#ComponentMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.ComponentMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.component.ComponentType">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">ComponentType</code><a class="reference internal" href="../_modules/pytext/config/component.html#ComponentType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.ComponentType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.BATCHER">
+<code class="sig-name descname">BATCHER</code><em class="property"> = 'batcher'</em><a class="headerlink" href="#pytext.config.component.ComponentType.BATCHER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.BATCH_SAMPLER">
+<code class="sig-name descname">BATCH_SAMPLER</code><em class="property"> = 'batch_sampler'</em><a class="headerlink" href="#pytext.config.component.ComponentType.BATCH_SAMPLER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.COLUMN">
+<code class="sig-name descname">COLUMN</code><em class="property"> = 'column'</em><a class="headerlink" href="#pytext.config.component.ComponentType.COLUMN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.DATA_HANDLER">
+<code class="sig-name descname">DATA_HANDLER</code><em class="property"> = 'data_handler'</em><a class="headerlink" href="#pytext.config.component.ComponentType.DATA_HANDLER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.DATA_SOURCE">
+<code class="sig-name descname">DATA_SOURCE</code><em class="property"> = 'data_source'</em><a class="headerlink" href="#pytext.config.component.ComponentType.DATA_SOURCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.DATA_TYPE">
+<code class="sig-name descname">DATA_TYPE</code><em class="property"> = 'data_type'</em><a class="headerlink" href="#pytext.config.component.ComponentType.DATA_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.EXPORTER">
+<code class="sig-name descname">EXPORTER</code><em class="property"> = 'exporter'</em><a class="headerlink" href="#pytext.config.component.ComponentType.EXPORTER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.FEATURIZER">
+<code class="sig-name descname">FEATURIZER</code><em class="property"> = 'featurizer'</em><a class="headerlink" href="#pytext.config.component.ComponentType.FEATURIZER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.LOSS">
+<code class="sig-name descname">LOSS</code><em class="property"> = 'loss'</em><a class="headerlink" href="#pytext.config.component.ComponentType.LOSS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.METRIC_REPORTER">
+<code class="sig-name descname">METRIC_REPORTER</code><em class="property"> = 'metric_reporter'</em><a class="headerlink" href="#pytext.config.component.ComponentType.METRIC_REPORTER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.MODEL">
+<code class="sig-name descname">MODEL</code><em class="property"> = 'model'</em><a class="headerlink" href="#pytext.config.component.ComponentType.MODEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.MODEL2">
+<code class="sig-name descname">MODEL2</code><em class="property"> = 'model2'</em><a class="headerlink" href="#pytext.config.component.ComponentType.MODEL2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.MODULE">
+<code class="sig-name descname">MODULE</code><em class="property"> = 'module'</em><a class="headerlink" href="#pytext.config.component.ComponentType.MODULE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.OPTIMIZER">
+<code class="sig-name descname">OPTIMIZER</code><em class="property"> = 'optimizer'</em><a class="headerlink" href="#pytext.config.component.ComponentType.OPTIMIZER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.PREDICTOR">
+<code class="sig-name descname">PREDICTOR</code><em class="property"> = 'predictor'</em><a class="headerlink" href="#pytext.config.component.ComponentType.PREDICTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.SCHEDULER">
+<code class="sig-name descname">SCHEDULER</code><em class="property"> = 'scheduler'</em><a class="headerlink" href="#pytext.config.component.ComponentType.SCHEDULER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.SPARSIFIER">
+<code class="sig-name descname">SPARSIFIER</code><em class="property"> = 'sparsifier'</em><a class="headerlink" href="#pytext.config.component.ComponentType.SPARSIFIER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.TASK">
+<code class="sig-name descname">TASK</code><em class="property"> = 'task'</em><a class="headerlink" href="#pytext.config.component.ComponentType.TASK" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.TENSORIZER">
+<code class="sig-name descname">TENSORIZER</code><em class="property"> = 'tensorizer'</em><a class="headerlink" href="#pytext.config.component.ComponentType.TENSORIZER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.TOKENIZER">
+<code class="sig-name descname">TOKENIZER</code><em class="property"> = 'tokenizer'</em><a class="headerlink" href="#pytext.config.component.ComponentType.TOKENIZER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.component.ComponentType.TRAINER">
+<code class="sig-name descname">TRAINER</code><em class="property"> = 'trainer'</em><a class="headerlink" href="#pytext.config.component.ComponentType.TRAINER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.component.Registry">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">Registry</code><a class="reference internal" href="../_modules/pytext/config/component.html#Registry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Registry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.config.component.Registry.add">
+<em class="property">classmethod </em><code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">component_type: pytext.config.component.ComponentType</em>, <em class="sig-param">cls_to_add: Type</em>, <em class="sig-param">config_cls: Type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#Registry.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Registry.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.config.component.Registry.configs">
+<em class="property">classmethod </em><code class="sig-name descname">configs</code><span class="sig-paren">(</span><em class="sig-param">component_type: pytext.config.component.ComponentType</em><span class="sig-paren">)</span> → Tuple[Type, ...]<a class="reference internal" href="../_modules/pytext/config/component.html#Registry.configs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Registry.configs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.config.component.Registry.get">
+<em class="property">classmethod </em><code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">component_type: pytext.config.component.ComponentType</em>, <em class="sig-param">config_cls: Type</em><span class="sig-paren">)</span> → Type<a class="reference internal" href="../_modules/pytext/config/component.html#Registry.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Registry.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.config.component.Registry.subconfigs">
+<em class="property">classmethod </em><code class="sig-name descname">subconfigs</code><span class="sig-paren">(</span><em class="sig-param">config_cls: Type</em><span class="sig-paren">)</span> → Tuple[Type, ...]<a class="reference internal" href="../_modules/pytext/config/component.html#Registry.subconfigs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Registry.subconfigs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.config.component.Registry.values">
+<em class="property">classmethod </em><code class="sig-name descname">values</code><span class="sig-paren">(</span><em class="sig-param">component_type: pytext.config.component.ComponentType</em><span class="sig-paren">)</span> → Tuple[Type, ...]<a class="reference internal" href="../_modules/pytext/config/component.html#Registry.values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.Registry.values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="exception">
+<dt id="pytext.config.component.RegistryError">
+<em class="property">exception </em><code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">RegistryError</code><a class="reference internal" href="../_modules/pytext/config/component.html#RegistryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.RegistryError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_component">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_component</code><span class="sig-paren">(</span><em class="sig-param">component_type: pytext.config.component.ComponentType</em>, <em class="sig-param">config: Any</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_data_handler">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_data_handler</code><span class="sig-paren">(</span><em class="sig-param">data_handler_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_data_handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_data_handler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_exporter">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_exporter</code><span class="sig-paren">(</span><em class="sig-param">exporter_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_exporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_exporter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_featurizer">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_featurizer</code><span class="sig-paren">(</span><em class="sig-param">featurizer_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_featurizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_featurizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_loss">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_loss</code><span class="sig-paren">(</span><em class="sig-param">loss_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_metric_reporter">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_metric_reporter</code><span class="sig-paren">(</span><em class="sig-param">module_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_metric_reporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_metric_reporter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_model">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_model</code><span class="sig-paren">(</span><em class="sig-param">model_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_optimizer">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_optimizer</code><span class="sig-paren">(</span><em class="sig-param">optimizer_config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_predictor">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_predictor</code><span class="sig-paren">(</span><em class="sig-param">predictor_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_predictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_predictor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_scheduler">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_scheduler</code><span class="sig-paren">(</span><em class="sig-param">scheduler_config</em>, <em class="sig-param">optimizer</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_scheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_scheduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_sparsifier">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_sparsifier</code><span class="sig-paren">(</span><em class="sig-param">sparsifier_config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_sparsifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_sparsifier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.create_trainer">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">create_trainer</code><span class="sig-paren">(</span><em class="sig-param">trainer_config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#create_trainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.create_trainer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.get_component_name">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">get_component_name</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#get_component_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.get_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the human-readable name of the class of <cite>obj</cite>.
+Document the type of a config field and can be used as a Union value
+in a json config.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.component.register_tasks">
+<code class="sig-prename descclassname">pytext.config.component.</code><code class="sig-name descname">register_tasks</code><span class="sig-paren">(</span><em class="sig-param">task_cls: Union[Type, List[Type]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/component.html#register_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.component.register_tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Task classes are already added to registry during declaration, pass them
+as parameters here just to make sure they’re imported</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.config_adapter">
+<span id="pytext-config-config-adapter-module"></span><h2>pytext.config.config_adapter module<a class="headerlink" href="#module-pytext.config.config_adapter" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.config.config_adapter.create_parameter">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">create_parameter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">path_str</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#create_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.create_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.delete_parameter">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">delete_parameter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">path_str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#delete_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.delete_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.deprecate">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">deprecate</code><span class="sig-paren">(</span><em class="sig-param">json_config</em>, <em class="sig-param">t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#deprecate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.deprecate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.doc_model_deprecated">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">doc_model_deprecated</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#doc_model_deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.doc_model_deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename DocModel to DocModel_Deprecated.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.ensemble_task_deprecated">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">ensemble_task_deprecated</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#ensemble_task_deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.ensemble_task_deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename tasks with new API consistently</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.find_dicts_containing_key">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">find_dicts_containing_key</code><span class="sig-paren">(</span><em class="sig-param">json_config</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#find_dicts_containing_key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.find_dicts_containing_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.find_parameter">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">find_parameter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">path_str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#find_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.find_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.flatten_deprecated_ensemble_config">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">flatten_deprecated_ensemble_config</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#flatten_deprecated_ensemble_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.flatten_deprecated_ensemble_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.is_type_specifier">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">is_type_specifier</code><span class="sig-paren">(</span><em class="sig-param">json_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#is_type_specifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.is_type_specifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>If a config object is a class, it might have a level which is a type specifier,
+with one key corresponding to the name of whichever type it is. These types should
+not be explicitly named in the path.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.lm_model_deprecated">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">lm_model_deprecated</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#lm_model_deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.lm_model_deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename LM model to _Deprecated (LMTask is already deprecated in v5)</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.migrate_to_new_data_handler">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">migrate_to_new_data_handler</code><span class="sig-paren">(</span><em class="sig-param">task</em>, <em class="sig-param">columns</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#migrate_to_new_data_handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.migrate_to_new_data_handler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.move_epoch_size">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">move_epoch_size</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#move_epoch_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.move_epoch_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.new_tasks_rename">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">new_tasks_rename</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#new_tasks_rename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.new_tasks_rename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename tasks with new API consistently</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.old_tasks_deprecated">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">old_tasks_deprecated</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#old_tasks_deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.old_tasks_deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename tasks with data_handler config to _Deprecated</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.register_adapter">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">register_adapter</code><span class="sig-paren">(</span><em class="sig-param">from_version</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#register_adapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.register_adapter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.remove_docclassificationtask_deprecated">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">remove_docclassificationtask_deprecated</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#remove_docclassificationtask_deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.remove_docclassificationtask_deprecated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.remove_lmtask_deprecated">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">remove_lmtask_deprecated</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#remove_lmtask_deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.remove_lmtask_deprecated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.rename">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">rename</code><span class="sig-paren">(</span><em class="sig-param">json_config</em>, <em class="sig-param">old_name</em>, <em class="sig-param">new_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#rename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.rename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.rename_bitransformer_inputs">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">rename_bitransformer_inputs</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#rename_bitransformer_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.rename_bitransformer_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>In “BiTransformer” model, rename input “characters” -&gt; “bytes” and update subfields.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.rename_fl_task">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">rename_fl_task</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#rename_fl_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.rename_fl_task" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.rename_parameter">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">rename_parameter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">old_path</em>, <em class="sig-param">new_path</em>, <em class="sig-param">transform=&lt;function &lt;lambda&gt;&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#rename_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.rename_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>A powerful tool for writing config adapters, this allows you to specify
+a JSON-style path for an old and new config parameter. For instance</p>
+<p>rename_parameter(config, “task.data.epoch_size”, “task.trainer.batches_per_epoch”)</p>
+<p>will look through the config for task.data.epoch_size, including moving through
+explicitly specified types. If it’s specified, it will delete the value and
+set it in task.trainer.num_batches_per_epoch instead, creating trainer as an empty
+dictionary if necessary.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.rename_tensorizer_vocab_params">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">rename_tensorizer_vocab_params</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#rename_tensorizer_vocab_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.rename_tensorizer_vocab_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.upgrade_if_xlm">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">upgrade_if_xlm</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#upgrade_if_xlm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.upgrade_if_xlm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make <cite>XLMModel</cite> Union changes for encoder and tokens config.
+Since they are now unions, insert the old class into the config if
+no class name is mentioned.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.upgrade_one_version">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">upgrade_one_version</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#upgrade_one_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.upgrade_one_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.upgrade_to_latest">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">upgrade_to_latest</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#upgrade_to_latest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.upgrade_to_latest" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.v0_to_v1">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">v0_to_v1</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#v0_to_v1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.v0_to_v1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.v12_to_v13">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">v12_to_v13</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#v12_to_v13"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.v12_to_v13" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove_output_encoded_layers(json_config)</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.v1_to_v2">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">v1_to_v2</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#v1_to_v2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.v1_to_v2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.v2_to_v3">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">v2_to_v3</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#v2_to_v3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.v2_to_v3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimizer and Scheduler configs used to be part of the task config,
+they now live in the trainer’s config.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.v3_to_v4">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">v3_to_v4</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#v3_to_v4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.v3_to_v4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key for provding the path for contextual token embedding has changed from
+<cite>pretrained_model_embedding</cite> to <cite>contextual_token_embedding. This affects the
+`features</cite> section of the config.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.config_adapter.v6_to_v7">
+<code class="sig-prename descclassname">pytext.config.config_adapter.</code><code class="sig-name descname">v6_to_v7</code><span class="sig-paren">(</span><em class="sig-param">json_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/config_adapter.html#v6_to_v7"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.config_adapter.v6_to_v7" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make <cite>LabelTensorizer</cite> expansible. If the <cite>labels</cite> field should be an instance of
+<cite>LabelTensorizer</cite>, convert it to`{LabelTensorizer: labels}`.</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.contextual_intent_slot">
+<span id="pytext-config-contextual-intent-slot-module"></span><h2>pytext.config.contextual_intent_slot module<a class="headerlink" href="#module-pytext.config.contextual_intent_slot" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.contextual_intent_slot.ExtraField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.contextual_intent_slot.</code><code class="sig-name descname">ExtraField</code><a class="reference internal" href="../_modules/pytext/config/contextual_intent_slot.html#ExtraField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.contextual_intent_slot.ExtraField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ExtraField.DOC_WEIGHT">
+<code class="sig-name descname">DOC_WEIGHT</code><em class="property"> = 'doc_weight'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ExtraField.DOC_WEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ExtraField.RAW_WORD_LABEL">
+<code class="sig-name descname">RAW_WORD_LABEL</code><em class="property"> = 'raw_word_label'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ExtraField.RAW_WORD_LABEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ExtraField.TOKEN_RANGE">
+<code class="sig-name descname">TOKEN_RANGE</code><em class="property"> = 'token_range'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ExtraField.TOKEN_RANGE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ExtraField.UTTERANCE">
+<code class="sig-name descname">UTTERANCE</code><em class="property"> = 'utterance'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ExtraField.UTTERANCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ExtraField.WORD_WEIGHT">
+<code class="sig-name descname">WORD_WEIGHT</code><em class="property"> = 'word_weight'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ExtraField.WORD_WEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.contextual_intent_slot.ModelInput">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.contextual_intent_slot.</code><code class="sig-name descname">ModelInput</code><a class="reference internal" href="../_modules/pytext/config/contextual_intent_slot.html#ModelInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInput.CHAR">
+<code class="sig-name descname">CHAR</code><em class="property"> = 'char_feat'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput.CHAR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInput.CONTEXTUAL_TOKEN_EMBEDDING">
+<code class="sig-name descname">CONTEXTUAL_TOKEN_EMBEDDING</code><em class="property"> = 'contextual_token_embedding'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput.CONTEXTUAL_TOKEN_EMBEDDING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInput.DENSE">
+<code class="sig-name descname">DENSE</code><em class="property"> = 'dense_feat'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput.DENSE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInput.DICT">
+<code class="sig-name descname">DICT</code><em class="property"> = 'dict_feat'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput.DICT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInput.SEQ">
+<code class="sig-name descname">SEQ</code><em class="property"> = 'seq_word_feat'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput.SEQ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInput.TEXT">
+<code class="sig-name descname">TEXT</code><em class="property"> = 'word_feat'</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInput.TEXT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.contextual_intent_slot.</code><code class="sig-name descname">ModelInputConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/contextual_intent_slot.html#ModelInputConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.module_config.Module.Config</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig.char_feat">
+<code class="sig-name descname">char_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig.char_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig.contextual_token_embedding">
+<code class="sig-name descname">contextual_token_embedding</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig.contextual_token_embedding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig.dense_feat">
+<code class="sig-name descname">dense_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig.dense_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig.dict_feat">
+<code class="sig-name descname">dict_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig.dict_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig.seq_word_feat">
+<code class="sig-name descname">seq_word_feat</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig.seq_word_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.contextual_intent_slot.ModelInputConfig.word_feat">
+<code class="sig-name descname">word_feat</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.contextual_intent_slot.ModelInputConfig.word_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.doc_classification">
+<span id="pytext-config-doc-classification-module"></span><h2>pytext.config.doc_classification module<a class="headerlink" href="#module-pytext.config.doc_classification" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.doc_classification.ExtraField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.doc_classification.</code><code class="sig-name descname">ExtraField</code><a class="reference internal" href="../_modules/pytext/config/doc_classification.html#ExtraField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.doc_classification.ExtraField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ExtraField.RAW_TEXT">
+<code class="sig-name descname">RAW_TEXT</code><em class="property"> = 'text'</em><a class="headerlink" href="#pytext.config.doc_classification.ExtraField.RAW_TEXT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.doc_classification.ModelInput">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.doc_classification.</code><code class="sig-name descname">ModelInput</code><a class="reference internal" href="../_modules/pytext/config/doc_classification.html#ModelInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.doc_classification.ModelInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInput.CHAR_FEAT">
+<code class="sig-name descname">CHAR_FEAT</code><em class="property"> = 'char_feat'</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInput.CHAR_FEAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInput.CONTEXTUAL_TOKEN_EMBEDDING">
+<code class="sig-name descname">CONTEXTUAL_TOKEN_EMBEDDING</code><em class="property"> = 'contextual_token_embedding'</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInput.CONTEXTUAL_TOKEN_EMBEDDING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInput.DENSE_FEAT">
+<code class="sig-name descname">DENSE_FEAT</code><em class="property"> = 'dense_feat'</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInput.DENSE_FEAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInput.DICT_FEAT">
+<code class="sig-name descname">DICT_FEAT</code><em class="property"> = 'dict_feat'</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInput.DICT_FEAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInput.SEQ_LENS">
+<code class="sig-name descname">SEQ_LENS</code><em class="property"> = 'seq_lens'</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInput.SEQ_LENS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInput.WORD_FEAT">
+<code class="sig-name descname">WORD_FEAT</code><em class="property"> = 'word_feat'</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInput.WORD_FEAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.doc_classification.ModelInputConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.doc_classification.</code><code class="sig-name descname">ModelInputConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/doc_classification.html#ModelInputConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.doc_classification.ModelInputConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.module_config.Module.Config</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInputConfig.char_feat">
+<code class="sig-name descname">char_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInputConfig.char_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInputConfig.contextual_token_embedding">
+<code class="sig-name descname">contextual_token_embedding</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInputConfig.contextual_token_embedding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInputConfig.dense_feat">
+<code class="sig-name descname">dense_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInputConfig.dense_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInputConfig.dict_feat">
+<code class="sig-name descname">dict_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInputConfig.dict_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.doc_classification.ModelInputConfig.word_feat">
+<code class="sig-name descname">word_feat</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.doc_classification.ModelInputConfig.word_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.field_config">
+<span id="pytext-config-field-config-module"></span><h2>pytext.config.field_config module<a class="headerlink" href="#module-pytext.config.field_config" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="pytext.config.field_config.CharFeatConfig">
+<code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">CharFeatConfig</code><a class="reference internal" href="../_modules/pytext/config/field_config.html#CharFeatConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.CharFeatConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pytext.config.field_config.CharFeatConfig" title="pytext.config.field_config.CharFeatConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.field_config.CharFeatConfig</span></code></a></p>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.ContextualTokenEmbeddingConfig">
+<code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">ContextualTokenEmbeddingConfig</code><a class="reference internal" href="../_modules/pytext/config/field_config.html#ContextualTokenEmbeddingConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.ContextualTokenEmbeddingConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pytext.config.field_config.ContextualTokenEmbeddingConfig" title="pytext.config.field_config.ContextualTokenEmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.field_config.ContextualTokenEmbeddingConfig</span></code></a></p>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.DictFeatConfig">
+<code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">DictFeatConfig</code><a class="reference internal" href="../_modules/pytext/config/field_config.html#DictFeatConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.DictFeatConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pytext.config.field_config.DictFeatConfig" title="pytext.config.field_config.DictFeatConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.field_config.DictFeatConfig</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.field_config.DocLabelConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">DocLabelConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/field_config.html#DocLabelConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.DocLabelConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.ConfigBase" title="pytext.config.pytext_config.ConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.ConfigBase</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.field_config.DocLabelConfig.export_output_names">
+<code class="sig-name descname">export_output_names</code><em class="property"> = ['doc_scores']</em><a class="headerlink" href="#pytext.config.field_config.DocLabelConfig.export_output_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.DocLabelConfig.label_weights">
+<code class="sig-name descname">label_weights</code><em class="property"> = {}</em><a class="headerlink" href="#pytext.config.field_config.DocLabelConfig.label_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.DocLabelConfig.target_prob">
+<code class="sig-name descname">target_prob</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.field_config.DocLabelConfig.target_prob" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.field_config.EmbedInitStrategy">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">EmbedInitStrategy</code><a class="reference internal" href="../_modules/pytext/config/field_config.html#EmbedInitStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.EmbedInitStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.field_config.EmbedInitStrategy.RANDOM">
+<code class="sig-name descname">RANDOM</code><em class="property"> = 'random'</em><a class="headerlink" href="#pytext.config.field_config.EmbedInitStrategy.RANDOM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.EmbedInitStrategy.ZERO">
+<code class="sig-name descname">ZERO</code><em class="property"> = 'zero'</em><a class="headerlink" href="#pytext.config.field_config.EmbedInitStrategy.ZERO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.field_config.FeatureConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">FeatureConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/field_config.html#FeatureConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.FeatureConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.module_config.Module.Config</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FeatureConfig.char_feat">
+<code class="sig-name descname">char_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.field_config.FeatureConfig.char_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FeatureConfig.contextual_token_embedding">
+<code class="sig-name descname">contextual_token_embedding</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.field_config.FeatureConfig.contextual_token_embedding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FeatureConfig.dense_feat">
+<code class="sig-name descname">dense_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.field_config.FeatureConfig.dense_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FeatureConfig.dict_feat">
+<code class="sig-name descname">dict_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.field_config.FeatureConfig.dict_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FeatureConfig.seq_word_feat">
+<code class="sig-name descname">seq_word_feat</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.field_config.FeatureConfig.seq_word_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FeatureConfig.word_feat">
+<code class="sig-name descname">word_feat</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.field_config.FeatureConfig.word_feat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.field_config.FloatVectorConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">FloatVectorConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/field_config.html#FloatVectorConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.FloatVectorConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.ConfigBase" title="pytext.config.pytext_config.ConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.ConfigBase</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FloatVectorConfig.dim">
+<code class="sig-name descname">dim</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.config.field_config.FloatVectorConfig.dim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FloatVectorConfig.dim_error_check">
+<code class="sig-name descname">dim_error_check</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.field_config.FloatVectorConfig.dim_error_check" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.FloatVectorConfig.export_input_names">
+<code class="sig-name descname">export_input_names</code><em class="property"> = ['float_vec_vals']</em><a class="headerlink" href="#pytext.config.field_config.FloatVectorConfig.export_input_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.field_config.Target">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">Target</code><a class="reference internal" href="../_modules/pytext/config/field_config.html#Target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.Target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.field_config.Target.DOC_LABEL">
+<code class="sig-name descname">DOC_LABEL</code><em class="property"> = 'doc_label'</em><a class="headerlink" href="#pytext.config.field_config.Target.DOC_LABEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.Target.TARGET_LABEL_FIELD">
+<code class="sig-name descname">TARGET_LABEL_FIELD</code><em class="property"> = 'target_label'</em><a class="headerlink" href="#pytext.config.field_config.Target.TARGET_LABEL_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.Target.TARGET_LOGITS_FIELD">
+<code class="sig-name descname">TARGET_LOGITS_FIELD</code><em class="property"> = 'target_logit'</em><a class="headerlink" href="#pytext.config.field_config.Target.TARGET_LOGITS_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.Target.TARGET_PROB_FIELD">
+<code class="sig-name descname">TARGET_PROB_FIELD</code><em class="property"> = 'target_prob'</em><a class="headerlink" href="#pytext.config.field_config.Target.TARGET_PROB_FIELD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.WordFeatConfig">
+<code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">WordFeatConfig</code><a class="reference internal" href="../_modules/pytext/config/field_config.html#WordFeatConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.WordFeatConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pytext.config.field_config.WordFeatConfig" title="pytext.config.field_config.WordFeatConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.field_config.WordFeatConfig</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.field_config.WordLabelConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.field_config.</code><code class="sig-name descname">WordLabelConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/field_config.html#WordLabelConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.field_config.WordLabelConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.ConfigBase" title="pytext.config.pytext_config.ConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.ConfigBase</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.field_config.WordLabelConfig.export_output_names">
+<code class="sig-name descname">export_output_names</code><em class="property"> = ['word_scores']</em><a class="headerlink" href="#pytext.config.field_config.WordLabelConfig.export_output_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.field_config.WordLabelConfig.use_bio_labels">
+<code class="sig-name descname">use_bio_labels</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.field_config.WordLabelConfig.use_bio_labels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.module_config">
+<span id="pytext-config-module-config-module"></span><h2>pytext.config.module_config module<a class="headerlink" href="#module-pytext.config.module_config" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.module_config.Activation">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">Activation</code><a class="reference internal" href="../_modules/pytext/config/module_config.html#Activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.Activation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.module_config.Activation.GELU">
+<code class="sig-name descname">GELU</code><em class="property"> = 'gelu'</em><a class="headerlink" href="#pytext.config.module_config.Activation.GELU" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.Activation.GLU">
+<code class="sig-name descname">GLU</code><em class="property"> = 'glu'</em><a class="headerlink" href="#pytext.config.module_config.Activation.GLU" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.Activation.LEAKYRELU">
+<code class="sig-name descname">LEAKYRELU</code><em class="property"> = 'leakyrelu'</em><a class="headerlink" href="#pytext.config.module_config.Activation.LEAKYRELU" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.Activation.RELU">
+<code class="sig-name descname">RELU</code><em class="property"> = 'relu'</em><a class="headerlink" href="#pytext.config.module_config.Activation.RELU" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.Activation.TANH">
+<code class="sig-name descname">TANH</code><em class="property"> = 'tanh'</em><a class="headerlink" href="#pytext.config.module_config.Activation.TANH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.module_config.CNNParams">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">CNNParams</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/module_config.html#CNNParams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.CNNParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.ConfigBase" title="pytext.config.pytext_config.ConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.ConfigBase</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.module_config.CNNParams.causal">
+<code class="sig-name descname">causal</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.module_config.CNNParams.causal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.CNNParams.dilated">
+<code class="sig-name descname">dilated</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.module_config.CNNParams.dilated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.CNNParams.kernel_num">
+<code class="sig-name descname">kernel_num</code><em class="property"> = 100</em><a class="headerlink" href="#pytext.config.module_config.CNNParams.kernel_num" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.CNNParams.kernel_sizes">
+<code class="sig-name descname">kernel_sizes</code><em class="property"> = [3, 4]</em><a class="headerlink" href="#pytext.config.module_config.CNNParams.kernel_sizes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.CNNParams.weight_norm">
+<code class="sig-name descname">weight_norm</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.module_config.CNNParams.weight_norm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.module_config.ExporterType">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">ExporterType</code><a class="reference internal" href="../_modules/pytext/config/module_config.html#ExporterType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.ExporterType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.module_config.ExporterType.INIT_PREDICT">
+<code class="sig-name descname">INIT_PREDICT</code><em class="property"> = 'init_predict'</em><a class="headerlink" href="#pytext.config.module_config.ExporterType.INIT_PREDICT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.ExporterType.PREDICTOR">
+<code class="sig-name descname">PREDICTOR</code><em class="property"> = 'predictor'</em><a class="headerlink" href="#pytext.config.module_config.ExporterType.PREDICTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.ModuleConfig">
+<code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">ModuleConfig</code><a class="reference internal" href="../_modules/pytext/config/module_config.html#ModuleConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.ModuleConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pytext.config.module_config.ModuleConfig" title="pytext.config.module_config.ModuleConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.module_config.ModuleConfig</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.module_config.PerplexityType">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">PerplexityType</code><a class="reference internal" href="../_modules/pytext/config/module_config.html#PerplexityType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.PerplexityType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PerplexityType.EOS">
+<code class="sig-name descname">EOS</code><em class="property"> = 'eos'</em><a class="headerlink" href="#pytext.config.module_config.PerplexityType.EOS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PerplexityType.MAX">
+<code class="sig-name descname">MAX</code><em class="property"> = 'max'</em><a class="headerlink" href="#pytext.config.module_config.PerplexityType.MAX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PerplexityType.MEAN">
+<code class="sig-name descname">MEAN</code><em class="property"> = 'mean'</em><a class="headerlink" href="#pytext.config.module_config.PerplexityType.MEAN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PerplexityType.MEDIAN">
+<code class="sig-name descname">MEDIAN</code><em class="property"> = 'median'</em><a class="headerlink" href="#pytext.config.module_config.PerplexityType.MEDIAN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PerplexityType.MIN">
+<code class="sig-name descname">MIN</code><em class="property"> = 'min'</em><a class="headerlink" href="#pytext.config.module_config.PerplexityType.MIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.module_config.PoolingType">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">PoolingType</code><a class="reference internal" href="../_modules/pytext/config/module_config.html#PoolingType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.PoolingType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PoolingType.MAX">
+<code class="sig-name descname">MAX</code><em class="property"> = 'max'</em><a class="headerlink" href="#pytext.config.module_config.PoolingType.MAX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PoolingType.MEAN">
+<code class="sig-name descname">MEAN</code><em class="property"> = 'mean'</em><a class="headerlink" href="#pytext.config.module_config.PoolingType.MEAN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.PoolingType.NONE">
+<code class="sig-name descname">NONE</code><em class="property"> = 'none'</em><a class="headerlink" href="#pytext.config.module_config.PoolingType.NONE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.module_config.SlotAttentionType">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.module_config.</code><code class="sig-name descname">SlotAttentionType</code><a class="reference internal" href="../_modules/pytext/config/module_config.html#SlotAttentionType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.module_config.SlotAttentionType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.config.module_config.SlotAttentionType.CONCAT">
+<code class="sig-name descname">CONCAT</code><em class="property"> = 'concat'</em><a class="headerlink" href="#pytext.config.module_config.SlotAttentionType.CONCAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.SlotAttentionType.DOT">
+<code class="sig-name descname">DOT</code><em class="property"> = 'dot'</em><a class="headerlink" href="#pytext.config.module_config.SlotAttentionType.DOT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.SlotAttentionType.MULTIPLY">
+<code class="sig-name descname">MULTIPLY</code><em class="property"> = 'multiply'</em><a class="headerlink" href="#pytext.config.module_config.SlotAttentionType.MULTIPLY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.module_config.SlotAttentionType.NO_ATTENTION">
+<code class="sig-name descname">NO_ATTENTION</code><em class="property"> = 'no_attention'</em><a class="headerlink" href="#pytext.config.module_config.SlotAttentionType.NO_ATTENTION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.pair_classification">
+<span id="pytext-config-pair-classification-module"></span><h2>pytext.config.pair_classification module<a class="headerlink" href="#module-pytext.config.pair_classification" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.pair_classification.ExtraField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pair_classification.</code><code class="sig-name descname">ExtraField</code><a class="reference internal" href="../_modules/pytext/config/pair_classification.html#ExtraField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pair_classification.ExtraField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.pair_classification.ExtraField.UTTERANCE_PAIR">
+<code class="sig-name descname">UTTERANCE_PAIR</code><em class="property"> = 'utterance'</em><a class="headerlink" href="#pytext.config.pair_classification.ExtraField.UTTERANCE_PAIR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pair_classification.ModelInput">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pair_classification.</code><code class="sig-name descname">ModelInput</code><a class="reference internal" href="../_modules/pytext/config/pair_classification.html#ModelInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pair_classification.ModelInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.pair_classification.ModelInput.TEXT1">
+<code class="sig-name descname">TEXT1</code><em class="property"> = 'text1'</em><a class="headerlink" href="#pytext.config.pair_classification.ModelInput.TEXT1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pair_classification.ModelInput.TEXT2">
+<code class="sig-name descname">TEXT2</code><em class="property"> = 'text2'</em><a class="headerlink" href="#pytext.config.pair_classification.ModelInput.TEXT2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pair_classification.ModelInputConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pair_classification.</code><code class="sig-name descname">ModelInputConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pair_classification.html#ModelInputConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pair_classification.ModelInputConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.module_config.Module.Config</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.pair_classification.ModelInputConfig.text1">
+<code class="sig-name descname">text1</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.pair_classification.ModelInputConfig.text1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pair_classification.ModelInputConfig.text2">
+<code class="sig-name descname">text2</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.pair_classification.ModelInputConfig.text2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.pytext_config">
+<span id="pytext-config-pytext-config-module"></span><h2>pytext.config.pytext_config module<a class="headerlink" href="#module-pytext.config.pytext_config" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.pytext_config.ConfigBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pytext_config.</code><code class="sig-name descname">ConfigBase</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#ConfigBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.ConfigBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.config.pytext_config.ConfigBase.items">
+<code class="sig-name descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#ConfigBase.items"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.ConfigBase.items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pytext_config.ConfigBaseMeta">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pytext_config.</code><code class="sig-name descname">ConfigBaseMeta</code><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#ConfigBaseMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.ConfigBaseMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<dl class="method">
+<dt id="pytext.config.pytext_config.ConfigBaseMeta.annotations_and_defaults">
+<code class="sig-name descname">annotations_and_defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#ConfigBaseMeta.annotations_and_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.ConfigBaseMeta.annotations_and_defaults" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pytext_config.LogitsConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pytext_config.</code><code class="sig-name descname">LogitsConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#LogitsConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.LogitsConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.TestConfig" title="pytext.config.pytext_config.TestConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.TestConfig</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.LogitsConfig.dump_raw_input">
+<code class="sig-name descname">dump_raw_input</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.LogitsConfig.dump_raw_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pytext_config.PlaceHolder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pytext_config.</code><code class="sig-name descname">PlaceHolder</code><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#PlaceHolder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.PlaceHolder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pytext_config.PyTextConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pytext_config.</code><code class="sig-name descname">PyTextConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#PyTextConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.ConfigBase" title="pytext.config.pytext_config.ConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.ConfigBase</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.auto_resume_from_snapshot">
+<code class="sig-name descname">auto_resume_from_snapshot</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.auto_resume_from_snapshot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.debug_path">
+<code class="sig-name descname">debug_path</code><em class="property"> = '/tmp/model.debug'</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.debug_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.distributed_world_size">
+<code class="sig-name descname">distributed_world_size</code><em class="property"> = 1</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.distributed_world_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.export_caffe2_path">
+<code class="sig-name descname">export_caffe2_path</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.export_caffe2_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.export_onnx_path">
+<code class="sig-name descname">export_onnx_path</code><em class="property"> = '/tmp/model.onnx'</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.export_onnx_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.export_torchscript_path">
+<code class="sig-name descname">export_torchscript_path</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.export_torchscript_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.gpu_streams_for_distributed_training">
+<code class="sig-name descname">gpu_streams_for_distributed_training</code><em class="property"> = 1</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.gpu_streams_for_distributed_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.include_dirs">
+<code class="sig-name descname">include_dirs</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.include_dirs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.load_snapshot_path">
+<code class="sig-name descname">load_snapshot_path</code><em class="property"> = ''</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.load_snapshot_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.modules_save_dir">
+<code class="sig-name descname">modules_save_dir</code><em class="property"> = ''</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.modules_save_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.random_seed">
+<code class="sig-name descname">random_seed</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.random_seed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seed value to seed torch, python, and numpy random generators.</p>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.report_eval_results">
+<code class="sig-name descname">report_eval_results</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.report_eval_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.save_all_checkpoints">
+<code class="sig-name descname">save_all_checkpoints</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.save_all_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.save_module_checkpoints">
+<code class="sig-name descname">save_module_checkpoints</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.save_module_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.save_snapshot_path">
+<code class="sig-name descname">save_snapshot_path</code><em class="property"> = '/tmp/model.pt'</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.save_snapshot_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.test_out_path">
+<code class="sig-name descname">test_out_path</code><em class="property"> = '/tmp/test_out.txt'</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.test_out_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.torchscript_quantize">
+<code class="sig-name descname">torchscript_quantize</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.torchscript_quantize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.use_config_from_snapshot">
+<code class="sig-name descname">use_config_from_snapshot</code><em class="property"> = True</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.use_config_from_snapshot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.use_cuda_if_available">
+<code class="sig-name descname">use_cuda_if_available</code><em class="property"> = True</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.use_cuda_if_available" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.use_deterministic_cudnn">
+<code class="sig-name descname">use_deterministic_cudnn</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.use_deterministic_cudnn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to allow CuDNN to behave deterministically.</p>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.use_fp16">
+<code class="sig-name descname">use_fp16</code><em class="property"> = False</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.use_fp16" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.PyTextConfig.use_tensorboard">
+<code class="sig-name descname">use_tensorboard</code><em class="property"> = True</em><a class="headerlink" href="#pytext.config.pytext_config.PyTextConfig.use_tensorboard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.pytext_config.TestConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.pytext_config.</code><code class="sig-name descname">TestConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/pytext_config.html#TestConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.pytext_config.TestConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.pytext_config.ConfigBase" title="pytext.config.pytext_config.ConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.pytext_config.ConfigBase</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.TestConfig.field_names">
+<code class="sig-name descname">field_names</code><em class="property"> = None</em><a class="headerlink" href="#pytext.config.pytext_config.TestConfig.field_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field names for the TSV. If this is not set, the first line of each file
+will be assumed to be a header containing the field names.</p>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.TestConfig.test_out_path">
+<code class="sig-name descname">test_out_path</code><em class="property"> = ''</em><a class="headerlink" href="#pytext.config.pytext_config.TestConfig.test_out_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.TestConfig.test_path">
+<code class="sig-name descname">test_path</code><em class="property"> = 'test.tsv'</em><a class="headerlink" href="#pytext.config.pytext_config.TestConfig.test_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.TestConfig.use_cuda_if_available">
+<code class="sig-name descname">use_cuda_if_available</code><em class="property"> = True</em><a class="headerlink" href="#pytext.config.pytext_config.TestConfig.use_cuda_if_available" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.pytext_config.TestConfig.use_tensorboard">
+<code class="sig-name descname">use_tensorboard</code><em class="property"> = True</em><a class="headerlink" href="#pytext.config.pytext_config.TestConfig.use_tensorboard" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.query_document_pairwise_ranking">
+<span id="pytext-config-query-document-pairwise-ranking-module"></span><h2>pytext.config.query_document_pairwise_ranking module<a class="headerlink" href="#module-pytext.config.query_document_pairwise_ranking" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInput">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.query_document_pairwise_ranking.</code><code class="sig-name descname">ModelInput</code><a class="reference internal" href="../_modules/pytext/config/query_document_pairwise_ranking.html#ModelInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInput.NEG_RESPONSE">
+<code class="sig-name descname">NEG_RESPONSE</code><em class="property"> = 'neg_response'</em><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInput.NEG_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInput.POS_RESPONSE">
+<code class="sig-name descname">POS_RESPONSE</code><em class="property"> = 'pos_response'</em><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInput.POS_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInput.QUERY">
+<code class="sig-name descname">QUERY</code><em class="property"> = 'query'</em><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInput.QUERY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInputConfig">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.config.query_document_pairwise_ranking.</code><code class="sig-name descname">ModelInputConfig</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/query_document_pairwise_ranking.html#ModelInputConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInputConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.module_config.Module.Config</span></code></p>
+<dl class="attribute">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInputConfig.neg_response">
+<code class="sig-name descname">neg_response</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInputConfig.neg_response" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInputConfig.pos_response">
+<code class="sig-name descname">pos_response</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInputConfig.pos_response" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.config.query_document_pairwise_ranking.ModelInputConfig.query">
+<code class="sig-name descname">query</code><em class="property"> = &lt;pytext.config.field_config.WordFeatConfig object&gt;</em><a class="headerlink" href="#pytext.config.query_document_pairwise_ranking.ModelInputConfig.query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config.serialize">
+<span id="pytext-config-serialize-module"></span><h2>pytext.config.serialize module<a class="headerlink" href="#module-pytext.config.serialize" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="pytext.config.serialize.ConfigParseError">
+<em class="property">exception </em><code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">ConfigParseError</code><a class="reference internal" href="../_modules/pytext/config/serialize.html#ConfigParseError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.ConfigParseError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+<dl class="exception">
+<dt id="pytext.config.serialize.EnumTypeError">
+<em class="property">exception </em><code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">EnumTypeError</code><a class="reference internal" href="../_modules/pytext/config/serialize.html#EnumTypeError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.EnumTypeError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.serialize.ConfigParseError" title="pytext.config.serialize.ConfigParseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.serialize.ConfigParseError</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="pytext.config.serialize.IncorrectTypeError">
+<em class="property">exception </em><code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">IncorrectTypeError</code><a class="reference internal" href="../_modules/pytext/config/serialize.html#IncorrectTypeError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.IncorrectTypeError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+<dl class="exception">
+<dt id="pytext.config.serialize.MissingValueError">
+<em class="property">exception </em><code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">MissingValueError</code><a class="reference internal" href="../_modules/pytext/config/serialize.html#MissingValueError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.MissingValueError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.serialize.ConfigParseError" title="pytext.config.serialize.ConfigParseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.serialize.ConfigParseError</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="pytext.config.serialize.UnionTypeError">
+<em class="property">exception </em><code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">UnionTypeError</code><a class="reference internal" href="../_modules/pytext/config/serialize.html#UnionTypeError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.UnionTypeError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.config.serialize.ConfigParseError" title="pytext.config.serialize.ConfigParseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.serialize.ConfigParseError</span></code></a></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.serialize.build_subclass_dict">
+<code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">build_subclass_dict</code><span class="sig-paren">(</span><em class="sig-param">subclasses</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/serialize.html#build_subclass_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.build_subclass_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.serialize.config_from_json">
+<code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">config_from_json</code><span class="sig-paren">(</span><em class="sig-param">cls</em>, <em class="sig-param">json_obj</em>, <em class="sig-param">ignore_fields=()</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/serialize.html#config_from_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.config_from_json" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.serialize.config_to_json">
+<code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">config_to_json</code><span class="sig-paren">(</span><em class="sig-param">cls</em>, <em class="sig-param">config_obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/serialize.html#config_to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.config_to_json" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.serialize.parse_config">
+<code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">parse_config</code><span class="sig-paren">(</span><em class="sig-param">config_json</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/serialize.html#parse_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.parse_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse PyTextConfig object from parameter string or parameter file</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.serialize.pytext_config_from_json">
+<code class="sig-prename descclassname">pytext.config.serialize.</code><code class="sig-name descname">pytext_config_from_json</code><span class="sig-paren">(</span><em class="sig-param">json_obj</em>, <em class="sig-param">ignore_fields=()</em>, <em class="sig-param">auto_upgrade=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/serialize.html#pytext_config_from_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.serialize.pytext_config_from_json" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.config.utils">
+<span id="pytext-config-utils-module"></span><h2>pytext.config.utils module<a class="headerlink" href="#module-pytext.config.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.config.utils.cast_str">
+<code class="sig-prename descclassname">pytext.config.utils.</code><code class="sig-name descname">cast_str</code><span class="sig-paren">(</span><em class="sig-param">to_type</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/utils.html#cast_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.utils.cast_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.utils.find_param">
+<code class="sig-prename descclassname">pytext.config.utils.</code><code class="sig-name descname">find_param</code><span class="sig-paren">(</span><em class="sig-param">root</em>, <em class="sig-param">suffix</em>, <em class="sig-param">parent=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/utils.html#find_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.utils.find_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively look at all fields in config to find where <cite>suffix</cite> would fit.
+This is used to change configs so that they don’t use default values.
+Return the list of field paths matching.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.config.utils.is_component_class">
+<code class="sig-prename descclassname">pytext.config.utils.</code><code class="sig-name descname">is_component_class</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/utils.html#is_component_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.utils.is_component_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.utils.replace_param">
+<code class="sig-prename descclassname">pytext.config.utils.</code><code class="sig-name descname">replace_param</code><span class="sig-paren">(</span><em class="sig-param">root</em>, <em class="sig-param">path_list</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/utils.html#replace_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.utils.replace_param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.config.utils.resolve_optional">
+<code class="sig-prename descclassname">pytext.config.utils.</code><code class="sig-name descname">resolve_optional</code><span class="sig-paren">(</span><em class="sig-param">type_v</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/config/utils.html#resolve_optional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.config.utils.resolve_optional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deal with Optional implemented as Union[type, None]</p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.config">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.config" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.common.html" title="previous chapter">pytext.common package</a></li>
+<li>Next: <a href="pytext.data.html" title="next chapter">pytext.data package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

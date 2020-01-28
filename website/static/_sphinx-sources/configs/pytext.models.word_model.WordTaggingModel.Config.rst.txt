@@ -1,0 +1,138 @@
+WordTaggingModel.Config
+=======================
+
+
+
+**Component:** :class:`WordTaggingModel  <pytext.models.word_model.WordTaggingModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.word_model
+.. py:class:: WordTaggingModel.Config
+  :noindex:
+
+  **Bases:** :class:`Model.Config <pytext.models.model.Model.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.word_model.ModelInput>` = :doc:`ModelInput <pytext.models.word_model.ModelInput>`\ ()
+    \ 
+
+  **embedding**: :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>` = :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>`\ ()
+    \ 
+
+  **representation**: Union[:doc:`BiLSTMSlotAttention.Config <pytext.models.representations.bilstm_slot_attn.BiLSTMSlotAttention.Config>`, :doc:`BSeqCNNRepresentation.Config <pytext.models.representations.biseqcnn.BSeqCNNRepresentation.Config>`, :doc:`PassThroughRepresentation.Config <pytext.models.representations.pass_through.PassThroughRepresentation.Config>`, :doc:`DeepCNNRepresentation.Config <pytext.models.representations.deepcnn.DeepCNNRepresentation.Config>`] = :doc:`PassThroughRepresentation.Config <pytext.models.representations.pass_through.PassThroughRepresentation.Config>`\ ()
+    \ 
+
+  **output_layer**: Union[:doc:`WordTaggingOutputLayer.Config <pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config>`, :doc:`CRFOutputLayer.Config <pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.Config>`] = :doc:`WordTaggingOutputLayer.Config <pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config>`\ ()
+    \ 
+
+  **decoder**: :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>` = :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`\ ()
+    \ 
+
+
+
+**Subclasses**
+  - :class:`WordTaggingLiteModel.Config <pytext.models.word_model.WordTaggingLiteModel.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {
+          "tokens": {
+              "is_input": true,
+              "column": "text",
+              "tokenizer": {
+                  "Tokenizer": {
+                      "split_regex": "\\s+",
+                      "lowercase": true
+                  }
+              },
+              "add_bos_token": false,
+              "add_eos_token": false,
+              "use_eos_token_for_bos": false,
+              "max_seq_len": null,
+              "vocab": {
+                  "build_from_data": true,
+                  "size_from_data": 0,
+                  "vocab_files": []
+              },
+              "vocab_file_delimiter": " "
+          },
+          "labels": {
+              "is_input": false,
+              "slot_column": "slots",
+              "text_column": "text",
+              "tokenizer": {
+                  "Tokenizer": {
+                      "split_regex": "\\s+",
+                      "lowercase": true
+                  }
+              },
+              "allow_unknown": false
+          }
+      },
+      "embedding": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "embed_dim": 100,
+          "embedding_init_strategy": "random",
+          "embedding_init_range": null,
+          "export_input_names": [
+              "tokens_vals"
+          ],
+          "pretrained_embeddings_path": "",
+          "vocab_file": "",
+          "vocab_size": 0,
+          "vocab_from_train_data": true,
+          "vocab_from_all_data": false,
+          "vocab_from_pretrained_embeddings": false,
+          "lowercase_tokens": true,
+          "min_freq": 1,
+          "mlp_layer_dims": [],
+          "padding_idx": null,
+          "cpu_only": false,
+          "skip_header": true,
+          "delimiter": " "
+      },
+      "representation": {
+          "PassThroughRepresentation": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null
+          }
+      },
+      "output_layer": {
+          "WordTaggingOutputLayer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {
+                  "CrossEntropyLoss": {}
+              },
+              "label_weights": {},
+              "ignore_pad_in_loss": true
+          }
+      },
+      "decoder": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_dims": [],
+          "out_dim": null,
+          "layer_norm": false,
+          "dropout": 0.0,
+          "activation": "relu"
+      }
+  }

@@ -1,0 +1,27 @@
+MAELoss.Config
+==============
+
+
+
+**Component:** :class:`MAELoss  <pytext.loss.loss.MAELoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: MAELoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

@@ -1,0 +1,219 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.mobile_onnx</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">onnx</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">caffe2.python</span> <span class="kn">import</span> <span class="n">core</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">workspace</span>
+<span class="kn">from</span> <span class="nn">caffe2.python.onnx</span> <span class="kn">import</span> <span class="n">backend</span> <span class="k">as</span> <span class="n">caffe2_backend</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.onnx</span> <span class="kn">import</span> <span class="n">convert_caffe2_blob_name</span>
+
+
+<div class="viewcode-block" id="create_context"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.mobile_onnx.create_context">[docs]</a><span class="k">def</span> <span class="nf">create_context</span><span class="p">(</span><span class="n">init_net</span><span class="p">):</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">ResetWorkspace</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">workspace</span><span class="o">.</span><span class="n">RunNetOnce</span><span class="p">(</span><span class="n">init_net</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="pytorch_to_caffe2"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.mobile_onnx.pytorch_to_caffe2">[docs]</a><span class="k">def</span> <span class="nf">pytorch_to_caffe2</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">export_input</span><span class="p">,</span>
+    <span class="n">external_input_names</span><span class="p">,</span>
+    <span class="n">output_names</span><span class="p">,</span>
+    <span class="n">export_path</span><span class="p">,</span>
+    <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">num_tensors</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">export_input</span><span class="p">:</span>
+        <span class="n">num_tensors</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">external_input_names</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_tensors</span>
+    <span class="n">all_input_names</span> <span class="o">=</span> <span class="n">external_input_names</span><span class="p">[:]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+        <span class="n">all_input_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="c1"># export the pytorch model to ONNX</span>
+    <span class="k">if</span> <span class="n">export_onnx_path</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Saving onnx model to: {export_onnx_path}"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">export_onnx_path</span> <span class="o">=</span> <span class="n">export_path</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">onnx</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span>
+            <span class="n">export_input</span><span class="p">,</span>
+            <span class="n">export_onnx_path</span><span class="p">,</span>
+            <span class="n">input_names</span><span class="o">=</span><span class="n">all_input_names</span><span class="p">,</span>
+            <span class="n">output_names</span><span class="o">=</span><span class="n">output_names</span><span class="p">,</span>
+            <span class="n">export_params</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">onnx_model</span> <span class="o">=</span> <span class="n">onnx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">export_onnx_path</span><span class="p">)</span>
+    <span class="n">onnx</span><span class="o">.</span><span class="n">checker</span><span class="o">.</span><span class="n">check_model</span><span class="p">(</span><span class="n">onnx_model</span><span class="p">)</span>
+    <span class="c1"># split onnx model into init_net and predict_net</span>
+    <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span> <span class="o">=</span> <span class="n">caffe2_backend</span><span class="o">.</span><span class="n">Caffe2Backend</span><span class="o">.</span><span class="n">onnx_graph_to_caffe2_net</span><span class="p">(</span>
+        <span class="n">onnx_model</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="add_feats_numericalize_ops"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.mobile_onnx.add_feats_numericalize_ops">[docs]</a><span class="k">def</span> <span class="nf">add_feats_numericalize_ops</span><span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">,</span> <span class="n">input_names</span><span class="p">):</span>
+    <span class="n">init_net</span><span class="p">,</span> <span class="n">final_predict_net</span><span class="p">,</span> <span class="n">final_input_names</span> <span class="o">=</span> <span class="n">get_numericalize_net</span><span class="p">(</span>
+        <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">,</span> <span class="n">input_names</span>
+    <span class="p">)</span>
+
+    <span class="n">create_context</span><span class="p">(</span><span class="n">init_net</span><span class="p">)</span>
+    <span class="n">init_net</span> <span class="o">=</span> <span class="n">init_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+    <span class="n">final_predict_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">predict_net</span><span class="o">.</span><span class="n">op</span><span class="p">)</span>
+    <span class="n">predict_net</span> <span class="o">=</span> <span class="n">final_predict_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">final_input_names</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_numericalize_net"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.mobile_onnx.get_numericalize_net">[docs]</a><span class="k">def</span> <span class="nf">get_numericalize_net</span><span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">,</span> <span class="n">input_names</span><span class="p">):</span>
+    <span class="n">init_net</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">(</span><span class="n">init_net</span><span class="p">)</span>
+    <span class="n">final_input_names</span> <span class="o">=</span> <span class="n">input_names</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">create_context</span><span class="p">(</span><span class="n">init_net</span><span class="p">)</span>
+    <span class="n">vocab_indices</span> <span class="o">=</span> <span class="n">create_vocab_indices_map</span><span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">)</span>
+
+    <span class="n">final_predict_net</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">(</span><span class="n">predict_net</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">"_processed"</span><span class="p">)</span>
+    <span class="n">final_inputs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">ext_input</span> <span class="k">for</span> <span class="n">ext_input</span> <span class="ow">in</span> <span class="n">input_names</span> <span class="k">if</span> <span class="n">ext_input</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vocab_map</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">ext_input</span> <span class="ow">in</span> <span class="n">final_inputs</span><span class="p">:</span>
+        <span class="n">final_predict_net</span><span class="o">.</span><span class="n">AddExternalInput</span><span class="p">(</span><span class="n">ext_input</span><span class="p">)</span>
+
+    <span class="c1"># add external_input and external_output from init_net</span>
+    <span class="n">init_net_proto</span> <span class="o">=</span> <span class="n">init_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="n">item</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
+                <span class="n">init_net_proto</span><span class="o">.</span><span class="n">external_input</span><span class="p">,</span> <span class="n">init_net_proto</span><span class="o">.</span><span class="n">external_output</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="n">final_predict_net</span><span class="o">.</span><span class="n">AddExternalInput</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">vocab_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">raw_input_blob</span> <span class="o">=</span> <span class="n">final_predict_net</span><span class="o">.</span><span class="n">AddExternalInput</span><span class="p">(</span>
+            <span class="n">convert_caffe2_blob_name</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">flattened_input_blob</span> <span class="o">=</span> <span class="n">final_predict_net</span><span class="o">.</span><span class="n">FlattenToVec</span><span class="p">(</span><span class="n">raw_input_blob</span><span class="p">)</span>
+        <span class="n">flattened_ids</span> <span class="o">=</span> <span class="n">final_predict_net</span><span class="o">.</span><span class="n">IndexGet</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">vocab_indices</span><span class="p">[</span><span class="n">feat</span><span class="p">],</span> <span class="n">flattened_input_blob</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">final_predict_net</span><span class="o">.</span><span class="n">ResizeLike</span><span class="p">([</span><span class="n">flattened_ids</span><span class="p">,</span> <span class="n">raw_input_blob</span><span class="p">],</span> <span class="p">[</span><span class="n">feat</span><span class="p">])</span>
+        <span class="n">final_input_names</span><span class="p">[</span><span class="n">input_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">feat</span><span class="p">)]</span> <span class="o">=</span> <span class="n">convert_caffe2_blob_name</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">final_predict_net</span><span class="p">,</span> <span class="n">final_input_names</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_vocab_indices_map"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.mobile_onnx.create_vocab_indices_map">[docs]</a><span class="k">def</span> <span class="nf">create_vocab_indices_map</span><span class="p">(</span><span class="n">init_net</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">):</span>
+    <span class="n">vocab_indices</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">feat_name</span><span class="p">,</span> <span class="n">vocab</span> <span class="ow">in</span> <span class="n">vocab_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="n">vocab_indices</span><span class="p">[</span><span class="n">feat_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">create_vocab_index</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">init_net</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">feat_name</span> <span class="o">+</span> <span class="s2">"_index"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">vocab_indices</span></div>
+
+
+<div class="viewcode-block" id="create_vocab_index"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.mobile_onnx.create_vocab_index">[docs]</a><span class="k">def</span> <span class="nf">create_vocab_index</span><span class="p">(</span><span class="n">vocab_list</span><span class="p">,</span> <span class="n">net</span><span class="p">,</span> <span class="n">net_workspace</span><span class="p">,</span> <span class="n">index_name</span><span class="p">):</span>
+    <span class="n">vocab_blob</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">AddExternalInput</span><span class="p">(</span><span class="n">f</span><span class="s2">"{index_name}_vocab"</span><span class="p">)</span>
+
+    <span class="n">net</span><span class="o">.</span><span class="n">GivenTensorStringFill</span><span class="p">(</span>
+        <span class="p">[],</span>
+        <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">vocab_blob</span><span class="p">)],</span>
+        <span class="n">arg</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">MakeArgument</span><span class="p">(</span><span class="s2">"shape"</span><span class="p">,</span> <span class="n">vocab_list</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">MakeArgument</span><span class="p">(</span><span class="s2">"values"</span><span class="p">,</span> <span class="n">vocab_list</span><span class="p">),</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">vocab_index</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">StringIndexCreate</span><span class="p">([],</span> <span class="n">index_name</span><span class="p">)</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">IndexLoad</span><span class="p">([</span><span class="n">vocab_index</span><span class="p">,</span> <span class="n">vocab_blob</span><span class="p">],</span> <span class="p">[</span><span class="n">vocab_index</span><span class="p">],</span> <span class="n">skip_first_entry</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">IndexFreeze</span><span class="p">([</span><span class="n">vocab_index</span><span class="p">],</span> <span class="p">[</span><span class="n">vocab_index</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">vocab_index</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

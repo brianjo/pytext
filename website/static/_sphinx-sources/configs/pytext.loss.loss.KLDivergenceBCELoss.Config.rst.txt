@@ -1,0 +1,36 @@
+KLDivergenceBCELoss.Config
+==========================
+
+
+
+**Component:** :class:`KLDivergenceBCELoss  <pytext.loss.loss.KLDivergenceBCELoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: KLDivergenceBCELoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **temperature**: float = ``1.0``
+    \ 
+
+  **hard_weight**: float = ``0.0``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "temperature": 1.0,
+      "hard_weight": 0.0
+  }

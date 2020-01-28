@@ -1,0 +1,12 @@
+embeddings
+==========
+
+
+.. toctree::
+
+  pytext.models.embeddings.char_embedding
+  pytext.models.embeddings.contextual_token_embedding
+  pytext.models.embeddings.dict_embedding
+  pytext.models.embeddings.embedding_base
+  pytext.models.embeddings.embedding_list
+  pytext.models.embeddings.word_embedding

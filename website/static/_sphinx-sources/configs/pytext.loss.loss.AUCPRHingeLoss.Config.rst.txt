@@ -1,0 +1,73 @@
+AUCPRHingeLoss.Config
+=====================
+
+
+
+**Component:** :class:`AUCPRHingeLoss  <pytext.loss.loss.AUCPRHingeLoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: AUCPRHingeLoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+  .. attribute:: precision_range_lower
+  
+     the lower range of precision values over
+     which to compute AUC. Must be nonnegative, `\leq precision_range_upper`,
+     and `leq 1.0`.
+  
+     :type: float
+  
+  .. attribute:: precision_range_upper
+  
+     the upper range of precision values over
+     which to compute AUC. Must be nonnegative, `\geq precision_range_lower`,
+     and `leq 1.0`.
+  
+     :type: float
+  
+  .. attribute:: num_classes
+  
+     number of classes(aka labels)
+  
+     :type: int
+  
+  .. attribute:: num_anchors
+  
+     The number of grid points used to approximate the
+     Riemann sum.
+  
+     :type: int
+  
+
+**All Attributes (including base classes)**
+
+  **precision_range_lower**: float = ``0.0``
+    \ 
+
+  **precision_range_upper**: float = ``1.0``
+    \ 
+
+  **num_classes**: int = ``1``
+    \ 
+
+  **num_anchors**: int = ``20``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "precision_range_lower": 0.0,
+      "precision_range_upper": 1.0,
+      "num_classes": 1,
+      "num_anchors": 20
+  }

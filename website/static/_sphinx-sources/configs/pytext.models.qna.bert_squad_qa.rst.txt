@@ -1,0 +1,8 @@
+bert_squad_qa
+=============
+
+
+.. toctree::
+
+  pytext.models.qna.bert_squad_qa.BertSquadQAModel.Config
+  pytext.models.qna.bert_squad_qa.ModelInput

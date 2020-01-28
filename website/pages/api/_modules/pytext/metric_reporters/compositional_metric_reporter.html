@@ -1,0 +1,284 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metric_reporters.compositional_metric_reporter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">BatchContext</span><span class="p">,</span> <span class="n">DatasetFieldName</span><span class="p">,</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">CommonMetadata</span>
+<span class="kn">from</span> <span class="nn">pytext.data.data_structures.annotation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">REDUCE</span><span class="p">,</span>
+    <span class="n">SHIFT</span><span class="p">,</span>
+    <span class="n">Intent</span><span class="p">,</span>
+    <span class="n">Slot</span><span class="p">,</span>
+    <span class="n">Token</span><span class="p">,</span>
+    <span class="n">Tree</span><span class="p">,</span>
+    <span class="n">TreeBuilder</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>
+<span class="kn">from</span> <span class="nn">pytext.metrics.intent_slot_metrics</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FramePredictionPair</span><span class="p">,</span>
+    <span class="n">Node</span><span class="p">,</span>
+    <span class="n">Span</span><span class="p">,</span>
+    <span class="n">compute_all_metrics</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.channel</span> <span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">ConsoleChannel</span><span class="p">,</span> <span class="n">FileChannel</span>
+<span class="kn">from</span> <span class="nn">.metric_reporter</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+
+
+<span class="n">ALL_PRED_FRAMES</span> <span class="o">=</span> <span class="s2">"all_pred_frames"</span>
+
+
+<div class="viewcode-block" id="CompositionalMetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter">[docs]</a><span class="k">class</span> <span class="nc">CompositionalMetricReporter</span><span class="p">(</span><span class="n">MetricReporter</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">MetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">text_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"tokenized_text"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">actions_vocab</span><span class="p">,</span>
+        <span class="n">channels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Channel</span><span class="p">],</span>
+        <span class="n">text_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions_vocab</span> <span class="o">=</span> <span class="n">actions_vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span> <span class="o">=</span> <span class="n">text_column_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span> <span class="ow">or</span> <span class="n">Tokenizer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_target_trees</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.from_config"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">CommonMetadata</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">tensorizers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"actions"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span>
+                <span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">(),</span> <span class="n">FileChannel</span><span class="p">((</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,),</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)],</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">,</span>
+                <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">actions_vocab</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">actions_vocab</span><span class="o">.</span><span class="n">itos</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">actions_vocab</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">(),</span> <span class="n">FileChannel</span><span class="p">((</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,),</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)],</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_target_trees</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.gen_extra_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.gen_extra_context">[docs]</a>    <span class="k">def</span> <span class="nf">gen_extra_context</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># check if all_preds contains top K results or only 1 result</span>
+        <span class="n">pred_target_trees</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">all_pred_trees</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tree</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">top_k_action_preds</span><span class="p">,</span> <span class="n">action_targets</span><span class="p">,</span> <span class="n">token_str_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">TOKENS</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">topk_pred_trees</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">action_preds</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">top_k_action_preds</span><span class="p">):</span>
+                <span class="n">pred_tree</span> <span class="o">=</span> <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">tree_from_tokens_and_indx_actions</span><span class="p">(</span>
+                    <span class="n">token_str_list</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">actions_vocab</span><span class="p">,</span>
+                    <span class="n">action_preds</span><span class="p">,</span>
+                    <span class="n">validate_tree</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">topk_pred_trees</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">tree_to_metric_node</span><span class="p">(</span><span class="n">pred_tree</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">target_tree</span> <span class="o">=</span> <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">tree_from_tokens_and_indx_actions</span><span class="p">(</span>
+                        <span class="n">token_str_list</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions_vocab</span><span class="p">,</span> <span class="n">action_targets</span>
+                    <span class="p">)</span>
+                    <span class="n">pred_target_trees</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pred_tree</span><span class="p">,</span> <span class="n">target_tree</span><span class="p">))</span>
+            <span class="n">all_pred_trees</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">topk_pred_trees</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_target_trees</span> <span class="o">=</span> <span class="n">pred_target_trees</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="n">ALL_PRED_FRAMES</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_pred_trees</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.predictions_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.predictions_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">predictions_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable predictions</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flat_str</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_target_trees</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.targets_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.targets_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">targets_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable targets</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flat_str</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_target_trees</span><span class="p">]</span></div>
+
+    <span class="c1"># CREATE NODES</span>
+<div class="viewcode-block" id="CompositionalMetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">compute_all_metrics</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_frame_prediction_pairs</span><span class="p">(),</span>
+            <span class="n">overall_metrics</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">all_predicted_frames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="n">ALL_PRED_FRAMES</span><span class="p">],</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.create_frame_prediction_pairs"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.create_frame_prediction_pairs">[docs]</a>    <span class="k">def</span> <span class="nf">create_frame_prediction_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">FramePredictionPair</span><span class="p">(</span>
+                <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">tree_to_metric_node</span><span class="p">(</span><span class="n">pred_tree</span><span class="p">),</span>
+                <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">tree_to_metric_node</span><span class="p">(</span><span class="n">target_tree</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">pred_tree</span><span class="p">,</span> <span class="n">target_tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_target_trees</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.get_model_select_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.get_model_select_metric">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_select_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">frame_accuracy</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.batch_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.batch_context">[docs]</a>    <span class="k">def</span> <span class="nf">batch_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">batch_context</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+        <span class="n">context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">TOKENS</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">])</span>
+            <span class="p">]</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+        <span class="p">]</span>
+        <span class="n">context</span><span class="p">[</span><span class="n">BatchContext</span><span class="o">.</span><span class="n">INDEX</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.tree_from_tokens_and_indx_actions"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.tree_from_tokens_and_indx_actions">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">tree_from_tokens_and_indx_actions</span><span class="p">(</span>
+        <span class="n">token_str_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">actions_vocab</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">actions_indices</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">validate_tree</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">action_idx</span> <span class="ow">in</span> <span class="n">actions_indices</span><span class="p">:</span>
+                <span class="n">action</span> <span class="o">=</span> <span class="n">actions_vocab</span><span class="p">[</span><span class="n">action_idx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">REDUCE</span><span class="p">:</span>
+                    <span class="n">builder</span><span class="o">.</span><span class="n">update_tree</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="n">SHIFT</span><span class="p">:</span>
+                    <span class="n">builder</span><span class="o">.</span><span class="n">update_tree</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">token_str_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">builder</span><span class="o">.</span><span class="n">update_tree</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">update_tree</span><span class="p">(</span><span class="n">SHIFT</span><span class="p">,</span> <span class="s2">"IN:INVALID"</span><span class="p">)</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">finalize_tree</span><span class="p">(</span><span class="n">validate_tree</span><span class="o">=</span><span class="n">validate_tree</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tree</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.tree_to_metric_node"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.tree_to_metric_node">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">tree_to_metric_node</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Creates a Node from tree assuming the utterance is a concatenation of the</span>
+<span class="sd">        tokens by whitespaces. The function does not necessarily reproduce the original</span>
+<span class="sd">        utterance as extra whitespaces can be introduced.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">node_to_metrics_node</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="CompositionalMetricReporter.node_to_metrics_node"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.node_to_metrics_node">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">node_to_metrics_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Intent</span><span class="p">,</span> <span class="n">Slot</span><span class="p">],</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        The input start is the absolute start position in utterance</span>
+<span class="sd">        """</span>
+        <span class="n">res_children</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+                    <span class="n">idx</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">label</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span><span class="p">:</span>
+                    <span class="n">res_child</span> <span class="o">=</span> <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">node_to_metrics_node</span><span class="p">(</span>
+                        <span class="n">child</span><span class="p">,</span> <span class="n">idx</span>
+                    <span class="p">)</span>
+                    <span class="n">res_children</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res_child</span><span class="p">)</span>
+                    <span class="n">idx</span> <span class="o">=</span> <span class="n">res_child</span><span class="o">.</span><span class="n">span</span><span class="o">.</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Child must be Token, Intent or Slot!"</span><span class="p">)</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">span</span><span class="o">=</span><span class="n">Span</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">children</span><span class="o">=</span><span class="n">res_children</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">node</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

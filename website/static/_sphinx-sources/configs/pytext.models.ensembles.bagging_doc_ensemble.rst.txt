@@ -1,0 +1,7 @@
+bagging_doc_ensemble
+====================
+
+
+.. toctree::
+
+  pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel.Config

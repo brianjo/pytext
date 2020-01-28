@@ -1,0 +1,27 @@
+Featurizer.Config
+=================
+
+
+
+**Component:** :class:`Featurizer  <pytext.data.featurizer.featurizer.Featurizer>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: Featurizer.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

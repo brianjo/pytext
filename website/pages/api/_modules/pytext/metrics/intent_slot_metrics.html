@@ -1,0 +1,618 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metrics.intent_slot_metrics</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span> <span class="k">as</span> <span class="n">counter</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AbstractSet</span><span class="p">,</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">Counter</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">NamedTuple</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">pytext.data.data_structures.node</span> <span class="kn">import</span> <span class="n">Node</span> <span class="k">as</span> <span class="n">NodeBase</span><span class="p">,</span> <span class="n">Span</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AllConfusions</span><span class="p">,</span>
+    <span class="n">Confusions</span><span class="p">,</span>
+    <span class="n">PerLabelConfusions</span><span class="p">,</span>
+    <span class="n">PRF1Metrics</span><span class="p">,</span>
+    <span class="n">PRF1Scores</span><span class="p">,</span>
+    <span class="n">safe_division</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="sd">"""</span>
+<span class="sd">Metric classes and functions for intent-slot prediction problems.</span>
+<span class="sd">"""</span>
+
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="n">NodeBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Subclass of the base Node class, used for metric purposes. It is immutable so that</span>
+<span class="sd">    hashing can be done on the class.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        label (str): Label of the node.</span>
+<span class="sd">        span (Span): Span of the node.</span>
+<span class="sd">        children (:obj:`frozenset` of :obj:`Node`): frozenset of the node's children,</span>
+<span class="sd">            left empty when computing bracketing metrics.</span>
+<span class="sd">        text (str): Text the node covers (=utterance[span.start:span.end])</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">span</span><span class="p">:</span> <span class="n">Span</span><span class="p">,</span>
+        <span class="n">children</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AbstractSet</span><span class="p">[</span><span class="s2">"Node"</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">label</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">(),</span> <span class="n">text</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">"Node class is immutable."</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">span</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="FramePredictionPair"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.FramePredictionPair">[docs]</a><span class="k">class</span> <span class="nc">FramePredictionPair</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Pair of predicted and gold intent frames.</span>
+<span class="sd">    """</span>
+
+    <span class="n">predicted_frame</span><span class="p">:</span> <span class="n">Node</span>
+    <span class="n">expected_frame</span><span class="p">:</span> <span class="n">Node</span></div>
+
+
+<div class="viewcode-block" id="NodesPredictionPair"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.NodesPredictionPair">[docs]</a><span class="k">class</span> <span class="nc">NodesPredictionPair</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Pair of predicted and expected sets of nodes.</span>
+<span class="sd">    """</span>
+
+    <span class="n">predicted_nodes</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span>
+    <span class="n">expected_nodes</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="IntentsAndSlots"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.IntentsAndSlots">[docs]</a><span class="k">class</span> <span class="nc">IntentsAndSlots</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Collection of intents and slots in an intent frame.</span>
+<span class="sd">    """</span>
+
+    <span class="n">intents</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span>
+    <span class="n">slots</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="FrameAccuracy"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.FrameAccuracy">[docs]</a><span class="k">class</span> <span class="nc">FrameAccuracy</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Frame accuracy for a collection of intent frame predictions.</span>
+
+<span class="sd">    Frame accuracy means the entire tree structure of the predicted frame matches that</span>
+<span class="sd">    of the gold frame.</span>
+<span class="sd">    """</span>
+
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">frame_accuracy</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+<span class="n">FrameAccuraciesByDepth</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">FrameAccuracy</span><span class="p">]</span>
+<span class="sd">"""</span>
+<span class="sd">Frame accuracies bucketized by depth of the gold tree.</span>
+<span class="sd">"""</span>
+
+
+<div class="viewcode-block" id="IntentSlotMetrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.IntentSlotMetrics">[docs]</a><span class="k">class</span> <span class="nc">IntentSlotMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Precision/recall/F1 metrics for intents and slots.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        intent_metrics: Precision/recall/F1 metrics for intents.</span>
+<span class="sd">        slot_metrics: Precision/recall/F1 metrics for slots.</span>
+<span class="sd">        overall_metrics: Combined precision/recall/F1 metrics for all nodes (merging</span>
+<span class="sd">            intents and slots).</span>
+<span class="sd">    """</span>
+
+    <span class="n">intent_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PRF1Metrics</span><span class="p">]</span>
+    <span class="n">slot_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PRF1Metrics</span><span class="p">]</span>
+    <span class="n">overall_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PRF1Scores</span><span class="p">]</span>
+
+<div class="viewcode-block" id="IntentSlotMetrics.print_metrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.IntentSlotMetrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">intent_metrics</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Intent Metrics"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">intent_metrics</span><span class="o">.</span><span class="n">print_metrics</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">slot_metrics</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Slot Metrics"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">slot_metrics</span><span class="o">.</span><span class="n">print_metrics</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overall_metrics</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Merged Intent and Slot Metrics"</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"  P = {self.overall_metrics.precision * 100:.2f} "</span>
+                <span class="n">f</span><span class="s2">"R = {self.overall_metrics.recall * 100:.2f}, "</span>
+                <span class="n">f</span><span class="s2">"F1 = {self.overall_metrics.f1 * 100:.2f}."</span>
+            <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AllMetrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.AllMetrics">[docs]</a><span class="k">class</span> <span class="nc">AllMetrics</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Aggregated class for intent-slot related metrics.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        top_intent_accuracy: Accuracy of the top-level intent.</span>
+<span class="sd">        frame_accuracy: Frame accuracy.</span>
+<span class="sd">        frame_accuracies_by_depth: Frame accuracies bucketized by depth of the gold</span>
+<span class="sd">            tree.</span>
+<span class="sd">        bracket_metrics: Bracket metrics for intents and slots. For details, see the</span>
+<span class="sd">            function `compute_intent_slot_metrics()`.</span>
+<span class="sd">        tree_metrics: Tree metrics for intents and slots. For details, see the function</span>
+<span class="sd">            `compute_intent_slot_metrics()`.</span>
+<span class="sd">        loss: Cross entropy loss.</span>
+<span class="sd">    """</span>
+
+    <span class="n">top_intent_accuracy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">frame_accuracy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">frame_accuracy_top_k</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">frame_accuracies_by_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FrameAccuraciesByDepth</span><span class="p">]</span>
+    <span class="n">bracket_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IntentSlotMetrics</span><span class="p">]</span>
+    <span class="n">tree_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IntentSlotMetrics</span><span class="p">]</span>
+    <span class="n">loss</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="AllMetrics.print_metrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.AllMetrics.print_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_accuracy</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">Frame accuracy = {self.frame_accuracy * 100:.2f}"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_accuracy_top_k</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">Top k frame accuracy = {self.frame_accuracy_top_k * 100:.2f}"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bracket_metrics</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">Bracket Metrics"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bracket_metrics</span><span class="o">.</span><span class="n">print_metrics</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree_metrics</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">Tree Metrics"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree_metrics</span><span class="o">.</span><span class="n">print_metrics</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="IntentSlotConfusions"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.IntentSlotConfusions">[docs]</a><span class="k">class</span> <span class="nc">IntentSlotConfusions</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Aggregated class for intent and slot confusions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        intent_confusions: Confusion counts for intents.</span>
+<span class="sd">        slot_confusions: Confusion counts for slots.</span>
+<span class="sd">    """</span>
+
+    <span class="n">intent_confusions</span><span class="p">:</span> <span class="n">Confusions</span>
+    <span class="n">slot_confusions</span><span class="p">:</span> <span class="n">Confusions</span></div>
+
+
+<span class="k">def</span> <span class="nf">_compare_nodes</span><span class="p">(</span>
+    <span class="n">predicted_nodes</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">],</span>
+    <span class="n">expected_nodes</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">],</span>
+    <span class="n">per_label_confusions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerLabelConfusions</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Confusions</span><span class="p">:</span>
+    <span class="n">true_positives</span> <span class="o">=</span> <span class="n">predicted_nodes</span> <span class="o">&amp;</span> <span class="n">expected_nodes</span>
+    <span class="n">false_positives</span> <span class="o">=</span> <span class="n">predicted_nodes</span> <span class="o">-</span> <span class="n">true_positives</span>
+    <span class="n">false_negatives</span> <span class="o">=</span> <span class="n">expected_nodes</span> <span class="o">-</span> <span class="n">true_positives</span>
+
+    <span class="k">if</span> <span class="n">per_label_confusions</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">true_positives</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="s2">"TP"</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">false_positives</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="s2">"FP"</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">false_negatives</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">per_label_confusions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="s2">"FN"</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Confusions</span><span class="p">(</span>
+        <span class="n">TP</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">true_positives</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">FP</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">false_positives</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">FN</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">false_negatives</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_intents_and_slots</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span> <span class="n">tree_based</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IntentsAndSlots</span><span class="p">:</span>
+    <span class="n">intents</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span> <span class="o">=</span> <span class="n">counter</span><span class="p">()</span>
+    <span class="n">slots</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span> <span class="o">=</span> <span class="n">counter</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">process_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span> <span class="n">is_intent</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">process_node</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="ow">not</span> <span class="n">is_intent</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tree_based</span><span class="p">:</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)(</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">span</span><span class="p">),</span> <span class="n">text</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_intent</span><span class="p">:</span>
+            <span class="n">intents</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slots</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">process_node</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">IntentsAndSlots</span><span class="p">(</span><span class="n">intents</span><span class="o">=</span><span class="n">intents</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="n">slots</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="compare_frames"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compare_frames">[docs]</a><span class="k">def</span> <span class="nf">compare_frames</span><span class="p">(</span>
+    <span class="n">predicted_frame</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span>
+    <span class="n">expected_frame</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span>
+    <span class="n">tree_based</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">intent_per_label_confusions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerLabelConfusions</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="n">slot_per_label_confusions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerLabelConfusions</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IntentSlotConfusions</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Compares two intent frames and returns TP, FP, FN counts for intents and slots.</span>
+<span class="sd">    Optionally collects the per label TP, FP, FN counts.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predicted_frame: Predicted intent frame.</span>
+<span class="sd">        expected_frame: Gold intent frame.</span>
+<span class="sd">        tree_based: Whether to get the tree-based confusions (if True) or bracket-based</span>
+<span class="sd">            confusions (if False). For details, see the function</span>
+<span class="sd">            `compute_intent_slot_metrics()`.</span>
+<span class="sd">        intent_per_label_confusions: If provided, update the per label confusions for</span>
+<span class="sd">            intents as well. Defaults to None.</span>
+<span class="sd">        slot_per_label_confusions: If provided, update the per label confusions for</span>
+<span class="sd">            slots as well. Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        IntentSlotConfusions, containing confusion counts for intents and slots.</span>
+<span class="sd">    """</span>
+    <span class="n">predicted_intents_and_slots</span> <span class="o">=</span> <span class="n">_get_intents_and_slots</span><span class="p">(</span>
+        <span class="n">predicted_frame</span><span class="p">,</span> <span class="n">tree_based</span><span class="o">=</span><span class="n">tree_based</span>
+    <span class="p">)</span>
+    <span class="n">expected_intents_and_slots</span> <span class="o">=</span> <span class="n">_get_intents_and_slots</span><span class="p">(</span>
+        <span class="n">expected_frame</span><span class="p">,</span> <span class="n">tree_based</span><span class="o">=</span><span class="n">tree_based</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">IntentSlotConfusions</span><span class="p">(</span>
+        <span class="n">intent_confusions</span><span class="o">=</span><span class="n">_compare_nodes</span><span class="p">(</span>
+            <span class="n">predicted_intents_and_slots</span><span class="o">.</span><span class="n">intents</span><span class="p">,</span>
+            <span class="n">expected_intents_and_slots</span><span class="o">.</span><span class="n">intents</span><span class="p">,</span>
+            <span class="n">intent_per_label_confusions</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">slot_confusions</span><span class="o">=</span><span class="n">_compare_nodes</span><span class="p">(</span>
+            <span class="n">predicted_intents_and_slots</span><span class="o">.</span><span class="n">slots</span><span class="p">,</span>
+            <span class="n">expected_intents_and_slots</span><span class="o">.</span><span class="n">slots</span><span class="p">,</span>
+            <span class="n">slot_per_label_confusions</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_prf1_metrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_prf1_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_prf1_metrics</span><span class="p">(</span>
+    <span class="n">nodes_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">NodesPredictionPair</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">AllConfusions</span><span class="p">,</span> <span class="n">PRF1Metrics</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes precision/recall/F1 metrics given a list of predicted and expected sets of</span>
+<span class="sd">    nodes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        nodes_pairs: List of predicted and expected node sets.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple, of which the first member contains the confusion information, and the</span>
+<span class="sd">        second member contains the computed precision/recall/F1 metrics.</span>
+<span class="sd">    """</span>
+    <span class="n">all_confusions</span> <span class="o">=</span> <span class="n">AllConfusions</span><span class="p">()</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">predicted_nodes</span><span class="p">,</span> <span class="n">expected_nodes</span><span class="p">)</span> <span class="ow">in</span> <span class="n">nodes_pairs</span><span class="p">:</span>
+        <span class="n">all_confusions</span><span class="o">.</span><span class="n">confusions</span> <span class="o">+=</span> <span class="n">_compare_nodes</span><span class="p">(</span>
+            <span class="n">predicted_nodes</span><span class="p">,</span> <span class="n">expected_nodes</span><span class="p">,</span> <span class="n">all_confusions</span><span class="o">.</span><span class="n">per_label_confusions</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">all_confusions</span><span class="p">,</span> <span class="n">all_confusions</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="compute_intent_slot_metrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_intent_slot_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_intent_slot_metrics</span><span class="p">(</span>
+    <span class="n">frame_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">],</span>
+    <span class="n">tree_based</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">overall_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IntentSlotMetrics</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given a list of predicted and gold intent frames, computes precision, recall and F1</span>
+<span class="sd">    metrics for intents and slots, either in tree-based or bracket-based manner.</span>
+
+<span class="sd">    The following assumptions are taken on intent frames:</span>
+<span class="sd">    1. The root node is an intent,</span>
+<span class="sd">    2. Children of intents are always slots, and children of slots are always intents.</span>
+
+<span class="sd">    For tree-based metrics, a node (an intent or slot) in the predicted frame is</span>
+<span class="sd">    considered a true positive only if the subtree rooted at this node has an exact copy</span>
+<span class="sd">    in the gold frame, otherwise it is considered a false positive. A false negative is</span>
+<span class="sd">    a node in the gold frame that does not have an exact subtree match in the predicted</span>
+<span class="sd">    frame.</span>
+
+<span class="sd">    For bracket-based metrics, a node in the predicted frame is considered a true</span>
+<span class="sd">    positive if there is a node in the gold frame having the same label and span (but</span>
+<span class="sd">    not necessarily the same children). The definitions of false positives and false</span>
+<span class="sd">    negatives are similar to the above.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        frame_pairs: List of predicted and gold intent frames.</span>
+<span class="sd">        tree_based: Whether to compute tree-based metrics (if True) or bracket-based</span>
+<span class="sd">            metrics (if False).</span>
+<span class="sd">        overall_metrics: Whether to compute overall (merging intents and slots) metrics</span>
+<span class="sd">            or not. Defaults to True.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        IntentSlotMetrics, containing precision/recall/F1 metrics for intents and slots.</span>
+<span class="sd">    """</span>
+    <span class="n">intents_pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">NodesPredictionPair</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">slots_pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">NodesPredictionPair</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">predicted_frame</span><span class="p">,</span> <span class="n">expected_frame</span><span class="p">)</span> <span class="ow">in</span> <span class="n">frame_pairs</span><span class="p">:</span>
+        <span class="n">predicted</span> <span class="o">=</span> <span class="n">_get_intents_and_slots</span><span class="p">(</span><span class="n">predicted_frame</span><span class="p">,</span> <span class="n">tree_based</span><span class="o">=</span><span class="n">tree_based</span><span class="p">)</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="n">_get_intents_and_slots</span><span class="p">(</span><span class="n">expected_frame</span><span class="p">,</span> <span class="n">tree_based</span><span class="o">=</span><span class="n">tree_based</span><span class="p">)</span>
+        <span class="n">intents_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NodesPredictionPair</span><span class="p">(</span><span class="n">predicted</span><span class="o">.</span><span class="n">intents</span><span class="p">,</span> <span class="n">expected</span><span class="o">.</span><span class="n">intents</span><span class="p">))</span>
+        <span class="n">slots_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NodesPredictionPair</span><span class="p">(</span><span class="n">predicted</span><span class="o">.</span><span class="n">slots</span><span class="p">,</span> <span class="n">expected</span><span class="o">.</span><span class="n">slots</span><span class="p">))</span>
+    <span class="n">intent_confusions</span><span class="p">,</span> <span class="n">intent_metrics</span> <span class="o">=</span> <span class="n">compute_prf1_metrics</span><span class="p">(</span><span class="n">intents_pairs</span><span class="p">)</span>
+    <span class="n">slot_confusions</span><span class="p">,</span> <span class="n">slot_metrics</span> <span class="o">=</span> <span class="n">compute_prf1_metrics</span><span class="p">(</span><span class="n">slots_pairs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">IntentSlotMetrics</span><span class="p">(</span>
+        <span class="n">intent_metrics</span><span class="o">=</span><span class="n">intent_metrics</span><span class="p">,</span>
+        <span class="n">slot_metrics</span><span class="o">=</span><span class="n">slot_metrics</span><span class="p">,</span>
+        <span class="n">overall_metrics</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">intent_confusions</span><span class="o">.</span><span class="n">confusions</span> <span class="o">+</span> <span class="n">slot_confusions</span><span class="o">.</span><span class="n">confusions</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">overall_metrics</span>
+        <span class="k">else</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_top_intent_accuracy"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_top_intent_accuracy">[docs]</a><span class="k">def</span> <span class="nf">compute_top_intent_accuracy</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes accuracy of the top-level intent.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        frame_pairs: List of predicted and gold intent frames.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Prediction accuracy of the top-level intent.</span>
+<span class="sd">    """</span>
+    <span class="n">num_correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">predicted_frame</span><span class="p">,</span> <span class="n">expected_frame</span><span class="p">)</span> <span class="ow">in</span> <span class="n">frame_pairs</span><span class="p">:</span>
+        <span class="n">num_correct</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">predicted_frame</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">expected_frame</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">num_correct</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_frame_accuracy"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_frame_accuracy">[docs]</a><span class="k">def</span> <span class="nf">compute_frame_accuracy</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes frame accuracy given a list of predicted and gold intent frames.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        frame_pairs: List of predicted and gold intent frames.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Frame accuracy. For a prediction, frame accuracy is achieved if the entire tree</span>
+<span class="sd">        structure of the predicted frame matches that of the gold frame.</span>
+<span class="sd">    """</span>
+    <span class="n">num_correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">predicted_frame</span><span class="p">,</span> <span class="n">expected_frame</span><span class="p">)</span> <span class="ow">in</span> <span class="n">frame_pairs</span><span class="p">:</span>
+        <span class="n">num_correct</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">predicted_frame</span> <span class="o">==</span> <span class="n">expected_frame</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">num_correct</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_frame_accuracy_top_k"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_frame_accuracy_top_k">[docs]</a><span class="k">def</span> <span class="nf">compute_frame_accuracy_top_k</span><span class="p">(</span>
+    <span class="n">frame_pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">],</span> <span class="n">all_frames</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">)</span>
+    <span class="n">num_correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">top_k_predicted_frames</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_frames</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">expected_frame</span> <span class="o">=</span> <span class="n">frame_pairs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">predicted_frame</span> <span class="ow">in</span> <span class="n">top_k_predicted_frames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">predicted_frame</span> <span class="o">==</span> <span class="n">expected_frame</span><span class="p">:</span>
+                <span class="n">num_correct</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">break</span>
+    <span class="k">return</span> <span class="n">safe_division</span><span class="p">(</span><span class="n">num_correct</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_metric_at_k"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_metric_at_k">[docs]</a><span class="k">def</span> <span class="nf">compute_metric_at_k</span><span class="p">(</span>
+    <span class="n">references</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">],</span>
+    <span class="n">hypothesis</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]],</span>
+    <span class="n">metric_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Node</span><span class="p">,</span> <span class="n">Node</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">f1</span><span class="p">,</span> <span class="n">f2</span><span class="p">:</span> <span class="n">f1</span> <span class="o">==</span> <span class="n">f2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Computes a boolean metric at each position in the ranked list of hypothesis,</span>
+<span class="sd">    and returns an average for each position over all examples.</span>
+<span class="sd">    By default metric_fn is comparing if frames are equal.</span>
+<span class="sd">    """</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">references</span><span class="p">)</span>
+    <span class="c1"># Position of the correct frame if present in the ranked list.</span>
+    <span class="n">pos_correct</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">max_hyp_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Iterate over ranked list of hypothesis and remember what was the position</span>
+    <span class="c1"># of the first correct frame.</span>
+    <span class="k">for</span> <span class="n">reference</span><span class="p">,</span> <span class="n">hyp_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">):</span>
+        <span class="n">correct_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">predicted_frame</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">hyp_list</span><span class="p">):</span>
+            <span class="n">max_hyp_count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">max_hyp_count</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">metric_fn</span><span class="p">(</span><span class="n">predicted_frame</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+                <span class="n">correct_index</span> <span class="o">=</span> <span class="n">rank</span>
+                <span class="k">break</span>
+        <span class="n">pos_correct</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correct_index</span><span class="p">)</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">max_hyp_count</span>
+    <span class="c1"># Compute the number of correct frames per each position in the ranked list.</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">pos_correct</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pos</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">max_hyp_count</span><span class="p">):</span>
+                <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">safe_division</span><span class="p">(</span><span class="n">res_i</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span> <span class="k">for</span> <span class="n">res_i</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="compute_frame_accuracies_by_depth"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_frame_accuracies_by_depth">[docs]</a><span class="k">def</span> <span class="nf">compute_frame_accuracies_by_depth</span><span class="p">(</span>
+    <span class="n">frame_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FrameAccuraciesByDepth</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given a list of predicted and gold intent frames, splits the predictions into</span>
+<span class="sd">    buckets according to the depth of the gold trees, and computes frame accuracy for</span>
+<span class="sd">    each bucket.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        frame_pairs: List of predicted and gold intent frames.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        FrameAccuraciesByDepth, a map from depths to their corresponding frame</span>
+<span class="sd">        accuracies.</span>
+<span class="sd">    """</span>
+    <span class="n">frame_pairs_by_depth</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">frame_pair</span> <span class="ow">in</span> <span class="n">frame_pairs</span><span class="p">:</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">frame_pair</span><span class="o">.</span><span class="n">expected_frame</span><span class="o">.</span><span class="n">get_depth</span><span class="p">()</span>
+        <span class="n">frame_pairs_by_depth</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_pair</span><span class="p">)</span>
+    <span class="n">frame_accuracies_by_depth</span><span class="p">:</span> <span class="n">FrameAccuraciesByDepth</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">depth</span><span class="p">,</span> <span class="n">pairs</span> <span class="ow">in</span> <span class="n">frame_pairs_by_depth</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">frame_accuracies_by_depth</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">=</span> <span class="n">FrameAccuracy</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">pairs</span><span class="p">),</span> <span class="n">compute_frame_accuracy</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">frame_accuracies_by_depth</span></div>
+
+
+<div class="viewcode-block" id="compute_all_metrics"><a class="viewcode-back" href="../../../modules/pytext.metrics.html#pytext.metrics.intent_slot_metrics.compute_all_metrics">[docs]</a><span class="k">def</span> <span class="nf">compute_all_metrics</span><span class="p">(</span>
+    <span class="n">frame_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FramePredictionPair</span><span class="p">],</span>
+    <span class="n">top_intent_accuracy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">frame_accuracy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">frame_accuracies_by_depth</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">bracket_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">tree_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="n">overall_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+    <span class="n">all_predicted_frames</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="n">calculated_loss</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AllMetrics</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given a list of predicted and gold intent frames, computes intent-slot related</span>
+<span class="sd">    metrics.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        frame_pairs: List of predicted and gold intent frames.</span>
+<span class="sd">        top_intent_accuracy: Whether to compute top intent accuracy or not. Defaults to</span>
+<span class="sd">            True.</span>
+<span class="sd">        frame_accuracy: Whether to compute frame accuracy or not. Defaults to True.</span>
+<span class="sd">        frame_accuracies_by_depth: Whether to compute frame accuracies by depth or not.</span>
+<span class="sd">            Defaults to True.</span>
+<span class="sd">        bracket_metrics: Whether to compute bracket metrics or not. Defaults to True.</span>
+<span class="sd">        tree_metrics: Whether to compute tree metrics or not. Defaults to True.</span>
+<span class="sd">        overall_metrics: If `bracket_metrics` or `tree_metrics` is true, decides whether</span>
+<span class="sd">            to compute overall (merging intents and slots) metrics for them. Defaults to</span>
+<span class="sd">            False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        AllMetrics which contains intent-slot related metrics.</span>
+<span class="sd">    """</span>
+    <span class="n">frame_accuracy_top_k</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">all_predicted_frames</span><span class="p">:</span>
+        <span class="n">frame_accuracy_top_k</span> <span class="o">=</span> <span class="n">compute_frame_accuracy_top_k</span><span class="p">(</span>
+            <span class="n">frame_pairs</span><span class="p">,</span> <span class="n">all_predicted_frames</span>
+        <span class="p">)</span>
+
+    <span class="n">top_intent</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">compute_top_intent_accuracy</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">)</span> <span class="k">if</span> <span class="n">top_intent_accuracy</span> <span class="k">else</span> <span class="bp">None</span>
+    <span class="p">)</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">compute_frame_accuracy</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">)</span> <span class="k">if</span> <span class="n">frame_accuracy</span> <span class="k">else</span> <span class="bp">None</span>
+    <span class="n">accuracies</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">compute_frame_accuracies_by_depth</span><span class="p">(</span><span class="n">frame_pairs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">frame_accuracies_by_depth</span>
+        <span class="k">else</span> <span class="bp">None</span>
+    <span class="p">)</span>
+    <span class="n">bracket</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">compute_intent_slot_metrics</span><span class="p">(</span>
+            <span class="n">frame_pairs</span><span class="p">,</span> <span class="n">tree_based</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">overall_metrics</span><span class="o">=</span><span class="n">overall_metrics</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">bracket_metrics</span>
+        <span class="k">else</span> <span class="bp">None</span>
+    <span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">compute_intent_slot_metrics</span><span class="p">(</span>
+            <span class="n">frame_pairs</span><span class="p">,</span> <span class="n">tree_based</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">overall_metrics</span><span class="o">=</span><span class="n">overall_metrics</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">tree_metrics</span>
+        <span class="k">else</span> <span class="bp">None</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">AllMetrics</span><span class="p">(</span>
+        <span class="n">top_intent</span><span class="p">,</span>
+        <span class="n">accuracy</span><span class="p">,</span>
+        <span class="n">frame_accuracy_top_k</span><span class="p">,</span>
+        <span class="n">accuracies</span><span class="p">,</span>
+        <span class="n">bracket</span><span class="p">,</span>
+        <span class="n">tree</span><span class="p">,</span>
+        <span class="n">calculated_loss</span><span class="p">,</span>
+    <span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../metrics.html">pytext.metrics</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

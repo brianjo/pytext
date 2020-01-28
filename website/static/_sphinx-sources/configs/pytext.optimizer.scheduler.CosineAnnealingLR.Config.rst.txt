@@ -1,0 +1,38 @@
+CosineAnnealingLR.Config
+========================
+
+
+
+**Component:** :class:`CosineAnnealingLR  <pytext.optimizer.scheduler.CosineAnnealingLR>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: CosineAnnealingLR.Config
+  :noindex:
+
+  **Bases:** :class:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **t_max**: int = ``1000``
+    Maximum number of iterations.
+    
+
+  **eta_min**: float = ``0``
+    Minimum learning rate
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "t_max": 1000,
+      "eta_min": 0
+  }

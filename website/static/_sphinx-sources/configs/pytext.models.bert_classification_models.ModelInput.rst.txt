@@ -1,0 +1,97 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.bert_classification_models
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInputBase <pytext.models.model.ModelInputBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens1**: :doc:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>` = :doc:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>`\ (columns=\ ``['text1']``\ , max_seq_len=\ ``128``\ )
+    \ 
+
+  **tokens2**: :doc:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>` = :doc:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>`\ (columns=\ ``['text2']``\ , max_seq_len=\ ``128``\ )
+    \ 
+
+  **labels**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ ()
+    \ 
+
+  **num_tokens**: :doc:`NtokensTensorizer.Config <pytext.data.tensorizers.NtokensTensorizer.Config>` = :doc:`NtokensTensorizer.Config <pytext.data.tensorizers.NtokensTensorizer.Config>`\ (names=\ ``['tokens1', 'tokens2']``\ , indexes=\ ``[2, 2]``\ )
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens1": {
+          "BERTTensorizer": {
+              "is_input": true,
+              "columns": [
+                  "text1"
+              ],
+              "tokenizer": {
+                  "WordPieceTokenizer": {
+                      "basic_tokenizer": {
+                          "split_regex": "\\s+",
+                          "lowercase": true
+                      },
+                      "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                  }
+              },
+              "base_tokenizer": null,
+              "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+              "max_seq_len": 128
+          }
+      },
+      "tokens2": {
+          "BERTTensorizer": {
+              "is_input": true,
+              "columns": [
+                  "text2"
+              ],
+              "tokenizer": {
+                  "WordPieceTokenizer": {
+                      "basic_tokenizer": {
+                          "split_regex": "\\s+",
+                          "lowercase": true
+                      },
+                      "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                  }
+              },
+              "base_tokenizer": null,
+              "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+              "max_seq_len": 128
+          }
+      },
+      "labels": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "label",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      },
+      "num_tokens": {
+          "is_input": false,
+          "names": [
+              "tokens1",
+              "tokens2"
+          ],
+          "indexes": [
+              2,
+              2
+          ]
+      }
+  }

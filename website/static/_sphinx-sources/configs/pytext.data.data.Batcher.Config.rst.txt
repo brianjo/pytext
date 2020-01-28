@@ -1,0 +1,49 @@
+Batcher.Config
+==============
+
+
+
+**Component:** :class:`Batcher  <pytext.data.data.Batcher>`\ 
+
+
+.. py:currentmodule:: pytext.data.data
+.. py:class:: Batcher.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **train_batch_size**: int = ``16``
+    Make batches of this size when possible. If there's not enough data,
+    might generate some smaller batches.
+    
+
+  **eval_batch_size**: int = ``16``
+    \ 
+
+  **test_batch_size**: int = ``16``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`PoolingBatcher.Config <pytext.data.data.PoolingBatcher.Config>`\ 
+  - :class:`DynamicPoolingBatcher.Config <pytext.data.dynamic_pooling_batcher.DynamicPoolingBatcher.Config>`\ 
+  - :class:`ExponentialDynamicPoolingBatcher.Config <pytext.data.dynamic_pooling_batcher.ExponentialDynamicPoolingBatcher.Config>`\ 
+  - :class:`LinearDynamicPoolingBatcher.Config <pytext.data.dynamic_pooling_batcher.LinearDynamicPoolingBatcher.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "train_batch_size": 16,
+      "eval_batch_size": 16,
+      "test_batch_size": 16
+  }

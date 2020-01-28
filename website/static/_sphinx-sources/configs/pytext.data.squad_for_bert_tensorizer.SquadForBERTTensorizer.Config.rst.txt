@@ -1,0 +1,75 @@
+SquadForBERTTensorizer.Config
+=============================
+
+
+
+**Component:** :class:`SquadForBERTTensorizer  <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.squad_for_bert_tensorizer
+.. py:class:: SquadForBERTTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **columns**: list[str] = ``['question', 'doc']``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`WordPieceTokenizer.Config <pytext.data.tokenizers.tokenizer.WordPieceTokenizer.Config>`\ ()
+    \ 
+
+  **base_tokenizer**: Optional[:doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`] = ``None``
+    \ 
+
+  **vocab_file**: str = ``'/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt'``
+    \ 
+
+  **max_seq_len**: int = ``256``
+    \ 
+
+  **answers_column**: str = ``'answers'``
+    \ 
+
+  **answer_starts_column**: str = ``'answer_starts'``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`SquadForBERTTensorizerForKD.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizerForKD.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "columns": [
+          "question",
+          "doc"
+      ],
+      "tokenizer": {
+          "WordPieceTokenizer": {
+              "basic_tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              },
+              "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+          }
+      },
+      "base_tokenizer": null,
+      "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+      "max_seq_len": 256,
+      "answers_column": "answers",
+      "answer_starts_column": "answer_starts"
+  }

@@ -1,0 +1,578 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-package">
+<h1>pytext package<a class="headerlink" href="#pytext-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytext.common.html">pytext.common package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.common.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.common.html#module-pytext.common.constants">pytext.common.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.common.html#module-pytext.common.utils">pytext.common.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.common.html#module-pytext.common">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.config.html">pytext.config package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.component">pytext.config.component module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.config_adapter">pytext.config.config_adapter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.contextual_intent_slot">pytext.config.contextual_intent_slot module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.doc_classification">pytext.config.doc_classification module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.field_config">pytext.config.field_config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.module_config">pytext.config.module_config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.pair_classification">pytext.config.pair_classification module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.pytext_config">pytext.config.pytext_config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.query_document_pairwise_ranking">pytext.config.query_document_pairwise_ranking module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.serialize">pytext.config.serialize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config.utils">pytext.config.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html#module-pytext.config">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.data.html">pytext.data package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.data_structures.html">pytext.data.data_structures package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.data_structures.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.data_structures.html#module-pytext.data.data_structures.annotation">pytext.data.data_structures.annotation module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.data_structures.html#module-pytext.data.data_structures.node">pytext.data.data_structures.node module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.data_structures.html#module-pytext.data.data_structures">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.featurizer.html">pytext.data.featurizer package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.featurizer.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.featurizer.html#module-pytext.data.featurizer.featurizer">pytext.data.featurizer.featurizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.featurizer.html#module-pytext.data.featurizer.simple_featurizer">pytext.data.featurizer.simple_featurizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.featurizer.html#module-pytext.data.featurizer">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.html">pytext.data.sources package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources.conllu">pytext.data.sources.conllu module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources.data_source">pytext.data.sources.data_source module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources.pandas">pytext.data.sources.pandas module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources.session">pytext.data.sources.session module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources.squad">pytext.data.sources.squad module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources.tsv">pytext.data.sources.tsv module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.html#module-pytext.data.sources">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.test.html">pytext.data.test package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.batch_sampler_test">pytext.data.test.batch_sampler_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.data_test">pytext.data.test.data_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.dynamic_pooling_batcher_test">pytext.data.test.dynamic_pooling_batcher_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.pandas_data_source_test">pytext.data.test.pandas_data_source_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.round_robin_batchiterator_test">pytext.data.test.round_robin_batchiterator_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.simple_featurizer_test">pytext.data.test.simple_featurizer_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.tensorizers_test">pytext.data.test.tensorizers_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.tokenizers_test">pytext.data.test.tokenizers_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.tsv_data_source_test">pytext.data.test.tsv_data_source_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test.utils_test">pytext.data.test.utils_test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.test.html#module-pytext.data.test">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tokenizers.html">pytext.data.tokenizers package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.html#module-pytext.data.tokenizers.tokenizer">pytext.data.tokenizers.tokenizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.html#module-pytext.data.tokenizers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.batch_sampler">pytext.data.batch_sampler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.bert_tensorizer">pytext.data.bert_tensorizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.data">pytext.data.data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.data_handler">pytext.data.data_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.disjoint_multitask_data">pytext.data.disjoint_multitask_data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.disjoint_multitask_data_handler">pytext.data.disjoint_multitask_data_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.dynamic_pooling_batcher">pytext.data.dynamic_pooling_batcher module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.packed_lm_data">pytext.data.packed_lm_data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.roberta_tensorizer">pytext.data.roberta_tensorizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.squad_for_bert_tensorizer">pytext.data.squad_for_bert_tensorizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.squad_tensorizer">pytext.data.squad_tensorizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.tensorizers">pytext.data.tensorizers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.utils">pytext.data.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.xlm_constants">pytext.data.xlm_constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.xlm_dictionary">pytext.data.xlm_dictionary module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data.xlm_tensorizer">pytext.data.xlm_tensorizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html#module-pytext.data">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.exporters.html">pytext.exporters package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html#module-pytext.exporters.custom_exporters">pytext.exporters.custom_exporters module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html#module-pytext.exporters.exporter">pytext.exporters.exporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html#module-pytext.exporters">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.fields.html">pytext.fields package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#module-pytext.fields.char_field">pytext.fields.char_field module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#module-pytext.fields.contextual_token_embedding_field">pytext.fields.contextual_token_embedding_field module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#module-pytext.fields.dict_field">pytext.fields.dict_field module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#module-pytext.fields.field">pytext.fields.field module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#module-pytext.fields.text_field_with_special_unk">pytext.fields.text_field_with_special_unk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.fields.html#module-pytext.fields">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.loss.html">pytext.loss package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html#module-pytext.loss.loss">pytext.loss.loss module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html#module-pytext.loss">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.metric_reporters.html">pytext.metric_reporters package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.channel">pytext.metric_reporters.channel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.classification_metric_reporter">pytext.metric_reporters.classification_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.compositional_metric_reporter">pytext.metric_reporters.compositional_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.disjoint_multitask_metric_reporter">pytext.metric_reporters.disjoint_multitask_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.intent_slot_detection_metric_reporter">pytext.metric_reporters.intent_slot_detection_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.language_model_metric_reporter">pytext.metric_reporters.language_model_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.metric_reporter">pytext.metric_reporters.metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.pairwise_ranking_metric_reporter">pytext.metric_reporters.pairwise_ranking_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.regression_metric_reporter">pytext.metric_reporters.regression_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.squad_metric_reporter">pytext.metric_reporters.squad_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters.word_tagging_metric_reporter">pytext.metric_reporters.word_tagging_metric_reporter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html#module-pytext.metric_reporters">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.metrics.html">pytext.metrics package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metrics.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metrics.html#module-pytext.metrics.intent_slot_metrics">pytext.metrics.intent_slot_metrics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metrics.html#module-pytext.metrics.language_model_metrics">pytext.metrics.language_model_metrics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metrics.html#module-pytext.metrics.squad_metrics">pytext.metrics.squad_metrics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metrics.html#module-pytext.metrics">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.models.html">pytext.models package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.decoders.html">pytext.models.decoders package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.html#module-pytext.models.decoders.decoder_base">pytext.models.decoders.decoder_base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.html#module-pytext.models.decoders.intent_slot_model_decoder">pytext.models.decoders.intent_slot_model_decoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.html#module-pytext.models.decoders.mlp_decoder">pytext.models.decoders.mlp_decoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.html#module-pytext.models.decoders.mlp_decoder_query_response">pytext.models.decoders.mlp_decoder_query_response module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.html#module-pytext.models.decoders">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.html">pytext.models.embeddings package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings.char_embedding">pytext.models.embeddings.char_embedding module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings.contextual_token_embedding">pytext.models.embeddings.contextual_token_embedding module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings.dict_embedding">pytext.models.embeddings.dict_embedding module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings.embedding_base">pytext.models.embeddings.embedding_base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings.embedding_list">pytext.models.embeddings.embedding_list module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings.word_embedding">pytext.models.embeddings.word_embedding module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.html#module-pytext.models.embeddings">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.ensembles.html">pytext.models.ensembles package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.html#module-pytext.models.ensembles.bagging_doc_ensemble">pytext.models.ensembles.bagging_doc_ensemble module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.html#module-pytext.models.ensembles.bagging_intent_slot_ensemble">pytext.models.ensembles.bagging_intent_slot_ensemble module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.html#module-pytext.models.ensembles.ensemble">pytext.models.ensembles.ensemble module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.html#module-pytext.models.ensembles">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.language_models.html">pytext.models.language_models package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.language_models.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.language_models.html#module-pytext.models.language_models.lmlstm">pytext.models.language_models.lmlstm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.language_models.html#module-pytext.models.language_models">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.html">pytext.models.output_layers package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.distance_output_layer">pytext.models.output_layers.distance_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.doc_classification_output_layer">pytext.models.output_layers.doc_classification_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.doc_regression_output_layer">pytext.models.output_layers.doc_regression_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.intent_slot_output_layer">pytext.models.output_layers.intent_slot_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.lm_output_layer">pytext.models.output_layers.lm_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.output_layer_base">pytext.models.output_layers.output_layer_base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.pairwise_ranking_output_layer">pytext.models.output_layers.pairwise_ranking_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.squad_output_layer">pytext.models.output_layers.squad_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.utils">pytext.models.output_layers.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers.word_tagging_output_layer">pytext.models.output_layers.word_tagging_output_layer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.html#module-pytext.models.output_layers">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.qna.html">pytext.models.qna package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.html#module-pytext.models.qna.bert_squad_qa">pytext.models.qna.bert_squad_qa module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.html#module-pytext.models.qna.dr_qa">pytext.models.qna.dr_qa module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.html#module-pytext.models.qna">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.html">pytext.models.representations package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.representations.transformer.html">pytext.models.representations.transformer package</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#submodules">Submodules</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#module-pytext.models.representations.transformer.multihead_attention">pytext.models.representations.transformer.multihead_attention module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#module-pytext.models.representations.transformer.positional_embedding">pytext.models.representations.transformer.positional_embedding module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#module-pytext.models.representations.transformer.residual_mlp">pytext.models.representations.transformer.residual_mlp module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#module-pytext.models.representations.transformer.sentence_encoder">pytext.models.representations.transformer.sentence_encoder module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#module-pytext.models.representations.transformer.transformer">pytext.models.representations.transformer.transformer module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.representations.transformer.html#module-pytext.models.representations.transformer">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.attention">pytext.models.representations.attention module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.augmented_lstm">pytext.models.representations.augmented_lstm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.bilstm">pytext.models.representations.bilstm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.bilstm_doc_attention">pytext.models.representations.bilstm_doc_attention module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.bilstm_doc_slot_attention">pytext.models.representations.bilstm_doc_slot_attention module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.bilstm_slot_attn">pytext.models.representations.bilstm_slot_attn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.biseqcnn">pytext.models.representations.biseqcnn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.contextual_intent_slot_rep">pytext.models.representations.contextual_intent_slot_rep module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.deepcnn">pytext.models.representations.deepcnn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.docnn">pytext.models.representations.docnn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.huggingface_bert_sentence_encoder">pytext.models.representations.huggingface_bert_sentence_encoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.jointcnn_rep">pytext.models.representations.jointcnn_rep module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.ordered_neuron_lstm">pytext.models.representations.ordered_neuron_lstm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.pair_rep">pytext.models.representations.pair_rep module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.pass_through">pytext.models.representations.pass_through module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.pooling">pytext.models.representations.pooling module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.pure_doc_attention">pytext.models.representations.pure_doc_attention module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.representation_base">pytext.models.representations.representation_base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.seq_rep">pytext.models.representations.seq_rep module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.slot_attention">pytext.models.representations.slot_attention module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.sparse_transformer_sentence_encoder">pytext.models.representations.sparse_transformer_sentence_encoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.stacked_bidirectional_rnn">pytext.models.representations.stacked_bidirectional_rnn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.traced_transformer_encoder">pytext.models.representations.traced_transformer_encoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.transformer_sentence_encoder">pytext.models.representations.transformer_sentence_encoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations.transformer_sentence_encoder_base">pytext.models.representations.transformer_sentence_encoder_base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.html#module-pytext.models.representations">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.semantic_parsers.html">pytext.models.semantic_parsers package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.semantic_parsers.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html">pytext.models.semantic_parsers.rnng package</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html#submodules">Submodules</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html#module-pytext.models.semantic_parsers.rnng.rnng_constant">pytext.models.semantic_parsers.rnng.rnng_constant module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html#module-pytext.models.semantic_parsers.rnng.rnng_data_structures">pytext.models.semantic_parsers.rnng.rnng_data_structures module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html#module-pytext.models.semantic_parsers.rnng.rnng_parser">pytext.models.semantic_parsers.rnng.rnng_parser module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html#module-pytext.models.semantic_parsers.rnng">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.semantic_parsers.html#module-pytext.models.semantic_parsers">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.seq_models.html">pytext.models.seq_models package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.html#module-pytext.models.seq_models.contextual_intent_slot">pytext.models.seq_models.contextual_intent_slot module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.html#module-pytext.models.seq_models.seqnn">pytext.models.seq_models.seqnn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.html#module-pytext.models.seq_models">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.bert_classification_models">pytext.models.bert_classification_models module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.bert_regression_model">pytext.models.bert_regression_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.crf">pytext.models.crf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.disjoint_multitask_model">pytext.models.disjoint_multitask_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.distributed_model">pytext.models.distributed_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.doc_model">pytext.models.doc_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.joint_model">pytext.models.joint_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.masked_lm">pytext.models.masked_lm module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.masking_utils">pytext.models.masking_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.model">pytext.models.model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.module">pytext.models.module module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.pair_classification_model">pytext.models.pair_classification_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.query_document_pairwise_ranking_model">pytext.models.query_document_pairwise_ranking_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.roberta">pytext.models.roberta module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models.word_model">pytext.models.word_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html#module-pytext.models">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.optimizer.html">pytext.optimizer package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.sparsifiers.html">pytext.optimizer.sparsifiers package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#module-pytext.optimizer.sparsifiers.blockwise_sparsifier">pytext.optimizer.sparsifiers.blockwise_sparsifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#module-pytext.optimizer.sparsifiers.sparsifier">pytext.optimizer.sparsifiers.sparsifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#module-pytext.optimizer.sparsifiers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.activations">pytext.optimizer.activations module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.fairseq_fp16_utils">pytext.optimizer.fairseq_fp16_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.fp16_optimizer">pytext.optimizer.fp16_optimizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.lamb">pytext.optimizer.lamb module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.optimizers">pytext.optimizer.optimizers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.radam">pytext.optimizer.radam module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.scheduler">pytext.optimizer.scheduler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer.swa">pytext.optimizer.swa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html#module-pytext.optimizer">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.task.html">pytext.task package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#module-pytext.task.disjoint_multitask">pytext.task.disjoint_multitask module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#module-pytext.task.new_task">pytext.task.new_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#module-pytext.task.serialize">pytext.task.serialize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#module-pytext.task.task">pytext.task.task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#module-pytext.task.tasks">pytext.task.tasks module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html#module-pytext.task">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.torchscript.html">pytext.torchscript package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.torchscript.tensorizer.html">pytext.torchscript.tensorizer package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.bert">pytext.torchscript.tensorizer.bert module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.normalizer">pytext.torchscript.tensorizer.normalizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.roberta">pytext.torchscript.tensorizer.roberta module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.tensorizer">pytext.torchscript.tensorizer.tensorizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.xlm">pytext.torchscript.tensorizer.xlm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.torchscript.tokenizer.html">pytext.torchscript.tokenizer package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tokenizer.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tokenizer.html#module-pytext.torchscript.tokenizer.bpe">pytext.torchscript.tokenizer.bpe module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tokenizer.html#module-pytext.torchscript.tokenizer.tokenizer">pytext.torchscript.tokenizer.tokenizer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.torchscript.tokenizer.html#module-pytext.torchscript.tokenizer">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.html#module-pytext.torchscript.module">pytext.torchscript.module module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.html#module-pytext.torchscript.utils">pytext.torchscript.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.html#module-pytext.torchscript.vocab">pytext.torchscript.vocab module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.html#module-pytext.torchscript">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.trainers.html">pytext.trainers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html#module-pytext.trainers.ensemble_trainer">pytext.trainers.ensemble_trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html#module-pytext.trainers.hogwild_trainer">pytext.trainers.hogwild_trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html#module-pytext.trainers.trainer">pytext.trainers.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html#module-pytext.trainers.training_state">pytext.trainers.training_state module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html#module-pytext.trainers">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.utils.html">pytext.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.ascii_table">pytext.utils.ascii_table module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.cuda">pytext.utils.cuda module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.data">pytext.utils.data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.distributed">pytext.utils.distributed module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.documentation">pytext.utils.documentation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.embeddings">pytext.utils.embeddings module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.file_io">pytext.utils.file_io module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.label">pytext.utils.label module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.lazy">pytext.utils.lazy module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.loss">pytext.utils.loss module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.meter">pytext.utils.meter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.mobile_onnx">pytext.utils.mobile_onnx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.model">pytext.utils.model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.onnx">pytext.utils.onnx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.path">pytext.utils.path module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.precision">pytext.utils.precision module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.tensor">pytext.utils.tensor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.test">pytext.utils.test module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.timing">pytext.utils.timing module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils.torch">pytext.utils.torch module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.utils.html#module-pytext.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.builtin_task">
+<span id="pytext-builtin-task-module"></span><h2>pytext.builtin_task module<a class="headerlink" href="#module-pytext.builtin_task" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.builtin_task.add_include">
+<code class="sig-prename descclassname">pytext.builtin_task.</code><code class="sig-name descname">add_include</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/builtin_task.html#add_include"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.builtin_task.add_include" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import tasks (and associated components) from the folder name.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.builtin_task.register_builtin_tasks">
+<code class="sig-prename descclassname">pytext.builtin_task.</code><code class="sig-name descname">register_builtin_tasks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/builtin_task.html#register_builtin_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.builtin_task.register_builtin_tasks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.main">
+<span id="pytext-main-module"></span><h2>pytext.main module<a class="headerlink" href="#module-pytext.main" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.main.Attrs">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.main.</code><code class="sig-name descname">Attrs</code><a class="reference internal" href="../_modules/pytext/main.html#Attrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.main.Attrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.main.gen_config_impl">
+<code class="sig-prename descclassname">pytext.main.</code><code class="sig-name descname">gen_config_impl</code><span class="sig-paren">(</span><em class="sig-param">task_name</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/main.html#gen_config_impl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.main.gen_config_impl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.main.run_single">
+<code class="sig-prename descclassname">pytext.main.</code><code class="sig-name descname">run_single</code><span class="sig-paren">(</span><em class="sig-param">rank: int, config_json: str, world_size: int, dist_init_method: Optional[str], metadata: Union[Dict[str, pytext.data.data_handler.CommonMetadata], pytext.data.data_handler.CommonMetadata, None], metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/main.html#run_single"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.main.run_single" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.main.train_model_distributed">
+<code class="sig-prename descclassname">pytext.main.</code><code class="sig-name descname">train_model_distributed</code><span class="sig-paren">(</span><em class="sig-param">config, metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/main.html#train_model_distributed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.main.train_model_distributed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.workflow">
+<span id="pytext-workflow-module"></span><h2>pytext.workflow module<a class="headerlink" href="#module-pytext.workflow" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.workflow.batch_predict">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">batch_predict</code><span class="sig-paren">(</span><em class="sig-param">model_file: str, examples: List[Dict[str, Any]]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/workflow.html#batch_predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.batch_predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.dict_zip">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">dict_zip</code><span class="sig-paren">(</span><em class="sig-param">*dicts</em>, <em class="sig-param">value_only=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/workflow.html#dict_zip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.dict_zip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.export_saved_model_to_caffe2">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">export_saved_model_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">saved_model_path: str</em>, <em class="sig-param">export_caffe2_path: str</em>, <em class="sig-param">output_onnx_path: str = None</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/workflow.html#export_saved_model_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.export_saved_model_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.export_saved_model_to_torchscript">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">export_saved_model_to_torchscript</code><span class="sig-paren">(</span><em class="sig-param">saved_model_path: str</em>, <em class="sig-param">path: str</em>, <em class="sig-param">quantize: bool = False</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/workflow.html#export_saved_model_to_torchscript"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.export_saved_model_to_torchscript" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.get_logits">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">get_logits</code><span class="sig-paren">(</span><em class="sig-param">snapshot_path: str</em>, <em class="sig-param">use_cuda_if_available: bool</em>, <em class="sig-param">output_path: Optional[str] = None</em>, <em class="sig-param">test_path: Optional[str] = None</em>, <em class="sig-param">field_names: Optional[List[str]] = None</em>, <em class="sig-param">dump_raw_input: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/workflow.html#get_logits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.get_logits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.prepare_task">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">prepare_task</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">dist_init_url: str = None</em>, <em class="sig-param">device_id: int = 0</em>, <em class="sig-param">rank: int = 0</em>, <em class="sig-param">world_size: int = 1</em>, <em class="sig-param">metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]] = None</em>, <em class="sig-param">metadata: pytext.data.data_handler.CommonMetadata = None</em><span class="sig-paren">)</span> → Tuple[pytext.task.task.Task_Deprecated, pytext.trainers.training_state.TrainingState]<a class="reference internal" href="../_modules/pytext/workflow.html#prepare_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.prepare_task" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.prepare_task_metadata">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">prepare_task_metadata</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig</em><span class="sig-paren">)</span> → pytext.data.data_handler.CommonMetadata<a class="reference internal" href="../_modules/pytext/workflow.html#prepare_task_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.prepare_task_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loading the whole dataset into cpu memory on every single processes could
+cause OOMs for data parallel distributed training.
+To avoid such practice, we move the operations that required loading the
+whole dataset out of spawn, and pass the context to every single process.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.save_and_export">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">save_and_export</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">task: pytext.task.task.Task_Deprecated</em>, <em class="sig-param">metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]] = None</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/workflow.html#save_and_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.save_and_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.test_model">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">test_model</code><span class="sig-paren">(</span><em class="sig-param">test_config: pytext.config.pytext_config.TestConfig, metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]], test_out_path: str</em><span class="sig-paren">)</span> → Any<a class="reference internal" href="../_modules/pytext/workflow.html#test_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.test_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.test_model_from_snapshot_path">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">test_model_from_snapshot_path</code><span class="sig-paren">(</span><em class="sig-param">snapshot_path: str</em>, <em class="sig-param">use_cuda_if_available: bool</em>, <em class="sig-param">test_path: Optional[str] = None</em>, <em class="sig-param">metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]] = None</em>, <em class="sig-param">test_out_path: str = ''</em>, <em class="sig-param">field_names: Optional[List[str]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/workflow.html#test_model_from_snapshot_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.test_model_from_snapshot_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.workflow.train_model">
+<code class="sig-prename descclassname">pytext.workflow.</code><code class="sig-name descname">train_model</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">dist_init_url: str = None</em>, <em class="sig-param">device_id: int = 0</em>, <em class="sig-param">rank: int = 0</em>, <em class="sig-param">world_size: int = 1</em>, <em class="sig-param">metric_channels: Optional[List[pytext.metric_reporters.channel.Channel]] = None</em>, <em class="sig-param">metadata: pytext.data.data_handler.CommonMetadata = None</em><span class="sig-paren">)</span> → Tuple<a class="reference internal" href="../_modules/pytext/workflow.html#train_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.workflow.train_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.batch_predict_caffe2_model">
+<code class="sig-prename descclassname">pytext.</code><code class="sig-name descname">batch_predict_caffe2_model</code><span class="sig-paren">(</span><em class="sig-param">pytext_model_file: str</em>, <em class="sig-param">caffe2_model_file: str</em>, <em class="sig-param">db_type: str = 'minidb'</em>, <em class="sig-param">data_source: Optional[pytext.data.sources.data_source.DataSource] = None</em>, <em class="sig-param">use_cuda=False</em>, <em class="sig-param">task: Optional[pytext.task.new_task.NewTask] = None</em>, <em class="sig-param">train_config: Optional[pytext.config.pytext_config.PyTextConfig] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext.html#batch_predict_caffe2_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.batch_predict_caffe2_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.create_predictor">
+<code class="sig-prename descclassname">pytext.</code><code class="sig-name descname">create_predictor</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">model_file: Optional[str] = None</em>, <em class="sig-param">db_type: str = 'minidb'</em>, <em class="sig-param">task: Optional[pytext.task.new_task.NewTask] = None</em><span class="sig-paren">)</span> → Callable[[Mapping[str, str]], Mapping[str, numpy.array]]<a class="reference internal" href="../_modules/pytext.html#create_predictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.create_predictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a simple prediction API from a training config and an exported caffe2
+model file. This model file should be created by calling export on a trained
+model snapshot.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.load_config">
+<code class="sig-prename descclassname">pytext.</code><code class="sig-name descname">load_config</code><span class="sig-paren">(</span><em class="sig-param">filename: str</em><span class="sig-paren">)</span> → pytext.config.pytext_config.PyTextConfig<a class="reference internal" href="../_modules/pytext.html#load_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.load_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a PyText configuration file from a file path.
+See pytext.config.pytext_config for more info on configs.</p>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pytext package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li>Previous: <a href="../configs/pytext.trainers.trainer.TrainerBase.Config.html" title="previous chapter">TrainerBase.Config</a></li>
+<li>Next: <a href="pytext.common.html" title="next chapter">pytext.common package</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

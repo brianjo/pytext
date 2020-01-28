@@ -1,0 +1,57 @@
+LabelTensorizer.Config
+======================
+
+
+
+**Component:** :class:`LabelTensorizer  <pytext.data.tensorizers.LabelTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: LabelTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``False``
+    \ 
+
+  **column**: str = ``'label'``
+    The name of the label column to parse from the data source.
+    
+
+  **allow_unknown**: bool = ``False``
+    Whether to allow for unknown labels at test/prediction time
+    
+
+  **pad_in_vocab**: bool = ``False``
+    if vocab should have pad, usually false when label is used as target
+    
+
+  **label_vocab**: Optional[list[str]] = ``None``
+    The label values, if known. Will skip initialization step if provided.
+    
+
+
+
+**Subclasses**
+  - :class:`LabelListTensorizer.Config <pytext.data.tensorizers.LabelListTensorizer.Config>`\ 
+  - :class:`SoftLabelTensorizer.Config <pytext.data.tensorizers.SoftLabelTensorizer.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": false,
+      "column": "label",
+      "allow_unknown": false,
+      "pad_in_vocab": false,
+      "label_vocab": null
+  }

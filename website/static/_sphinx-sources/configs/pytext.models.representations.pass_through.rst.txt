@@ -1,0 +1,7 @@
+pass_through
+============
+
+
+.. toctree::
+
+  pytext.models.representations.pass_through.PassThroughRepresentation.Config

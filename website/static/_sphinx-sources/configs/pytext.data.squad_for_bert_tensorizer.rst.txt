@@ -1,0 +1,9 @@
+squad_for_bert_tensorizer
+=========================
+
+
+.. toctree::
+
+  pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config
+  pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizerForKD.Config
+  pytext.data.squad_for_bert_tensorizer.SquadForRoBERTaTensorizer.Config

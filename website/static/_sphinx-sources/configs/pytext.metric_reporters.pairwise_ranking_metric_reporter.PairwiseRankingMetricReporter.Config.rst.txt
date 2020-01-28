@@ -1,0 +1,36 @@
+PairwiseRankingMetricReporter.Config
+====================================
+
+
+
+**Component:** :class:`PairwiseRankingMetricReporter  <pytext.metric_reporters.pairwise_ranking_metric_reporter.PairwiseRankingMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: PairwiseRankingMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false
+  }

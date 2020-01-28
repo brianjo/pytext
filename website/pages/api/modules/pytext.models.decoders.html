@@ -1,0 +1,542 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-models-decoders-package">
+<h1>pytext.models.decoders package<a class="headerlink" href="#pytext-models-decoders-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.models.decoders.decoder_base">
+<span id="pytext-models-decoders-decoder-base-module"></span><h2>pytext.models.decoders.decoder_base module<a class="headerlink" href="#module-pytext.models.decoders.decoder_base" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.decoder_base.</code><code class="sig-name descname">DecoderBase</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.ConfigBase</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.module.Module" title="pytext.models.module.Module"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.module.Module</span></code></a></p>
+<p>Base class for all decoder modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>ConfigBase</em>) – Configuration object.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase.in_dim">
+<code class="sig-name descname">in_dim</code><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase.in_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of input Tensor passed to the decoder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase.out_dim">
+<code class="sig-name descname">out_dim</code><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase.out_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of output Tensor produced by the decoder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the decoder module.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase.get_in_dim">
+<code class="sig-name descname">get_in_dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → int<a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.get_in_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase.get_in_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the dimension of the input Tensor that the decoder accepts.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.decoder_base.DecoderBase.get_out_dim">
+<code class="sig-name descname">get_out_dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → int<a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.get_out_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.decoder_base.DecoderBase.get_out_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the dimension of the input Tensor that the decoder emits.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.decoders.intent_slot_model_decoder">
+<span id="pytext-models-decoders-intent-slot-model-decoder-module"></span><h2>pytext.models.decoders.intent_slot_model_decoder module<a class="headerlink" href="#module-pytext.models.decoders.intent_slot_model_decoder" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.intent_slot_model_decoder.</code><code class="sig-name descname">IntentSlotModelDecoder</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.Config</em>, <em class="sig-param">in_dim_doc: int</em>, <em class="sig-param">in_dim_word: int</em>, <em class="sig-param">out_dim_doc: int</em>, <em class="sig-param">out_dim_word: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/intent_slot_model_decoder.html#IntentSlotModelDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.decoders.decoder_base.DecoderBase" title="pytext.models.decoders.decoder_base.DecoderBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.decoders.decoder_base.DecoderBase</span></code></a></p>
+<p><cite>IntentSlotModelDecoder</cite> implements the decoder layer for intent-slot models.
+Intent-slot models jointly predict intent and slots from an utterance.
+At the core these models learn to jointly perform document classification
+and word tagging tasks.</p>
+<dl class="simple">
+<dt><cite>IntentSlotModelDecoder</cite> accepts arguments for decoding both document</dt><dd><p>classification and word tagging tasks, namely, <cite>in_dim_doc</cite> and <cite>in_dim_word</cite>.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>type</em>) – Configuration object of type IntentSlotModelDecoder.Config.</p></li>
+<li><p><strong>in_dim_doc</strong> (<em>type</em>) – Dimension of input Tensor for projecting document</p></li>
+<li><p><strong>representation.</strong> – </p></li>
+<li><p><strong>in_dim_word</strong> (<em>type</em>) – Dimension of input Tensor for projecting word</p></li>
+<li><p><strong>representation.</strong> – </p></li>
+<li><p><strong>out_dim_doc</strong> (<em>type</em>) – Dimension of projected output Tensor for document</p></li>
+<li><p><strong>classification.</strong> – </p></li>
+<li><p><strong>out_dim_word</strong> (<em>type</em>) – Dimension of projected output Tensor for word tagging.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.use_doc_probs_in_word">
+<code class="sig-name descname">use_doc_probs_in_word</code><a class="headerlink" href="#pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.use_doc_probs_in_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to use intent probabilities for</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">predicting slots.</code></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.doc_decoder">
+<code class="sig-name descname">doc_decoder</code><a class="headerlink" href="#pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.doc_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Document/intent decoder module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.word_decoder">
+<code class="sig-name descname">word_decoder</code><a class="headerlink" href="#pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.word_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Word/slot decoder module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x_d: torch.Tensor</em>, <em class="sig-param">x_w: torch.Tensor</em>, <em class="sig-param">dense: Optional[torch.Tensor] = None</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/decoders/intent_slot_model_decoder.html#IntentSlotModelDecoder.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[torch.nn.modules.module.Module]<a class="reference internal" href="../_modules/pytext/models/decoders/intent_slot_model_decoder.html#IntentSlotModelDecoder.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the document and word decoder modules.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.decoders.mlp_decoder">
+<span id="pytext-models-decoders-mlp-decoder-module"></span><h2>pytext.models.decoders.mlp_decoder module<a class="headerlink" href="#module-pytext.models.decoders.mlp_decoder" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.decoders.mlp_decoder.MLPDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.mlp_decoder.</code><code class="sig-name descname">MLPDecoder</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.decoders.mlp_decoder.MLPDecoder.Config</em>, <em class="sig-param">in_dim: int</em>, <em class="sig-param">out_dim: int = 0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder.html#MLPDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder.MLPDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.decoders.decoder_base.DecoderBase" title="pytext.models.decoders.decoder_base.DecoderBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.decoders.decoder_base.DecoderBase</span></code></a></p>
+<p><cite>MLPDecoder</cite> implements a fully connected network and uses ReLU as the
+activation function. The module projects an input tensor to <cite>out_dim</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object of type MLPDecoder.Config.</p></li>
+<li><p><strong>in_dim</strong> (<em>int</em>) – Dimension of input Tensor passed to MLP.</p></li>
+<li><p><strong>out_dim</strong> (<em>int</em>) – Dimension of output Tensor produced by MLP. Defaults to 0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.mlp_decoder.MLPDecoder.mlp">
+<code class="sig-name descname">mlp</code><a class="headerlink" href="#pytext.models.decoders.mlp_decoder.MLPDecoder.mlp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module that implements the MLP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.mlp_decoder.MLPDecoder.out_dim">
+<code class="sig-name descname">out_dim</code><a class="headerlink" href="#pytext.models.decoders.mlp_decoder.MLPDecoder.out_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of the output of this module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.mlp_decoder.MLPDecoder.hidden_dims">
+<code class="sig-name descname">hidden_dims</code><a class="headerlink" href="#pytext.models.decoders.mlp_decoder.MLPDecoder.hidden_dims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimensions of the outputs of hidden layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[int]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.mlp_decoder.MLPDecoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*input: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder.html#MLPDecoder.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder.MLPDecoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.mlp_decoder.MLPDecoder.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[torch.nn.modules.module.Module]<a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder.html#MLPDecoder.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder.MLPDecoder.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the MLP module that is used as a decoder.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.decoders.mlp_decoder_query_response">
+<span id="pytext-models-decoders-mlp-decoder-query-response-module"></span><h2>pytext.models.decoders.mlp_decoder_query_response module<a class="headerlink" href="#module-pytext.models.decoders.mlp_decoder_query_response" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.mlp_decoder_query_response.</code><code class="sig-name descname">MLPDecoderQueryResponse</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.Config</em>, <em class="sig-param">from_dim: int</em>, <em class="sig-param">to_dim: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder_query_response.html#MLPDecoderQueryResponse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.decoders.decoder_base.DecoderBase" title="pytext.models.decoders.decoder_base.DecoderBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.decoders.decoder_base.DecoderBase</span></code></a></p>
+<p>Implements a ‘two-tower’ MLP: one for query and one for response
+Used in search pairwise ranking: both pos_response and neg_response
+use the response-MLP</p>
+<dl class="method">
+<dt id="pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*x: List[torch.Tensor]</em><span class="sig-paren">)</span> → List[torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder_query_response.html#MLPDecoderQueryResponse.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[torch.nn.modules.module.Module]<a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder_query_response.html#MLPDecoderQueryResponse.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the decoder module.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.get_mlp">
+<em class="property">static </em><code class="sig-name descname">get_mlp</code><span class="sig-paren">(</span><em class="sig-param">from_dim: int, to_dim: int, hidden_dims: List[int]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder_query_response.html#MLPDecoderQueryResponse.get_mlp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.get_mlp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.decoders">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.models.decoders" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.decoders.DecoderBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.</code><code class="sig-name descname">DecoderBase</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.pytext_config.ConfigBase</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.DecoderBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.module.Module" title="pytext.models.module.Module"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.module.Module</span></code></a></p>
+<p>Base class for all decoder modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>ConfigBase</em>) – Configuration object.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.DecoderBase.in_dim">
+<code class="sig-name descname">in_dim</code><a class="headerlink" href="#pytext.models.decoders.DecoderBase.in_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of input Tensor passed to the decoder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.DecoderBase.out_dim">
+<code class="sig-name descname">out_dim</code><a class="headerlink" href="#pytext.models.decoders.DecoderBase.out_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of output Tensor produced by the decoder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.DecoderBase.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.DecoderBase.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.DecoderBase.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.DecoderBase.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the decoder module.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.DecoderBase.get_in_dim">
+<code class="sig-name descname">get_in_dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → int<a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.get_in_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.DecoderBase.get_in_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the dimension of the input Tensor that the decoder accepts.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.DecoderBase.get_out_dim">
+<code class="sig-name descname">get_out_dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → int<a class="reference internal" href="../_modules/pytext/models/decoders/decoder_base.html#DecoderBase.get_out_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.DecoderBase.get_out_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the dimension of the input Tensor that the decoder emits.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.decoders.MLPDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.</code><code class="sig-name descname">MLPDecoder</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.decoders.mlp_decoder.MLPDecoder.Config</em>, <em class="sig-param">in_dim: int</em>, <em class="sig-param">out_dim: int = 0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder.html#MLPDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.MLPDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.decoders.decoder_base.DecoderBase" title="pytext.models.decoders.decoder_base.DecoderBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.decoders.decoder_base.DecoderBase</span></code></a></p>
+<p><cite>MLPDecoder</cite> implements a fully connected network and uses ReLU as the
+activation function. The module projects an input tensor to <cite>out_dim</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object of type MLPDecoder.Config.</p></li>
+<li><p><strong>in_dim</strong> (<em>int</em>) – Dimension of input Tensor passed to MLP.</p></li>
+<li><p><strong>out_dim</strong> (<em>int</em>) – Dimension of output Tensor produced by MLP. Defaults to 0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.MLPDecoder.mlp">
+<code class="sig-name descname">mlp</code><a class="headerlink" href="#pytext.models.decoders.MLPDecoder.mlp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module that implements the MLP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.MLPDecoder.out_dim">
+<code class="sig-name descname">out_dim</code><a class="headerlink" href="#pytext.models.decoders.MLPDecoder.out_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of the output of this module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.MLPDecoder.hidden_dims">
+<code class="sig-name descname">hidden_dims</code><a class="headerlink" href="#pytext.models.decoders.MLPDecoder.hidden_dims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimensions of the outputs of hidden layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[int]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.MLPDecoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*input: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder.html#MLPDecoder.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.MLPDecoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.MLPDecoder.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[torch.nn.modules.module.Module]<a class="reference internal" href="../_modules/pytext/models/decoders/mlp_decoder.html#MLPDecoder.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.MLPDecoder.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the MLP module that is used as a decoder.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.decoders.IntentSlotModelDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.decoders.</code><code class="sig-name descname">IntentSlotModelDecoder</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.Config</em>, <em class="sig-param">in_dim_doc: int</em>, <em class="sig-param">in_dim_word: int</em>, <em class="sig-param">out_dim_doc: int</em>, <em class="sig-param">out_dim_word: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/decoders/intent_slot_model_decoder.html#IntentSlotModelDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.IntentSlotModelDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.decoders.decoder_base.DecoderBase" title="pytext.models.decoders.decoder_base.DecoderBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.decoders.decoder_base.DecoderBase</span></code></a></p>
+<p><cite>IntentSlotModelDecoder</cite> implements the decoder layer for intent-slot models.
+Intent-slot models jointly predict intent and slots from an utterance.
+At the core these models learn to jointly perform document classification
+and word tagging tasks.</p>
+<dl class="simple">
+<dt><cite>IntentSlotModelDecoder</cite> accepts arguments for decoding both document</dt><dd><p>classification and word tagging tasks, namely, <cite>in_dim_doc</cite> and <cite>in_dim_word</cite>.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>type</em>) – Configuration object of type IntentSlotModelDecoder.Config.</p></li>
+<li><p><strong>in_dim_doc</strong> (<em>type</em>) – Dimension of input Tensor for projecting document</p></li>
+<li><p><strong>representation.</strong> – </p></li>
+<li><p><strong>in_dim_word</strong> (<em>type</em>) – Dimension of input Tensor for projecting word</p></li>
+<li><p><strong>representation.</strong> – </p></li>
+<li><p><strong>out_dim_doc</strong> (<em>type</em>) – Dimension of projected output Tensor for document</p></li>
+<li><p><strong>classification.</strong> – </p></li>
+<li><p><strong>out_dim_word</strong> (<em>type</em>) – Dimension of projected output Tensor for word tagging.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.IntentSlotModelDecoder.use_doc_probs_in_word">
+<code class="sig-name descname">use_doc_probs_in_word</code><a class="headerlink" href="#pytext.models.decoders.IntentSlotModelDecoder.use_doc_probs_in_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to use intent probabilities for</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">predicting slots.</code></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.IntentSlotModelDecoder.doc_decoder">
+<code class="sig-name descname">doc_decoder</code><a class="headerlink" href="#pytext.models.decoders.IntentSlotModelDecoder.doc_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Document/intent decoder module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.decoders.IntentSlotModelDecoder.word_decoder">
+<code class="sig-name descname">word_decoder</code><a class="headerlink" href="#pytext.models.decoders.IntentSlotModelDecoder.word_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Word/slot decoder module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.IntentSlotModelDecoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x_d: torch.Tensor</em>, <em class="sig-param">x_w: torch.Tensor</em>, <em class="sig-param">dense: Optional[torch.Tensor] = None</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/decoders/intent_slot_model_decoder.html#IntentSlotModelDecoder.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.IntentSlotModelDecoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.decoders.IntentSlotModelDecoder.get_decoder">
+<code class="sig-name descname">get_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[torch.nn.modules.module.Module]<a class="reference internal" href="../_modules/pytext/models/decoders/intent_slot_model_decoder.html#IntentSlotModelDecoder.get_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.decoders.IntentSlotModelDecoder.get_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the document and word decoder modules.</p>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.models.html">pytext.models package</a><ul>
+<li>Previous: <a href="pytext.models.html" title="previous chapter">pytext.models package</a></li>
+<li>Next: <a href="pytext.models.embeddings.html" title="next chapter">pytext.models.embeddings package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

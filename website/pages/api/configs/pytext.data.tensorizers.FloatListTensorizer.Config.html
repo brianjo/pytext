@@ -1,0 +1,121 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="floatlisttensorizer-config">
+<h1>FloatListTensorizer.Config<a class="headerlink" href="#floatlisttensorizer-config" title="Permalink to this headline">¶</a></h1>
+<p><strong>Component:</strong> <a class="reference internal" href="../modules/pytext.data.html#pytext.data.tensorizers.FloatListTensorizer" title="pytext.data.tensorizers.FloatListTensorizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FloatListTensorizer</span></code></a></p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="sig-prename descclassname">FloatListTensorizer.</code><code class="sig-name descname">Config</code><a class="reference internal" href="../_modules/pytext/data/tensorizers.html#FloatListTensorizer.Config"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p><strong>Bases:</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer.Config</span></code></p>
+</dd></dl>
+<p><strong>All Attributes (including base classes)</strong></p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>is_input</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>column</strong>: str</dt><dd><p>The name of the label column to parse from the data source.</p>
+</dd>
+<dt><strong>error_check</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>dim</strong>: Optional[int] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>normalize</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+</dl>
+</div></blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This config has parameters with no default values.
+We aren’t yet able to generate functional JSON for it.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html">config</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.data.html">data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html">exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html">loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html">metric_reporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html">models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html">task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html">trainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext</a><ul>
+<li><a href="pytext.data.html">data</a><ul>
+<li><a href="pytext.data.tensorizers.html">tensorizers</a><ul>
+<li>Previous: <a href="pytext.data.tensorizers.CharacterTokenTensorizer.Config.html" title="previous chapter">CharacterTokenTensorizer.Config</a></li>
+<li>Next: <a href="pytext.data.tensorizers.FloatTensorizer.Config.html" title="next chapter">FloatTensorizer.Config</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

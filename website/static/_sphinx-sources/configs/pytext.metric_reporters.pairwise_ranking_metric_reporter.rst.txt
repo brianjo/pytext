@@ -1,0 +1,7 @@
+pairwise_ranking_metric_reporter
+================================
+
+
+.. toctree::
+
+  pytext.metric_reporters.pairwise_ranking_metric_reporter.PairwiseRankingMetricReporter.Config

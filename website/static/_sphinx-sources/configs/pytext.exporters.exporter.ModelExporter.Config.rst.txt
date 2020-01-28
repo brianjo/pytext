@@ -1,0 +1,41 @@
+ModelExporter.Config
+====================
+
+
+
+**Component:** :class:`ModelExporter  <pytext.exporters.exporter.ModelExporter>`\ 
+
+
+.. py:currentmodule:: pytext.exporters.exporter
+.. py:class:: ModelExporter.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **export_logits**: bool = ``False``
+    \ 
+
+  **export_raw_to_metrics**: bool = ``False``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`DenseFeatureExporter.Config <pytext.exporters.custom_exporters.DenseFeatureExporter.Config>`\ 
+  - :class:`InitPredictNetExporter.Config <pytext.exporters.custom_exporters.InitPredictNetExporter.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "export_logits": false,
+      "export_raw_to_metrics": false
+  }

@@ -1,0 +1,47 @@
+WordTaggingInputConfig
+======================
+
+
+
+.. py:currentmodule:: pytext.models.roberta
+.. py:class:: WordTaggingInputConfig
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`RoBERTaTokenLevelTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config>` = :doc:`RoBERTaTokenLevelTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "columns": [
+              "text"
+          ],
+          "tokenizer": {
+              "GPT2BPETokenizer": {
+                  "bpe_encoder_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json",
+                  "bpe_vocab_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe"
+              }
+          },
+          "base_tokenizer": null,
+          "vocab_file": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/dict.txt",
+          "max_seq_len": 256,
+          "labels_columns": [
+              "label"
+          ],
+          "labels": []
+      }
+  }

@@ -1,0 +1,48 @@
+MemoryEfficientFP16OptimizerFairseq.Config
+==========================================
+
+
+
+**Component:** :class:`MemoryEfficientFP16OptimizerFairseq  <pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.fp16_optimizer
+.. py:class:: MemoryEfficientFP16OptimizerFairseq.Config
+  :noindex:
+
+  **Bases:** :class:`FP16Optimizer.Config <pytext.optimizer.fp16_optimizer.FP16Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **init_loss_scale**: int = ``128``
+    \ 
+
+  **scale_window**: Optional[int] = ``None``
+    \ 
+
+  **scale_tolerance**: float = ``0.0``
+    \ 
+
+  **threshold_loss_scale**: Optional[float] = ``None``
+    \ 
+
+  **min_loss_scale**: float = ``0.0001``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "init_loss_scale": 128,
+      "scale_window": null,
+      "scale_tolerance": 0.0,
+      "threshold_loss_scale": null,
+      "min_loss_scale": 0.0001
+  }

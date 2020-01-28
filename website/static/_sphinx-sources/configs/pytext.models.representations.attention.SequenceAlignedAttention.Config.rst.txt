@@ -1,0 +1,48 @@
+SequenceAlignedAttention.Config
+===============================
+
+
+
+**Component:** :class:`SequenceAlignedAttention  <pytext.models.representations.attention.SequenceAlignedAttention>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.attention
+.. py:class:: SequenceAlignedAttention.Config
+  :noindex:
+
+  **Bases:** :class:`Module.Config <pytext.models.module.Module.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **proj_dim**: int = ``32``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "proj_dim": 32
+  }

@@ -1,0 +1,7 @@
+mlp_decoder_query_response
+==========================
+
+
+.. toctree::
+
+  pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.Config

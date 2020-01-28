@@ -1,0 +1,22 @@
+pytext.data.tokenizers package
+==============================
+
+Submodules
+----------
+
+pytext.data.tokenizers.tokenizer module
+---------------------------------------
+
+.. automodule:: pytext.data.tokenizers.tokenizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.data.tokenizers
+   :members:
+   :undoc-members:
+   :show-inheritance:

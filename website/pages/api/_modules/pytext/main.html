@@ -1,0 +1,561 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.main</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+<span class="kn">from</span> <span class="nn">pydoc</span> <span class="kn">import</span> <span class="n">locate</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">click</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext</span> <span class="kn">import</span> <span class="n">create_predictor</span>
+<span class="kn">from</span> <span class="nn">pytext.builtin_task</span> <span class="kn">import</span> <span class="n">add_include</span>
+<span class="kn">from</span> <span class="nn">pytext.common.utils</span> <span class="kn">import</span> <span class="n">eprint</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">LATEST_VERSION</span><span class="p">,</span> <span class="n">PyTextConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">register_tasks</span>
+<span class="kn">from</span> <span class="nn">pytext.config.serialize</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">config_to_json</span><span class="p">,</span>
+    <span class="n">parse_config</span><span class="p">,</span>
+    <span class="n">pytext_config_from_json</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.config.utils</span> <span class="kn">import</span> <span class="n">find_param</span><span class="p">,</span> <span class="n">replace_param</span>
+<span class="kn">from</span> <span class="nn">pytext.data.data_handler</span> <span class="kn">import</span> <span class="n">CommonMetadata</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters.channel</span> <span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">TensorBoardChannel</span>
+<span class="kn">from</span> <span class="nn">pytext.task</span> <span class="kn">import</span> <span class="n">load</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.documentation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ROOT_CONFIG</span><span class="p">,</span>
+    <span class="n">find_config_class</span><span class="p">,</span>
+    <span class="n">get_subclasses</span><span class="p">,</span>
+    <span class="n">pretty_print_config_class</span><span class="p">,</span>
+    <span class="n">replace_components</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">pytext.workflow</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">export_saved_model_to_caffe2</span><span class="p">,</span>
+    <span class="n">export_saved_model_to_torchscript</span><span class="p">,</span>
+    <span class="n">get_logits</span> <span class="k">as</span> <span class="n">workflow_get_logits</span><span class="p">,</span>
+    <span class="n">prepare_task_metadata</span><span class="p">,</span>
+    <span class="n">test_model_from_snapshot_path</span><span class="p">,</span>
+    <span class="n">train_model</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">torch.multiprocessing.spawn</span> <span class="kn">import</span> <span class="n">spawn</span>
+
+
+<div class="viewcode-block" id="Attrs"><a class="viewcode-back" href="../../modules/pytext.html#pytext.main.Attrs">[docs]</a><span class="k">class</span> <span class="nc">Attrs</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s2">"Attrs({', '.join(f'{k}={v}' for k, v in vars(self).items())})"</span></div>
+
+
+<div class="viewcode-block" id="train_model_distributed"><a class="viewcode-back" href="../../modules/pytext.html#pytext.main.train_model_distributed">[docs]</a><span class="k">def</span> <span class="nf">train_model_distributed</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">metric_channels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Channel</span><span class="p">]]):</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">use_cuda_if_available</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+    <span class="p">)</span> <span class="ow">or</span> <span class="n">config</span><span class="o">.</span><span class="n">distributed_world_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">"distributed training is only available for GPU training"</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">distributed_world_size</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="ow">or</span> <span class="n">config</span><span class="o">.</span><span class="n">distributed_world_size</span> <span class="o">&lt;=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">()</span>
+    <span class="p">),</span> <span class="p">(</span>
+        <span class="n">f</span><span class="s2">"Only {torch.cuda.device_count()} GPUs are available, "</span>
+        <span class="s2">"{config.distributed_world_size} GPUs were requested"</span>
+    <span class="p">)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">=== Starting training, World size is {config.distributed_world_size}"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">use_cuda_if_available</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="n">run_single</span><span class="p">(</span>
+            <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">config_json</span><span class="o">=</span><span class="n">config_to_json</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">config</span><span class="p">),</span>
+            <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">dist_init_method</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">metric_channels</span><span class="o">=</span><span class="n">metric_channels</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span>
+            <span class="n">delete</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">".dist_sync"</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">sync_file</span><span class="p">:</span>
+            <span class="n">dist_init_method</span> <span class="o">=</span> <span class="s2">"file://"</span> <span class="o">+</span> <span class="n">sync_file</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">prepare_task_metadata</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="n">spawn</span><span class="p">(</span>
+                <span class="n">run_single</span><span class="p">,</span>
+                <span class="p">(</span>
+                    <span class="n">config_to_json</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">config</span><span class="p">),</span>
+                    <span class="n">config</span><span class="o">.</span><span class="n">distributed_world_size</span><span class="p">,</span>
+                    <span class="n">dist_init_method</span><span class="p">,</span>
+                    <span class="n">metadata</span><span class="p">,</span>
+                    <span class="p">[],</span>
+                <span class="p">),</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">distributed_world_size</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_single"><a class="viewcode-back" href="../../modules/pytext.html#pytext.main.run_single">[docs]</a><span class="k">def</span> <span class="nf">run_single</span><span class="p">(</span>
+    <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">config_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">dist_init_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">CommonMetadata</span><span class="p">],</span> <span class="n">CommonMetadata</span><span class="p">]],</span>
+    <span class="n">metric_channels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Channel</span><span class="p">]],</span>
+<span class="p">):</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">pytext_config_from_json</span><span class="p">(</span><span class="n">config_json</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">metric_channels</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">train_model</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="n">dist_init_url</span><span class="o">=</span><span class="n">dist_init_method</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span>
+        <span class="n">metric_channels</span><span class="o">=</span><span class="n">metric_channels</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="gen_config_impl"><a class="viewcode-back" href="../../modules/pytext.html#pytext.main.gen_config_impl">[docs]</a><span class="k">def</span> <span class="nf">gen_config_impl</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># import the classes required by parameters</span>
+    <span class="n">requested_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">locate</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">locate</span><span class="p">(</span><span class="n">task_name</span><span class="p">)]</span>
+    <span class="n">register_tasks</span><span class="p">(</span><span class="n">requested_classes</span><span class="p">)</span>
+
+    <span class="n">task_class_set</span> <span class="o">=</span> <span class="n">find_config_class</span><span class="p">(</span><span class="n">task_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">task_class_set</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"Unknown task class: {task_name} "</span> <span class="s2">"(try fully qualified class name?)"</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">task_class_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Multiple tasks named {task_name}: {task_class_set}"</span><span class="p">)</span>
+
+    <span class="n">task_class</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">task_class_set</span><span class="p">))</span>
+    <span class="n">task_config</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">task_class</span><span class="p">,</span> <span class="s2">"example_config"</span><span class="p">,</span> <span class="n">task_class</span><span class="o">.</span><span class="n">Config</span><span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">PyTextConfig</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task_config</span><span class="p">(),</span> <span class="n">version</span><span class="o">=</span><span class="n">LATEST_VERSION</span><span class="p">)</span>
+    <span class="n">eprint</span><span class="p">(</span><span class="s2">"INFO - Applying task option:"</span><span class="p">,</span> <span class="n">task_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="c1"># Use components in args instead of defaults</span>
+    <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"="</span> <span class="ow">in</span> <span class="n">opt</span><span class="p">:</span>
+            <span class="n">param_path</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"="</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="n">param_path</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">continue</span>
+        <span class="n">replace_class_set</span> <span class="o">=</span> <span class="n">find_config_class</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">replace_class_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Not a component class: {opt}"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">replace_class_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Multiple component named {opt}: {replace_class_set}"</span><span class="p">)</span>
+        <span class="n">replace_class</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">replace_class_set</span><span class="p">))</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="n">replace_components</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">replace_class</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+            <span class="n">eprint</span><span class="p">(</span><span class="s2">"INFO - Applying class option:"</span><span class="p">,</span> <span class="s2">"."</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">found</span><span class="p">)),</span> <span class="s2">"="</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">root</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">found</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">replace_class</span><span class="p">,</span> <span class="s2">"Config"</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">replace_class</span><span class="o">.</span><span class="n">Config</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">replace_class</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Unknown class option: {opt}"</span><span class="p">)</span>
+
+    <span class="c1"># Use parameters in kwargs instead of defaults</span>
+    <span class="k">for</span> <span class="n">param_path</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="n">find_param</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="s2">"."</span> <span class="o">+</span> <span class="n">param_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">eprint</span><span class="p">(</span><span class="s2">"INFO - Applying parameter option to"</span><span class="p">,</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"="</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">replace_param</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">),</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Unknown parameter option: {param_path}"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"Multiple possibilities for {param_path}: {', '.join(found)}"</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">root</span></div>
+
+
+<span class="nd">@click.group</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--include"</span><span class="p">,</span> <span class="n">multiple</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"directory containing custom python classes"</span>
+<span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--config-file"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--config-json"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--config-module"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"python module that contains the config object"</span>
+<span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">config_file</span><span class="p">,</span> <span class="n">config_json</span><span class="p">,</span> <span class="n">config_module</span><span class="p">,</span> <span class="n">include</span><span class="p">):</span>
+    <span class="sd">"""Configs can be passed by file or directly from json.</span>
+<span class="sd">    If neither --config-file or --config-json is passed,</span>
+<span class="sd">    attempts to read the file from stdin.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">      pytext train &lt; demos/docnn.json</span>
+<span class="sd">    """</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">include</span> <span class="ow">or</span> <span class="p">[]:</span>
+        <span class="c1"># remove possible trailing / from autocomplete in --include</span>
+        <span class="n">add_include</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">))</span>
+
+    <span class="n">context</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">Attrs</span><span class="p">()</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">include</span> <span class="o">=</span> <span class="n">include</span>
+
+    <span class="k">def</span> <span class="nf">load_config</span><span class="p">():</span>
+        <span class="c1"># Cache the config object so it can be accessed multiple times</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">config_module</span><span class="p">:</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="n">config_module</span><span class="p">)</span><span class="o">.</span><span class="n">config</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">config_file</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span> <span class="k">as</span> <span class="nb">file</span><span class="p">:</span>
+                        <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">config_json</span><span class="p">:</span>
+                    <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">config_json</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">eprint</span><span class="p">(</span><span class="s2">"No config file specified, reading from stdin"</span><span class="p">)</span>
+                    <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
+                <span class="c1"># before parsing the config, include the custom components</span>
+                <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"include_dirs"</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="n">add_include</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">))</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">parse_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">config</span>
+
+    <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span> <span class="o">=</span> <span class="n">load_config</span>
+
+
+<span class="nd">@main.command</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">"Print help information on a config parameter"</span><span class="p">)</span>
+<span class="nd">@click.argument</span><span class="p">(</span><span class="s2">"class_name"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">ROOT_CONFIG</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">help_config</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">class_name</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Find all the classes matching `class_name`, and</span>
+<span class="sd">        pretty-print each matching class field members (non-recursively).</span>
+<span class="sd">    """</span>
+    <span class="n">found_classes</span> <span class="o">=</span> <span class="n">find_config_class</span><span class="p">(</span><span class="n">class_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">found_classes</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">found_classes</span><span class="p">:</span>
+            <span class="n">pretty_print_config_class</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Unknown component name: {class_name}"</span><span class="p">)</span>
+
+
+<span class="nd">@main.command</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">"Generate a config JSON file with default values."</span><span class="p">)</span>
+<span class="nd">@click.argument</span><span class="p">(</span><span class="s2">"task_name"</span><span class="p">)</span>
+<span class="nd">@click.argument</span><span class="p">(</span><span class="s2">"options"</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">gen_default_config</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">task_name</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Generate a config for `task_name` with default values.</span>
+<span class="sd">        Optionally, override the defaults by passing your desired</span>
+<span class="sd">        components as `options`.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">gen_config_impl</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="o">*</span><span class="n">options</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="n">eprint</span><span class="p">(</span>
+            <span class="s2">"ERROR - Cannot create this config"</span><span class="p">,</span>
+            <span class="s2">"because some fields don't have a default value:"</span><span class="p">,</span>
+            <span class="n">ex</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># add the --include to the config generated</span>
+    <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">include</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">include_dirs</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">include_dirs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">include</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">include_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">))</span>
+
+    <span class="n">cfg_json</span> <span class="o">=</span> <span class="n">config_to_json</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cfg_json</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+
+
+<span class="nd">@main.command</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">"Update a config JSON file to lastest version."</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">update_config</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Load a config file, update to latest version and prints the result.</span>
+<span class="sd">    """</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+    <span class="n">config_json</span> <span class="o">=</span> <span class="n">config_to_json</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">config_json</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--model-snapshot"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"load model snapshot and test configuration from this file"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--test-path"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"path to test data"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--use-cuda/--no-cuda"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"Run supported parts of the model on GPU if available."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--use-tensorboard/--no-tensorboard"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"Whether to visualize test metrics using TensorBoard."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--field_names"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"""Field names for the test-path. If this is not set, the first line of</span>
+<span class="s2">         each file will be assumed to be a header containing the field names."""</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">test_path</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">use_tensorboard</span><span class="p">,</span> <span class="n">field_names</span><span class="p">):</span>
+    <span class="sd">"""Test a trained model snapshot.</span>
+
+<span class="sd">    If model-snapshot is provided, the models and configuration will then be</span>
+<span class="sd">    loaded from the snapshot rather than any passed config file.</span>
+<span class="sd">    Otherwise, a config file will be loaded.</span>
+<span class="sd">    """</span>
+    <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">use_tensorboard</span> <span class="o">=</span> <span class="n">_get_model_snapshot</span><span class="p">(</span>
+        <span class="n">context</span><span class="p">,</span> <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">use_tensorboard</span>
+    <span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">=== Starting testing..."</span><span class="p">)</span>
+    <span class="n">metric_channels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">use_tensorboard</span><span class="p">:</span>
+        <span class="n">metric_channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TensorBoardChannel</span><span class="p">())</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">test_model_from_snapshot_path</span><span class="p">(</span>
+            <span class="n">model_snapshot</span><span class="p">,</span>
+            <span class="n">use_cuda</span><span class="p">,</span>
+            <span class="n">test_path</span><span class="p">,</span>
+            <span class="n">metric_channels</span><span class="p">,</span>
+            <span class="n">field_names</span><span class="o">=</span><span class="n">field_names</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">mc</span> <span class="ow">in</span> <span class="n">metric_channels</span><span class="p">:</span>
+            <span class="n">mc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_get_model_snapshot</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">use_tensorboard</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">model_snapshot</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Loading model snapshot and config from {model_snapshot}"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">use_cuda</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">"if --model-snapshot is set --use-cuda/--no-cuda must be set"</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"No model snapshot provided, loading from config"</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+        <span class="n">model_snapshot</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">save_snapshot_path</span>
+        <span class="n">use_cuda</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">use_cuda_if_available</span>
+        <span class="n">use_tensorboard</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">use_tensorboard</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Configured model snapshot {model_snapshot}"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">use_tensorboard</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="sd">"""Train a model and save the best snapshot."""</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">===Starting training..."</span><span class="p">)</span>
+    <span class="n">metric_channels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">use_tensorboard</span><span class="p">:</span>
+        <span class="n">metric_channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TensorBoardChannel</span><span class="p">())</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">distributed_world_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">train_model</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">metric_channels</span><span class="o">=</span><span class="n">metric_channels</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">train_model_distributed</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">metric_channels</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">=== Starting testing..."</span><span class="p">)</span>
+        <span class="n">test_model_from_snapshot_path</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">save_snapshot_path</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">use_cuda_if_available</span><span class="p">,</span>
+            <span class="n">test_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">metric_channels</span><span class="o">=</span><span class="n">metric_channels</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">mc</span> <span class="ow">in</span> <span class="n">metric_channels</span><span class="p">:</span>
+            <span class="n">mc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--model"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"the pytext snapshot model file to load"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--output-path"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"where to save the exported caffe2 model"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--output-onnx-path"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"where to save the exported onnx model"</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">output_onnx_path</span><span class="p">):</span>
+    <span class="sd">"""Convert a pytext model snapshot to a caffe2 model."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">save_snapshot_path</span>
+        <span class="n">output_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">export_caffe2_path</span>
+        <span class="n">output_onnx_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">export_onnx_path</span>
+    <span class="k">print</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">"Exporting {model} to caffe2 file: {output_path} and onnx file: {output_onnx_path}"</span>
+    <span class="p">)</span>
+    <span class="n">export_saved_model_to_caffe2</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">output_onnx_path</span><span class="p">)</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--model"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"the pytext snapshot model file to load"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--output-path"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"where to save the exported torchscript model"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--quantize"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"whether to quantize the model"</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">torchscript_export</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">quantize</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">"""Convert a pytext model snapshot to a torchscript model."""</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span> <span class="ow">or</span> <span class="n">config</span><span class="o">.</span><span class="n">save_snapshot_path</span>
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span> <span class="ow">or</span> <span class="n">f</span><span class="s2">"{config.save_snapshot_path}.torchscript"</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Exporting {model} to torchscript file: {output_path}"</span><span class="p">)</span>
+    <span class="n">export_saved_model_to_torchscript</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">quantize</span><span class="p">)</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--exported-model"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"where to load the exported model"</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">exported_model</span><span class="p">):</span>
+    <span class="sd">"""Start a repl executing examples against a caffe2 model."""</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Loading model from {exported_model or config.export_caffe2_path}"</span><span class="p">)</span>
+    <span class="n">predictor</span> <span class="o">=</span> <span class="n">create_predictor</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">exported_model</span><span class="p">)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Model loaded, reading example JSON from stdin"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+        <span class="nb">input</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictor</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--model-file"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"where to load the pytorch model"</span><span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">predict_py</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">model_file</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Start a repl executing examples against a PyTorch model.</span>
+<span class="sd">    Example is in json format with names being the same with column_to_read</span>
+<span class="sd">    in model training config</span>
+<span class="sd">    """</span>
+    <span class="n">task</span><span class="p">,</span> <span class="n">train_config</span><span class="p">,</span> <span class="n">_training_state</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">model_file</span><span class="p">)</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
+                <span class="s2">"please input a json example, the names should be the same with "</span>
+                <span class="o">+</span> <span class="s2">"column_to_read in model training config: </span><span class="se">\n</span><span class="s2">"</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)])[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">EOFError</span><span class="p">:</span>
+            <span class="k">break</span>
+
+
+<span class="nd">@main.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--model-snapshot"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"load model snapshot and test configuration from this file"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--test-path"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"path to test data"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s2">"--output-path"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"path to save logits"</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--use-cuda/--no-cuda"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"Run supported parts of the model on GPU if available."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span>
+    <span class="s2">"--field_names"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"""Field names for the test-path. If this is not set, the first line of</span>
+<span class="s2">         each file will be assumed to be a header containing the field names."""</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click.pass_context</span>
+<span class="k">def</span> <span class="nf">get_logits</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">test_path</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">field_names</span><span class="p">):</span>
+    <span class="sd">"""print logits from  a trained model snapshot to output_path</span>
+<span class="sd">    """</span>
+
+    <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_model_snapshot</span><span class="p">(</span>
+        <span class="n">context</span><span class="p">,</span> <span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="bp">False</span>
+    <span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">=== Starting get_logits..."</span><span class="p">)</span>
+    <span class="n">workflow_get_logits</span><span class="p">(</span><span class="n">model_snapshot</span><span class="p">,</span> <span class="n">use_cuda</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">test_path</span><span class="p">,</span> <span class="n">field_names</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../index.html">Documentation overview</a><ul>
+<li><a href="../index.html">Module code</a><ul>
+<li><a href="../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

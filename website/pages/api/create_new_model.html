@@ -1,0 +1,267 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="creating-a-new-model">
+<h1>Creating A New Model<a class="headerlink" href="#creating-a-new-model" title="Permalink to this headline">¶</a></h1>
+<p>PyText uses a <code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code> class as a central place to define components for data processing, model training, etc. and wire up those components.</p>
+<p>In this tutorial, we will create a word tagging model for the ATIS dataset. The format of the ATIS dataset is explained in the <a class="reference internal" href="datasource_tutorial.html"><span class="doc">Custom Data Format</span></a>, so we will not repeat it here. We are going to create a similar data source that uses the slot tagging information rather than the intent information. We won’t describe in detail how this data source is created but you can look at the <a class="reference internal" href="datasource_tutorial.html"><span class="doc">Custom Data Format</span></a>, and the full source code for this tutorial in <code class="docutils literal notranslate"><span class="pre">demo/my_tagging</span></code> for more information.</p>
+<p>This model will predict a “slot”, also called “tag” or “label”, for each word in the utterance, using the <a class="reference external" href="https://en.wikipedia.org/wiki/Inside%E2%80%93outside%E2%80%93beginning_(tagging">IOB2 format</a>), where the O tag is used for Outside (no match), B- for Beginning and I- for Inside (continuation). Here’s an example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">{</span>
+<span class="go">  "text": "please list the flights from newark to los angeles",</span>
+<span class="go">  "slots": "O O O O O B-fromloc.city_name O B-toloc.city_name I-toloc.city_name"</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<div class="section" id="the-components">
+<h2>1. The Components<a class="headerlink" href="#the-components" title="Permalink to this headline">¶</a></h2>
+<p>The first step is to specify the components used in this model by listing them in the Config class, the corresponding <code class="docutils literal notranslate"><span class="pre">from_config</span></code> function, and the constructor <code class="docutils literal notranslate"><span class="pre">__init__</span></code>.</p>
+<p>Thanks to the modular nature of PyText, we can simply use many included common components, such as <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">WordEmbedding</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BiLSTMSlotAttention</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">MLPDecoder</span></code>. Since we’re also using the common pattern of <cite>embedding</cite> -&gt; <cite>representation</cite> -&gt; <cite>decoder</cite> -&gt; <cite>output_layer</cite>, we use <code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code> as a base class, so we don’t need to write <code class="docutils literal notranslate"><span class="pre">__init__</span></code>.</p>
+<p>ModelInput defines how the data that is read will be transformed into tensors. This is done using a <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer</span></code>. These components take one or several columns (often strings) from each input row and create the corresponding numeric features in a properly padded tensor. The tensorizers will to be initialized first, and in this step they will often parse the training data to create their <code class="xref py py-class docutils literal notranslate"><span class="pre">Vocabulary</span></code>.</p>
+<p>In our case, the utterance is in the column “text” (which is the default column name for this tensorizer), and is composed of tokens (words), so we can use the <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code>. The <code class="xref py py-class docutils literal notranslate"><span class="pre">Vocabulary</span></code> will be created from all the utterances.</p>
+<p>The slots are also composed of tokens: the IOB2 tags. We can also use <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code> for the column “slots”. This <code class="xref py py-class docutils literal notranslate"><span class="pre">Vocabulary</span></code> will be the list of IOB2 tags found in the “slots” column of the training data. This is a different column name, so we specify it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyTaggingModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="n">slots</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">"slots"</span><span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">representation</span><span class="p">:</span> <span class="n">BiLSTMSlotAttention</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BiLSTMSlotAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">MyTaggingOutputLayer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MyTaggingOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="from-config-method">
+<h2>2. from_config method<a class="headerlink" href="#from-config-method" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">from_config</span></code> is where the components are created with the proper parameters. Some come from the Config (passed by the user in json format), some use the default values, others are dicated by the model’s architecture so that the different components fit with each other. For example, the representation layer needs to know the dimension of the embeddings it will receive, the decoder needs to know the dimension of the representation layer before it and the size of the slots vocab to output.</p>
+<p>In this model, we only need one embedding: the one of the tokens. The slots don’t have embeddings because while they are listed as input (in ModelInput), they are actually outputs and the will be used in the output layer. (During training, they are inputs as true values.)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+    <span class="n">embedding</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">embedding</span><span class="p">,</span> <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">])</span>
+    <span class="n">representation</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embedding</span><span class="o">.</span><span class="n">embedding_dim</span>
+    <span class="p">)</span>
+    <span class="n">slots</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"slots"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+    <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span>
+        <span class="n">in_dim</span><span class="o">=</span><span class="n">representation</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span>
+        <span class="n">out_dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">slots</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">output_layer</span> <span class="o">=</span> <span class="n">MyTaggingOutputLayer</span><span class="p">(</span><span class="n">slots</span><span class="p">,</span> <span class="n">CrossEntropyLoss</span><span class="p">(</span><span class="bp">None</span><span class="p">))</span>
+    <span class="c1"># call __init__ constructor from super class Model</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="forward-method">
+<h2>3. Forward method<a class="headerlink" href="#forward-method" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">forward</span></code> method contains the execution logic calling each of those components and passing the results of one to the next. It will be called for every row transformed into tensors.</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code> returns the tensor for the tokens themselves and also the sequence length, which is the number of tokens in the utterances. This is because we need to pad the tensors in a batch to give them all the same dimensions, and LSTM-based reprentations need to differentiate the padding from the actual tokens.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">word_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">seq_lens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+    <span class="c1"># fetch embeddings for the tokens in the utterance</span>
+    <span class="n">embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="p">(</span><span class="n">word_tokens</span><span class="p">)</span>
+
+    <span class="c1"># pass the embeddings to the BiLSTMSlotAttention layer.</span>
+    <span class="c1"># LSTM-based representations also need seq_lens.</span>
+    <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">representation</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">)</span>
+
+    <span class="c1"># some LSTM representations return extra tensors, we don't use those.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">representation</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="n">representation</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># finally run the results through the decoder</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">representation</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="complete-mytaggingmodel">
+<h2>4. Complete MyTaggingModel<a class="headerlink" href="#complete-mytaggingmodel" title="Permalink to this headline">¶</a></h2>
+<p>To finish this class, we need to define a few more functions.</p>
+<p>All the inputs are placed in a python dict where the key is the name of the tensorizer as defined in ModelInput, and the value is the tensor for this input row.</p>
+<p>First, we define how the inputs will be passed to the <code class="docutils literal notranslate"><span class="pre">forward</span></code> function in <code class="docutils literal notranslate"><span class="pre">arrange_model_inputs</span></code>. In our case, the only input passed to the <code class="docutils literal notranslate"><span class="pre">forward</span></code> function is the tensors from the “tokens” input. As explained above, <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code> returns 2 tensors: the tokens and the sequence length. (Actually it returns 3 tensors, we’ll ignore the 3rd one, the token ranges, in this tutorial)</p>
+<p>Then we define <code class="docutils literal notranslate"><span class="pre">arrange_targets</span></code>, which is doing something similar for the targets, which are passed to the loss function during training. In our case, it’s the “slots” tensorizer doing that. The padding value can be passed to the loss function (unlike LSTM representations), so we only need the first tensor.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+    <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+    <span class="n">slots</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"slots"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">slots</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="output-layer">
+<h2>5. Output Layer<a class="headerlink" href="#output-layer" title="Permalink to this headline">¶</a></h2>
+<p>So far, our model is using the same components as any other model, including a common classification model, except for two things: the BiLSTMSlotAttention and the output layer.</p>
+<p>BiLSTMSlotAttention is a multi-layer bidirectional LSTM based representation with attention over slots. The implementation of this representation is outside the scope of this tutorial, and this component is already included in PyText, so we’ll just use it.</p>
+<p>The output layer can be simple enough and demonstrates a few important notions in PyText, like how the loss function is tied to the output layer. We implement it like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyTaggingOutputLayer</span><span class="p">(</span><span class="n">OutputLayerBase</span><span class="p">):</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">OutputLayerBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">loss</span><span class="p">:</span> <span class="n">CrossEntropyLoss</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">CrossEntropyLoss</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">vocab</span><span class="p">,</span> <span class="n">pad_token</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">vocab</span><span class="p">,</span>
+            <span class="n">create_loss</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="n">pad_token</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="nb">reduce</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c1"># flatten the logit from [batch_size, seq_lens, dim] to</span>
+        <span class="c1"># [batch_size * seq_lens, dim]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">logit</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">logit</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">target</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="nb">reduce</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">logit</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">logit</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">preds</span><span class="p">,</span> <span class="n">scores</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="metric-reporter">
+<h2>6. Metric Reporter<a class="headerlink" href="#metric-reporter" title="Permalink to this headline">¶</a></h2>
+<p>Next we need to write a <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricReporter</span></code> to calculate metrics and report model training/test results:</p>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricReporter</span></code> base class aggregates all the output from Trainer, including predictions, scores and targets. The default aggregation behavior is concatenating the tensors from each batch and converting it to list. If you want different aggregation behavior, you can override it with your own implementation. Here we use the compute_classification_metrics method provided in pytext.metrics to get the precision/recall/F1 scores. PyText ships with a few common metric calculation methods, but you can easily incorporate other libraries, such as sklearn.</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method, we can pass a list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code> to report the results to any output stream. We use a simple <code class="xref py py-class docutils literal notranslate"><span class="pre">ConsoleChannel</span></code> that prints everything to stdout and a <code class="xref py py-class docutils literal notranslate"><span class="pre">TensorBoardChannel</span></code> that outputs metrics to TensorBoard:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyTaggingMetricReporter</span><span class="p">(</span><span class="n">MetricReporter</span><span class="p">):</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MyTaggingMetricReporter</span><span class="p">(</span>
+            <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">(),</span> <span class="n">TensorBoardChannel</span><span class="p">()],</span>
+            <span class="n">label_names</span><span class="o">=</span><span class="n">vocab</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label_names</span><span class="p">,</span> <span class="n">channels</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span> <span class="o">=</span> <span class="n">label_names</span>
+
+    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">compute_classification_metrics</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span>
+                <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="n">LabelPrediction</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">expect</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">scores</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">expect</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">(),</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="task">
+<h2>7. Task<a class="headerlink" href="#task" title="Permalink to this headline">¶</a></h2>
+<p>Finally, we declare a task by inheriting from <code class="xref py py-class docutils literal notranslate"><span class="pre">NewTask</span></code>. This base class specifies the training parameters of the model: the data source and batcher, the trainer class (most models will use the default one), and the metric reporter.</p>
+<p>Since our metric reporter needs to be initialized with a specific vocab, we need to define the classmethod <cite>create_metric_reporter</cite> so that PyText can construct it properly.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyTaggingTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">MyTaggingModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MyTaggingModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MyTaggingMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MyTaggingMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_metric_reporter</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MyTaggingMetricReporter</span><span class="p">(</span>
+            <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">(),</span> <span class="n">TensorBoardChannel</span><span class="p">()],</span>
+            <span class="n">label_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"slots"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="generate-sample-config-and-train-the-model">
+<h2>8. Generate sample config and train the model<a class="headerlink" href="#generate-sample-config-and-train-the-model" title="Permalink to this headline">¶</a></h2>
+<p>Save all your files in the same directory. For example, I saved all my files in <code class="docutils literal notranslate"><span class="pre">my_tagging/</span></code>.Now you can tell PyText to include your classes with the parameter <code class="docutils literal notranslate"><span class="pre">--include</span> <span class="pre">my_tagging</span></code></p>
+<p>Now that we have a fully functional class:<cite>~Task</cite>, we can generate a default JSON config for it by using the pytext cli tool.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext --include my_tagging gen-default-config MyTaggingTask &gt; my_config.json
+</pre></div>
+</div>
+<p>Tweak the config as you like, for instance change the number of epochs. Most importantly, specify the path to your ATIS dataset. Then train the model with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext --include my_tagging train &lt; my_config.json
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="dense.html" title="previous chapter">Using External Dense Features</a></li>
+<li>Next: <a href="hacking_pytext.html" title="next chapter">Hacking PyText</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

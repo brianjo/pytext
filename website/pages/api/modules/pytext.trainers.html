@@ -1,0 +1,700 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-trainers-package">
+<h1>pytext.trainers package<a class="headerlink" href="#pytext-trainers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.trainers.ensemble_trainer">
+<span id="pytext-trainers-ensemble-trainer-module"></span><h2>pytext.trainers.ensemble_trainer module<a class="headerlink" href="#module-pytext.trainers.ensemble_trainer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.trainers.ensemble_trainer.EnsembleTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.ensemble_trainer.</code><code class="sig-name descname">EnsembleTrainer</code><span class="sig-paren">(</span><em class="sig-param">real_trainers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/ensemble_trainer.html#EnsembleTrainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.ensemble_trainer.EnsembleTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.TrainerBase" title="pytext.trainers.trainer.TrainerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.TrainerBase</span></code></a></p>
+<p>Trainer for ensemble models</p>
+<dl class="attribute">
+<dt id="pytext.trainers.ensemble_trainer.EnsembleTrainer.real_trainer">
+<code class="sig-name descname">real_trainer</code><a class="headerlink" href="#pytext.trainers.ensemble_trainer.EnsembleTrainer.real_trainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>the actual trainer to run</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Trainer</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.ensemble_trainer.EnsembleTrainer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.ensemble_trainer.EnsembleTrainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/ensemble_trainer.html#EnsembleTrainer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.ensemble_trainer.EnsembleTrainer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.ensemble_trainer.EnsembleTrainer.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">eval_iter</em>, <em class="sig-param">model</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/ensemble_trainer.html#EnsembleTrainer.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.ensemble_trainer.EnsembleTrainer.train" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.trainers.hogwild_trainer">
+<span id="pytext-trainers-hogwild-trainer-module"></span><h2>pytext.trainers.hogwild_trainer module<a class="headerlink" href="#module-pytext.trainers.hogwild_trainer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.hogwild_trainer.</code><code class="sig-name descname">HogwildTrainer</code><span class="sig-paren">(</span><em class="sig-param">real_trainer_config</em>, <em class="sig-param">num_workers</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.Trainer" title="pytext.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.Trainer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.hogwild_trainer.HogwildTrainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer.run_epoch">
+<code class="sig-name descname">run_epoch</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">data_iter: torchtext.data.iterator.Iterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer.run_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer.set_up_training">
+<code class="sig-name descname">set_up_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data</em><span class="sig-paren">)</span><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer.set_up_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.hogwild_trainer.</code><code class="sig-name descname">HogwildTrainer_Deprecated</code><span class="sig-paren">(</span><em class="sig-param">real_trainer_config</em>, <em class="sig-param">num_workers</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.Trainer" title="pytext.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.Trainer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.run_epoch">
+<code class="sig-name descname">run_epoch</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">data_iter: torchtext.data.iterator.Iterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated.run_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.run_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.set_up_training">
+<code class="sig-name descname">set_up_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated.set_up_training"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.set_up_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.trainers.trainer">
+<span id="pytext-trainers-trainer-module"></span><h2>pytext.trainers.trainer module<a class="headerlink" href="#module-pytext.trainers.trainer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.trainers.trainer.TaskTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.trainer.</code><code class="sig-name descname">TaskTrainer</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.trainer.Trainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#TaskTrainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.TaskTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.Trainer" title="pytext.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.Trainer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.trainers.trainer.TaskTrainer.run_step">
+<code class="sig-name descname">run_step</code><span class="sig-paren">(</span><em class="sig-param">samples: List[Any], state: pytext.trainers.training_state.TrainingState, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, report_metric: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#TaskTrainer.run_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.TaskTrainer.run_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Our run_step is a bit different, because we’re wrapping the model forward
+call with model.train_batch, which arranges tensors and gets loss, etc.</p>
+<p>Whenever “samples” contains more than one mini-batch (sample_size &gt; 1),
+we want to accumulate gradients locally and only call all-reduce in the
+last backwards pass.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.trainer.Trainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.trainer.</code><code class="sig-name descname">Trainer</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.trainer.Trainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.TrainerBase" title="pytext.trainers.trainer.TrainerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.TrainerBase</span></code></a></p>
+<dl class="simple">
+<dt>Base Trainer class that provide ways to</dt><dd><p>1 Train model, compute metrics against eval set and use the metrics for
+model selection.
+2 Test trained model, compute and publish metrics against a blind test set.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.trainers.trainer.Trainer.epochs">
+<code class="sig-name descname">epochs</code><a class="headerlink" href="#pytext.trainers.trainer.Trainer.epochs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Training epochs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.trainer.Trainer.early_stop_after">
+<code class="sig-name descname">early_stop_after</code><a class="headerlink" href="#pytext.trainers.trainer.Trainer.early_stop_after" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop after how many epochs when the eval metric
+is not improving</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.trainer.Trainer.max_clip_norm">
+<code class="sig-name descname">max_clip_norm</code><a class="headerlink" href="#pytext.trainers.trainer.Trainer.max_clip_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clip gradient norm if set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Optional[float]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.trainer.Trainer.report_train_metrics">
+<code class="sig-name descname">report_train_metrics</code><a class="headerlink" href="#pytext.trainers.trainer.Trainer.report_train_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether metrics on training data should be
+computed and reported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.trainer.Trainer.target_time_limit_seconds">
+<code class="sig-name descname">target_time_limit_seconds</code><a class="headerlink" href="#pytext.trainers.trainer.Trainer.target_time_limit_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Target time limit for training in seconds. If
+the expected time to train another epoch exceeds this limit, stop training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.backprop">
+<code class="sig-name descname">backprop</code><span class="sig-paren">(</span><em class="sig-param">state</em>, <em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.backprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.backprop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.continue_training">
+<code class="sig-name descname">continue_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.continue_training"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.continue_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.trainer.Trainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.load_best_model">
+<code class="sig-name descname">load_best_model</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.load_best_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.load_best_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.optimizer_step">
+<code class="sig-name descname">optimizer_step</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.optimizer_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.optimizer_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.run_epoch">
+<code class="sig-name descname">run_epoch</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.run_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.run_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.run_step">
+<code class="sig-name descname">run_step</code><span class="sig-paren">(</span><em class="sig-param">samples: List[Any], state: pytext.trainers.training_state.TrainingState, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, report_metric: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.run_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.run_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.save_checkpoint">
+<code class="sig-name descname">save_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.save_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.save_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.set_up_training">
+<code class="sig-name descname">set_up_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data: pytext.data.data_handler.BatchIterator</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.set_up_training"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.set_up_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.sparsification_step">
+<code class="sig-name descname">sparsification_step</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.sparsification_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.sparsification_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param">test_iter</em>, <em class="sig-param">model</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">training_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">eval_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">model: pytext.models.model.Model</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">rank: int = 0</em><span class="sig-paren">)</span> → Tuple[torch.nn.modules.module.Module, Any]<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and eval a model, the model states will be modified.
+:param train_iter: batch iterator of training data
+:type train_iter: BatchIterator
+:param eval_iter: batch iterator of evaluation data
+:type eval_iter: BatchIterator
+:param model: model to be trained
+:type model: Model
+:param metric_reporter: compute metric based on training
+:type metric_reporter: MetricReporter
+:param output and report results to console, file.. etc:
+:param train_config: training config
+:type train_config: PyTextConfig
+:param training_result: only meaningful for Hogwild training. default
+:type training_result: Optional
+:param is None:
+:param rank: only used in distributed training, the rank of the current
+:type rank: int
+:param training thread, evaluation will only be done in rank 0:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the trained model together with the best metric</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>model, best_metric</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.train_from_state">
+<code class="sig-name descname">train_from_state</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">eval_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em><span class="sig-paren">)</span> → Tuple[torch.nn.modules.module.Module, Any]<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.train_from_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.train_from_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and eval a model from a given training state will be modified.
+This function iterates epochs specified in config, and for each epoch do:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Train model using training data, aggregate and report training results</p></li>
+<li><p>Adjust learning rate if scheduler is specified</p></li>
+<li><p>Evaluate model using evaluation data</p></li>
+<li><p>Calculate metrics based on evaluation results and select best model</p></li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training_state</strong> (<em>TrainingState</em>) – contrains stateful information to be</p></li>
+<li><p><strong>to restore a training job</strong> (<em>able</em>) – </p></li>
+<li><p><strong>train_iter</strong> (<em>BatchIterator</em>) – batch iterator of training data</p></li>
+<li><p><strong>eval_iter</strong> (<em>BatchIterator</em>) – batch iterator of evaluation data</p></li>
+<li><p><strong>model</strong> (<em>Model</em>) – model to be trained</p></li>
+<li><p><strong>metric_reporter</strong> (<em>MetricReporter</em>) – compute metric based on training
+output and report results to console, file.. etc</p></li>
+<li><p><strong>train_config</strong> (<em>PyTextConfig</em>) – training config</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the trained model together with the best metric</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>model, best_metric</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.update_best_model">
+<code class="sig-name descname">update_best_model</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">eval_metric</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.update_best_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.update_best_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.trainer.Trainer.zero_grads">
+<code class="sig-name descname">zero_grads</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.zero_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.Trainer.zero_grads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.trainer.TrainerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.trainer.</code><code class="sig-name descname">TrainerBase</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#TrainerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.TrainerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.trainers.trainer.cycle">
+<code class="sig-prename descclassname">pytext.trainers.trainer.</code><code class="sig-name descname">cycle</code><span class="sig-paren">(</span><em class="sig-param">iterator: Iterable[Any]</em><span class="sig-paren">)</span> → Iterable[Any]<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#cycle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.cycle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like itertools.cycle, but will call iter on the original iterable instead.
+This limits it to not be able to run on say raw generators, but also doesn’t
+store a copy of the iterable in memory for repetition.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.trainers.trainer.maybe_accumulate_gradients">
+<code class="sig-prename descclassname">pytext.trainers.trainer.</code><code class="sig-name descname">maybe_accumulate_gradients</code><span class="sig-paren">(</span><em class="sig-param">exit_stack</em>, <em class="sig-param">model</em>, <em class="sig-param">index</em>, <em class="sig-param">sample_size</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#maybe_accumulate_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.trainer.maybe_accumulate_gradients" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.trainers.training_state">
+<span id="pytext-trainers-training-state-module"></span><h2>pytext.trainers.training_state module<a class="headerlink" href="#module-pytext.trainers.training_state" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.trainers.training_state.TrainingState">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.training_state.</code><code class="sig-name descname">TrainingState</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/training_state.html#TrainingState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.training_state.TrainingState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.best_model_metric">
+<code class="sig-name descname">best_model_metric</code><em class="property"> = None</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.best_model_metric" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.best_model_state">
+<code class="sig-name descname">best_model_state</code><em class="property"> = None</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.best_model_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.epoch">
+<code class="sig-name descname">epoch</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.epochs_since_last_improvement">
+<code class="sig-name descname">epochs_since_last_improvement</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.epochs_since_last_improvement" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.rank">
+<code class="sig-name descname">rank</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.stage">
+<code class="sig-name descname">stage</code><em class="property"> = 'Training'</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.stage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.step_counter">
+<code class="sig-name descname">step_counter</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.step_counter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.training_state.TrainingState.tensorizers">
+<code class="sig-name descname">tensorizers</code><em class="property"> = None</em><a class="headerlink" href="#pytext.trainers.training_state.TrainingState.tensorizers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.trainers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.trainers" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.trainers.Trainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.</code><code class="sig-name descname">Trainer</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.trainer.Trainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.TrainerBase" title="pytext.trainers.trainer.TrainerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.TrainerBase</span></code></a></p>
+<dl class="simple">
+<dt>Base Trainer class that provide ways to</dt><dd><p>1 Train model, compute metrics against eval set and use the metrics for
+model selection.
+2 Test trained model, compute and publish metrics against a blind test set.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.trainers.Trainer.epochs">
+<code class="sig-name descname">epochs</code><a class="headerlink" href="#pytext.trainers.Trainer.epochs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Training epochs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.Trainer.early_stop_after">
+<code class="sig-name descname">early_stop_after</code><a class="headerlink" href="#pytext.trainers.Trainer.early_stop_after" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop after how many epochs when the eval metric
+is not improving</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.Trainer.max_clip_norm">
+<code class="sig-name descname">max_clip_norm</code><a class="headerlink" href="#pytext.trainers.Trainer.max_clip_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clip gradient norm if set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Optional[float]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.Trainer.report_train_metrics">
+<code class="sig-name descname">report_train_metrics</code><a class="headerlink" href="#pytext.trainers.Trainer.report_train_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether metrics on training data should be
+computed and reported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.Trainer.target_time_limit_seconds">
+<code class="sig-name descname">target_time_limit_seconds</code><a class="headerlink" href="#pytext.trainers.Trainer.target_time_limit_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Target time limit for training in seconds. If
+the expected time to train another epoch exceeds this limit, stop training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.backprop">
+<code class="sig-name descname">backprop</code><span class="sig-paren">(</span><em class="sig-param">state</em>, <em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.backprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.backprop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.continue_training">
+<code class="sig-name descname">continue_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.continue_training"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.continue_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.trainer.Trainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.load_best_model">
+<code class="sig-name descname">load_best_model</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.load_best_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.load_best_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.optimizer_step">
+<code class="sig-name descname">optimizer_step</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.optimizer_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.optimizer_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.run_epoch">
+<code class="sig-name descname">run_epoch</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.run_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.run_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.run_step">
+<code class="sig-name descname">run_step</code><span class="sig-paren">(</span><em class="sig-param">samples: List[Any], state: pytext.trainers.training_state.TrainingState, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, report_metric: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.run_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.run_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.save_checkpoint">
+<code class="sig-name descname">save_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em><span class="sig-paren">)</span> → str<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.save_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.save_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.set_up_training">
+<code class="sig-name descname">set_up_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data: pytext.data.data_handler.BatchIterator</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.set_up_training"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.set_up_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.sparsification_step">
+<code class="sig-name descname">sparsification_step</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.sparsification_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.sparsification_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param">test_iter</em>, <em class="sig-param">model</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">training_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">eval_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">model: pytext.models.model.Model</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">rank: int = 0</em><span class="sig-paren">)</span> → Tuple[torch.nn.modules.module.Module, Any]<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and eval a model, the model states will be modified.
+:param train_iter: batch iterator of training data
+:type train_iter: BatchIterator
+:param eval_iter: batch iterator of evaluation data
+:type eval_iter: BatchIterator
+:param model: model to be trained
+:type model: Model
+:param metric_reporter: compute metric based on training
+:type metric_reporter: MetricReporter
+:param output and report results to console, file.. etc:
+:param train_config: training config
+:type train_config: PyTextConfig
+:param training_result: only meaningful for Hogwild training. default
+:type training_result: Optional
+:param is None:
+:param rank: only used in distributed training, the rank of the current
+:type rank: int
+:param training thread, evaluation will only be done in rank 0:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the trained model together with the best metric</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>model, best_metric</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.train_from_state">
+<code class="sig-name descname">train_from_state</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">eval_data: pytext.data.data_handler.BatchIterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em><span class="sig-paren">)</span> → Tuple[torch.nn.modules.module.Module, Any]<a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.train_from_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.train_from_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and eval a model from a given training state will be modified.
+This function iterates epochs specified in config, and for each epoch do:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Train model using training data, aggregate and report training results</p></li>
+<li><p>Adjust learning rate if scheduler is specified</p></li>
+<li><p>Evaluate model using evaluation data</p></li>
+<li><p>Calculate metrics based on evaluation results and select best model</p></li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training_state</strong> (<em>TrainingState</em>) – contrains stateful information to be</p></li>
+<li><p><strong>to restore a training job</strong> (<em>able</em>) – </p></li>
+<li><p><strong>train_iter</strong> (<em>BatchIterator</em>) – batch iterator of training data</p></li>
+<li><p><strong>eval_iter</strong> (<em>BatchIterator</em>) – batch iterator of evaluation data</p></li>
+<li><p><strong>model</strong> (<em>Model</em>) – model to be trained</p></li>
+<li><p><strong>metric_reporter</strong> (<em>MetricReporter</em>) – compute metric based on training
+output and report results to console, file.. etc</p></li>
+<li><p><strong>train_config</strong> (<em>PyTextConfig</em>) – training config</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the trained model together with the best metric</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>model, best_metric</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.update_best_model">
+<code class="sig-name descname">update_best_model</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">train_config: pytext.config.pytext_config.PyTextConfig</em>, <em class="sig-param">eval_metric</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.update_best_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.update_best_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.Trainer.zero_grads">
+<code class="sig-name descname">zero_grads</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#Trainer.zero_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.Trainer.zero_grads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.TrainingState">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.</code><code class="sig-name descname">TrainingState</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/training_state.html#TrainingState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.TrainingState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.best_model_metric">
+<code class="sig-name descname">best_model_metric</code><em class="property"> = None</em><a class="headerlink" href="#pytext.trainers.TrainingState.best_model_metric" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.best_model_state">
+<code class="sig-name descname">best_model_state</code><em class="property"> = None</em><a class="headerlink" href="#pytext.trainers.TrainingState.best_model_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.epoch">
+<code class="sig-name descname">epoch</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.TrainingState.epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.epochs_since_last_improvement">
+<code class="sig-name descname">epochs_since_last_improvement</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.TrainingState.epochs_since_last_improvement" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.rank">
+<code class="sig-name descname">rank</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.TrainingState.rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.stage">
+<code class="sig-name descname">stage</code><em class="property"> = 'Training'</em><a class="headerlink" href="#pytext.trainers.TrainingState.stage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.step_counter">
+<code class="sig-name descname">step_counter</code><em class="property"> = 0</em><a class="headerlink" href="#pytext.trainers.TrainingState.step_counter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.trainers.TrainingState.tensorizers">
+<code class="sig-name descname">tensorizers</code><em class="property"> = None</em><a class="headerlink" href="#pytext.trainers.TrainingState.tensorizers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.EnsembleTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.</code><code class="sig-name descname">EnsembleTrainer</code><span class="sig-paren">(</span><em class="sig-param">real_trainers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/ensemble_trainer.html#EnsembleTrainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.EnsembleTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.TrainerBase" title="pytext.trainers.trainer.TrainerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.TrainerBase</span></code></a></p>
+<p>Trainer for ensemble models</p>
+<dl class="attribute">
+<dt id="pytext.trainers.EnsembleTrainer.real_trainer">
+<code class="sig-name descname">real_trainer</code><a class="headerlink" href="#pytext.trainers.EnsembleTrainer.real_trainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>the actual trainer to run</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Trainer</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.EnsembleTrainer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.ensemble_trainer.EnsembleTrainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/ensemble_trainer.html#EnsembleTrainer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.EnsembleTrainer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.EnsembleTrainer.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">eval_iter</em>, <em class="sig-param">model</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/ensemble_trainer.html#EnsembleTrainer.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.EnsembleTrainer.train" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.HogwildTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.</code><code class="sig-name descname">HogwildTrainer</code><span class="sig-paren">(</span><em class="sig-param">real_trainer_config</em>, <em class="sig-param">num_workers</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.HogwildTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.Trainer" title="pytext.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.Trainer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.trainers.HogwildTrainer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.hogwild_trainer.HogwildTrainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.HogwildTrainer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.HogwildTrainer.run_epoch">
+<code class="sig-name descname">run_epoch</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">data_iter: torchtext.data.iterator.Iterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="headerlink" href="#pytext.trainers.HogwildTrainer.run_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.HogwildTrainer.set_up_training">
+<code class="sig-name descname">set_up_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data</em><span class="sig-paren">)</span><a class="headerlink" href="#pytext.trainers.HogwildTrainer.set_up_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.HogwildTrainer_Deprecated">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.</code><code class="sig-name descname">HogwildTrainer_Deprecated</code><span class="sig-paren">(</span><em class="sig-param">real_trainer_config</em>, <em class="sig-param">num_workers</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.HogwildTrainer_Deprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.Trainer" title="pytext.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.Trainer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.trainers.HogwildTrainer_Deprecated.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.HogwildTrainer_Deprecated.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.HogwildTrainer_Deprecated.run_epoch">
+<code class="sig-name descname">run_epoch</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">data_iter: torchtext.data.iterator.Iterator</em>, <em class="sig-param">metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated.run_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.HogwildTrainer_Deprecated.run_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.trainers.HogwildTrainer_Deprecated.set_up_training">
+<code class="sig-name descname">set_up_training</code><span class="sig-paren">(</span><em class="sig-param">state: pytext.trainers.training_state.TrainingState</em>, <em class="sig-param">training_data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/hogwild_trainer.html#HogwildTrainer_Deprecated.set_up_training"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.HogwildTrainer_Deprecated.set_up_training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.trainers.TaskTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.trainers.</code><code class="sig-name descname">TaskTrainer</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.trainers.trainer.Trainer.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#TaskTrainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.TaskTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.trainers.trainer.Trainer" title="pytext.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.trainers.trainer.Trainer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.trainers.TaskTrainer.run_step">
+<code class="sig-name descname">run_step</code><span class="sig-paren">(</span><em class="sig-param">samples: List[Any], state: pytext.trainers.training_state.TrainingState, metric_reporter: pytext.metric_reporters.metric_reporter.MetricReporter, report_metric: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/trainers/trainer.html#TaskTrainer.run_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.trainers.TaskTrainer.run_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Our run_step is a bit different, because we’re wrapping the model forward
+call with model.train_batch, which arranges tensors and gets loss, etc.</p>
+<p>Whenever “samples” contains more than one mini-batch (sample_size &gt; 1),
+we want to accumulate gradients locally and only call all-reduce in the
+last backwards pass.</p>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.torchscript.tokenizer.html" title="previous chapter">pytext.torchscript.tokenizer package</a></li>
+<li>Next: <a href="pytext.utils.html" title="next chapter">pytext.utils package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

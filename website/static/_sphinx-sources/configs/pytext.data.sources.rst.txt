@@ -1,0 +1,12 @@
+sources
+=======
+
+
+.. toctree::
+
+  pytext.data.sources.conllu
+  pytext.data.sources.data_source
+  pytext.data.sources.pandas
+  pytext.data.sources.session
+  pytext.data.sources.squad
+  pytext.data.sources.tsv

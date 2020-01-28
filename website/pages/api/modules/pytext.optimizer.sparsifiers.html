@@ -1,0 +1,311 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-optimizer-sparsifiers-package">
+<h1>pytext.optimizer.sparsifiers package<a class="headerlink" href="#pytext-optimizer-sparsifiers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.optimizer.sparsifiers.blockwise_sparsifier">
+<span id="pytext-optimizer-sparsifiers-blockwise-sparsifier-module"></span><h2>pytext.optimizer.sparsifiers.blockwise_sparsifier module<a class="headerlink" href="#module-pytext.optimizer.sparsifiers.blockwise_sparsifier" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.sparsifiers.blockwise_sparsifier.</code><code class="sig-name descname">BlockwiseMagnitudeSparsifier</code><span class="sig-paren">(</span><em class="sig-param">sparsity</em>, <em class="sig-param">starting_epoch</em>, <em class="sig-param">frequency</em>, <em class="sig-param">block_size</em>, <em class="sig-param">columnwise_blocking</em>, <em class="sig-param">accumulate_mask</em>, <em class="sig-param">layerwise_pruning</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/blockwise_sparsifier.html#BlockwiseMagnitudeSparsifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier" title="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier</span></code></a></p>
+<p>running blockwise magnitude-based sparsification</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block_size</strong> – define the size of each block</p></li>
+<li><p><strong>columnwise_blocking</strong> – define columnwise block if true</p></li>
+<li><p><strong>starting_epoch</strong> – sparsification_condition returns true only after starting_epoch</p></li>
+<li><p><strong>frequency</strong> – sparsification_condition only if number of steps devides frequency</p></li>
+<li><p><strong>accumulate_mask</strong> – if true, the mask after each .sparisfy() will be reused</p></li>
+<li><p><strong>sparsity</strong> – percentage of zeros among the <strong>UNPRUNED</strong> parameters.</p></li>
+<li><p><strong>on how the sparsifier work</strong> (<em>Examples</em>) – </p></li>
+<li><p><strong>matrix</strong> (<em>2D</em>) – </p></li>
+<li><p><strong>[</strong> – 0  1  2  3  4
+5  6  7  8  9
+10 11 12 13 14
+15 16 17 18 19
+20 21 22 23 24</p></li>
+<li><p><strong>]</strong> – </p></li>
+<li><p><strong>3 X 1 block</strong> (<em>define</em>) – </p></li>
+<li><p><strong>[</strong> – <strong>*****</strong> <strong>***</strong>
+<em>0  1  2</em> <em>3   4</em>
+<strong>******</strong> <strong>***</strong>
+<em>5  6  7</em> <em>8   9</em>
+<strong>******</strong> <strong>***</strong>
+<em>10 11 12</em> <em>13 14</em>
+<strong>******</strong> <strong>***</strong>
+<em>15 16 17</em> <em>18 19</em>
+<strong>******</strong> <strong>***</strong>
+<em>20 21 22</em> <em>23 24</em>
+<strong>******</strong> <strong>***</strong></p></li>
+<li><p><strong>]</strong> – </p></li>
+<li><p><strong>l1 norm of each block and sort them. Retain blocks with largest</strong> (<em>compute</em>) – </p></li>
+<li><p><strong>values until sparsity threshold is met</strong> (<em>absolute</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/blockwise_sparsifier.html#BlockwiseMagnitudeSparsifier.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.get_current_sparsity">
+<code class="sig-name descname">get_current_sparsity</code><span class="sig-paren">(</span><em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/blockwise_sparsifier.html#BlockwiseMagnitudeSparsifier.get_current_sparsity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.get_current_sparsity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.get_masks">
+<code class="sig-name descname">get_masks</code><span class="sig-paren">(</span><em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">pre_masks: List[torch.Tensor] = None</em><span class="sig-paren">)</span> → List[torch.Tensor]<a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/blockwise_sparsifier.html#BlockwiseMagnitudeSparsifier.get_masks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.get_masks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note: this function returns the masks only but do not sparsify or modify the
+weights</p>
+<p>prune x% of weights among the weights with “1” in pre_masks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – Model</p></li>
+<li><p><strong>pre_masks</strong> – list of FloatTensors where “1” means retained the weight and
+“0” means pruned the weight</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List[torch.Tensor], intersection of new masks and pre_masks, so
+that “1” only if the weight is selected after new masking and pre_mask</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>masks</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.get_sparsifiable_params">
+<code class="sig-name descname">get_sparsifiable_params</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">requires_name=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/blockwise_sparsifier.html#BlockwiseMagnitudeSparsifier.get_sparsifiable_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.get_sparsifiable_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.sparsifiers.sparsifier">
+<span id="pytext-optimizer-sparsifiers-sparsifier-module"></span><h2>pytext.optimizer.sparsifiers.sparsifier module<a class="headerlink" href="#module-pytext.optimizer.sparsifiers.sparsifier" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.sparsifiers.sparsifier.</code><code class="sig-name descname">CRF_L1_SoftThresholding</code><span class="sig-paren">(</span><em class="sig-param">lambda_l1: float</em>, <em class="sig-param">starting_epoch: int</em>, <em class="sig-param">frequency: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_L1_SoftThresholding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase" title="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase</span></code></a></p>
+<dl class="simple">
+<dt>implement l1 regularization:</dt><dd><p>min Loss(x, y, CRFparams) + lambda_l1 * ||CRFparams||_1</p>
+</dd>
+</dl>
+<p>and solve the optimiation problem via (stochastic) proximal gradient-based
+method i.e., soft-thresholding</p>
+<p>param_updated = sign(CRFparams) * max ( abs(CRFparams) - lambda_l1, 0)</p>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_L1_SoftThresholding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.sparsify">
+<code class="sig-name descname">sparsify</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_L1_SoftThresholding.sparsify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.sparsify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.sparsifiers.sparsifier.</code><code class="sig-name descname">CRF_MagnitudeThresholding</code><span class="sig-paren">(</span><em class="sig-param">sparsity</em>, <em class="sig-param">starting_epoch</em>, <em class="sig-param">frequency</em>, <em class="sig-param">grouping</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_MagnitudeThresholding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase" title="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase</span></code></a></p>
+<p>magnitude-based (equivalent to projection onto l0 constraint set) sparsification
+on CRF transition matrix. Preserveing the top-k elements either rowwise or
+columnwise until sparsity constraint is met.</p>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_MagnitudeThresholding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.sparsify">
+<code class="sig-name descname">sparsify</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_MagnitudeThresholding.sparsify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.sparsify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.sparsifiers.sparsifier.</code><code class="sig-name descname">CRF_SparsifierBase</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_SparsifierBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier" title="pytext.optimizer.sparsifiers.sparsifier.Sparsifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.sparsifiers.sparsifier.Sparsifier</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.get_sparsifiable_params">
+<code class="sig-name descname">get_sparsifiable_params</code><span class="sig-paren">(</span><em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_SparsifierBase.get_sparsifiable_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.get_sparsifiable_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.get_transition_sparsity">
+<code class="sig-name descname">get_transition_sparsity</code><span class="sig-paren">(</span><em class="sig-param">transition</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_SparsifierBase.get_transition_sparsity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.get_transition_sparsity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.sparsification_condition">
+<code class="sig-name descname">sparsification_condition</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#CRF_SparsifierBase.sparsification_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.sparsification_condition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.sparsifiers.sparsifier.</code><code class="sig-name descname">L0_projection_sparsifier</code><span class="sig-paren">(</span><em class="sig-param">sparsity</em>, <em class="sig-param">starting_epoch</em>, <em class="sig-param">frequency</em>, <em class="sig-param">layerwise_pruning=True</em>, <em class="sig-param">accumulate_mask=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier" title="pytext.optimizer.sparsifiers.sparsifier.Sparsifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.sparsifiers.sparsifier.Sparsifier</span></code></a></p>
+<p>L0 projection-based (unstructured) sparsification</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>weights</strong> (<em>torch.Tensor</em>) – input weight matrix</p></li>
+<li><p><strong>sparsity</strong> (<em>float32</em>) – the desired sparsity [0-1]</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.apply_masks">
+<code class="sig-name descname">apply_masks</code><span class="sig-paren">(</span><em class="sig-param">model: pytext.models.model.Model, masks: List[torch.Tensor]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier.apply_masks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.apply_masks" title="Permalink to this definition">¶</a></dt>
+<dd><p>apply given masks to zero-out learnable weights in model</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.get_masks">
+<code class="sig-name descname">get_masks</code><span class="sig-paren">(</span><em class="sig-param">model: pytext.models.model.Model</em>, <em class="sig-param">pre_masks: List[torch.Tensor] = None</em><span class="sig-paren">)</span> → List[torch.Tensor]<a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier.get_masks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.get_masks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note: this function returns the masks only but do not sparsify or modify the
+weights</p>
+<p>prune x% of weights among the weights with “1” in pre_masks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – Model</p></li>
+<li><p><strong>pre_masks</strong> – list of FloatTensors where “1” means retained the weight and
+“0” means pruned the weight</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List[torch.Tensor], intersection of new masks and pre_masks, so
+that “1” only if the weight is selected after new masking and pre_mask</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>masks</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.get_sparsifiable_params">
+<code class="sig-name descname">get_sparsifiable_params</code><span class="sig-paren">(</span><em class="sig-param">model: pytext.models.model.Model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier.get_sparsifiable_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.get_sparsifiable_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.sparsification_condition">
+<code class="sig-name descname">sparsification_condition</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier.sparsification_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.sparsification_condition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.sparsify">
+<code class="sig-name descname">sparsify</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#L0_projection_sparsifier.sparsify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.sparsify" title="Permalink to this definition">¶</a></dt>
+<dd><p>obtain a mask and apply the mask to sparsify</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.Sparsifier">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.sparsifiers.sparsifier.</code><code class="sig-name descname">Sparsifier</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#Sparsifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.Sparsifier.get_current_sparsity">
+<code class="sig-name descname">get_current_sparsity</code><span class="sig-paren">(</span><em class="sig-param">model: pytext.models.model.Model</em><span class="sig-paren">)</span> → float<a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#Sparsifier.get_current_sparsity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier.get_current_sparsity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.Sparsifier.get_sparsifiable_params">
+<code class="sig-name descname">get_sparsifiable_params</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#Sparsifier.get_sparsifiable_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier.get_sparsifiable_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.Sparsifier.sparsification_condition">
+<code class="sig-name descname">sparsification_condition</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#Sparsifier.sparsification_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier.sparsification_condition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.sparsifiers.sparsifier.Sparsifier.sparsify">
+<code class="sig-name descname">sparsify</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/sparsifiers/sparsifier.html#Sparsifier.sparsify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.sparsifiers.sparsifier.Sparsifier.sparsify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.sparsifiers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.optimizer.sparsifiers" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.optimizer.html">pytext.optimizer package</a><ul>
+<li>Previous: <a href="pytext.optimizer.html" title="previous chapter">pytext.optimizer package</a></li>
+<li>Next: <a href="pytext.task.html" title="next chapter">pytext.task package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

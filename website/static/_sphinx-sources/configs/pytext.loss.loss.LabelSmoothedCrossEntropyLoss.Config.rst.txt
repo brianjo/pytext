@@ -1,0 +1,40 @@
+LabelSmoothedCrossEntropyLoss.Config
+====================================
+
+
+
+**Component:** :class:`LabelSmoothedCrossEntropyLoss  <pytext.loss.loss.LabelSmoothedCrossEntropyLoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: LabelSmoothedCrossEntropyLoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **beta**: float = ``0.1``
+    \ 
+
+  **from_logits**: bool = ``True``
+    \ 
+
+  **use_entropy**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "beta": 0.1,
+      "from_logits": true,
+      "use_entropy": false
+  }

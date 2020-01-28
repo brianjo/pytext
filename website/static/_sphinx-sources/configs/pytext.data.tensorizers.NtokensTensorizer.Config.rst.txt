@@ -1,0 +1,32 @@
+NtokensTensorizer.Config
+========================
+
+
+
+**Component:** :class:`NtokensTensorizer  <pytext.data.tensorizers.NtokensTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: NtokensTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`MetricTensorizer.Config <pytext.data.tensorizers.MetricTensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``False``
+    \ 
+
+  **names**: list[str]
+    \ 
+
+  **indexes**: list[int]
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

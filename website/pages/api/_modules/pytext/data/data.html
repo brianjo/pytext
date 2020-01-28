@@ -1,0 +1,452 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.data</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">RawExampleFieldName</span><span class="p">,</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">create_component</span>
+
+<span class="kn">from</span> <span class="nn">.sources</span> <span class="kn">import</span> <span class="n">DataSource</span><span class="p">,</span> <span class="n">RawExample</span><span class="p">,</span> <span class="n">TSVDataSource</span>
+<span class="kn">from</span> <span class="nn">.sources.data_source</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GeneratorIterator</span><span class="p">,</span>
+    <span class="n">RowShardedDataSource</span><span class="p">,</span>
+    <span class="n">ShardedDataSource</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.tensorizers</span> <span class="kn">import</span> <span class="n">MetricTensorizer</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">,</span> <span class="n">initialize_tensorizers</span>
+
+
+<span class="k">class</span> <span class="nc">RowData</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">raw_data</span><span class="p">:</span> <span class="n">RawExample</span>
+    <span class="n">numberized</span><span class="p">:</span> <span class="n">RawExample</span>
+
+
+<span class="k">class</span> <span class="nc">BatchData</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">raw_data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">RawExample</span><span class="p">]</span>
+    <span class="n">numberized</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span>
+
+
+<span class="k">class</span> <span class="nc">Batcher</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""Batcher designed to batch rows of data, before padding."""</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">BATCHER</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: Make batches of this size when possible. If there's not enough data,</span>
+        <span class="c1">#: might generate some smaller batches.</span>
+        <span class="n">train_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span>
+        <span class="n">eval_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span>
+        <span class="n">test_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">test_batch_size</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+        <span class="n">eval_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+        <span class="n">test_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_batch_size</span> <span class="o">=</span> <span class="n">train_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_batch_size</span> <span class="o">=</span> <span class="n">eval_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_batch_size</span> <span class="o">=</span> <span class="n">test_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_batch_sizes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+            <span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+            <span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">RawExample</span><span class="p">],</span> <span class="n">sort_key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span>
+    <span class="p">):</span>
+        <span class="sd">"""Group rows by batch_size.  Assume iterable of dicts, yield dict of lists.</span>
+<span class="sd">        The last batch will be of length len(iterable) % batch_size."""</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_batch_sizes</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">sort_key</span><span class="p">):</span>
+            <span class="n">raw_batch</span><span class="p">,</span> <span class="n">numberized_batch</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">BatchData</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">zip_dicts</span><span class="p">(</span><span class="n">numberized_batch</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_group_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">RawExample</span><span class="p">],</span> <span class="n">group_size</span><span class="p">,</span> <span class="n">sort_key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">iterators</span> <span class="o">=</span> <span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">)]</span> <span class="o">*</span> <span class="n">group_size</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">zip_longest</span><span class="p">(</span><span class="o">*</span><span class="n">iterators</span><span class="p">):</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="p">[</span><span class="n">ex</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="n">group</span> <span class="k">if</span> <span class="n">ex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">sort_key</span><span class="p">:</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">sort_key</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">group</span>
+
+
+<span class="k">class</span> <span class="nc">PoolingBatcher</span><span class="p">(</span><span class="n">Batcher</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Batcher that loads a pool of data, sorts it, and batches it.</span>
+
+<span class="sd">    Shuffling is performed before pooling, by loading `num_shuffled_pools` worth</span>
+<span class="sd">    of data, shuffling, and then splitting that up into pools.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="PoolingBatcher.Config"><a class="viewcode-back" href="../../../configs/pytext.data.data.PoolingBatcher.Config.html#pytext.data.data.PoolingBatcher.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Batcher</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: Size of a pool expressed in number of batches</span>
+        <span class="n">pool_num_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span>
+        <span class="c1">#: How many pool-sized chunks to load at a time for shuffling</span>
+        <span class="n">num_shuffled_pools</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">pool_num_batches</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">num_shuffled_pools</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+        <span class="n">eval_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+        <span class="n">test_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+        <span class="n">pool_num_batches</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">pool_num_batches</span><span class="p">,</span>
+        <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">num_shuffled_pools</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">train_batch_size</span><span class="p">,</span> <span class="n">eval_batch_size</span><span class="p">,</span> <span class="n">test_batch_size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pool_num_batches</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">num_shuffled_pools</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pool_num_batches</span> <span class="o">=</span> <span class="n">pool_num_batches</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_shuffled_pools</span> <span class="o">=</span> <span class="n">num_shuffled_pools</span>
+
+    <span class="k">def</span> <span class="nf">get_batch_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Stage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_batch_sizes</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">RawExample</span><span class="p">],</span> <span class="n">sort_key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        From an iterable of dicts, yield dicts of lists:</span>
+
+<span class="sd">        1. Load `num_shuffled_pools` pools of data, and shuffle them.</span>
+<span class="sd">        2. Load a pool (`batch_size * pool_num_batches` examples).</span>
+<span class="sd">        3. Sort rows, if necessary.</span>
+<span class="sd">        4. Shuffle the order in which the batches are returned, if necessary.</span>
+<span class="sd">        """</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_batch_size</span><span class="p">(</span><span class="n">stage</span><span class="p">)</span>
+        <span class="n">pool_size</span> <span class="o">=</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_num_batches</span>
+        <span class="n">super_pool_size</span> <span class="o">=</span> <span class="n">pool_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_shuffled_pools</span>
+
+        <span class="k">for</span> <span class="n">super_pool</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">super_pool_size</span><span class="p">,</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="c1"># No point in shuffling if we're loading a single pool which is then sorted.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_shuffled_pools</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">sort_key</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">super_pool</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pool</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_iter</span><span class="p">(</span><span class="n">super_pool</span><span class="p">,</span> <span class="n">pool_size</span><span class="p">,</span> <span class="n">sort_key</span><span class="p">):</span>
+                <span class="n">batch_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span> <span class="o">/</span> <span class="n">batch_size</span><span class="p">)))</span>
+                <span class="k">if</span> <span class="n">sort_key</span><span class="p">:</span>
+                    <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">batch_indices</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">batch_index</span> <span class="ow">in</span> <span class="n">batch_indices</span><span class="p">:</span>
+                    <span class="n">batch</span> <span class="o">=</span> <span class="n">pool</span><span class="p">[</span>
+                        <span class="n">batch_size</span> <span class="o">*</span> <span class="n">batch_index</span> <span class="p">:</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">batch_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="p">]</span>
+                    <span class="n">raw_batch</span><span class="p">,</span> <span class="n">numberized_batch</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+                    <span class="k">yield</span> <span class="n">BatchData</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">zip_dicts</span><span class="p">(</span><span class="n">numberized_batch</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">pad_and_tensorize_batches</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">batches</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">numberized_batch</span> <span class="ow">in</span> <span class="n">batches</span><span class="p">:</span>
+        <span class="n">tensor_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tensorizer</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensorizer</span><span class="p">,</span> <span class="n">MetricTensorizer</span><span class="p">):</span>
+                <span class="n">tensor_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tensorizer</span><span class="o">.</span><span class="n">tensorize</span><span class="p">(</span><span class="n">numberized_batch</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tensor_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tensorizer</span><span class="o">.</span><span class="n">tensorize</span><span class="p">(</span><span class="n">numberized_batch</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+        <span class="k">yield</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">tensor_dict</span>
+
+
+<span class="k">def</span> <span class="nf">zip_dicts</span><span class="p">(</span><span class="n">dicts</span><span class="p">):</span>
+    <span class="n">all_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">dicts</span><span class="p">))</span>
+    <span class="n">zipped</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">all_keys</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dicts</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">all_keys</span><span class="p">:</span>
+            <span class="n">zipped</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">zipped</span>
+
+
+<span class="k">def</span> <span class="nf">generator_iterator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+    <span class="sd">"""Turn a generator into a GeneratorIterator-wrapped function.</span>
+<span class="sd">    Effectively this allows iterating over a generator multiple times by recording</span>
+<span class="sd">    the call arguments, and calling the generator with them anew each item __iter__</span>
+<span class="sd">    is called on the returned object."""</span>
+
+    <span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">GeneratorIterator</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">wrapped</span>
+
+
+<span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""Data is an abstraction that handles all of the following:</span>
+
+<span class="sd">    - Initialize model metadata parameters</span>
+<span class="sd">    - Create batches of tensors for model training or prediction</span>
+
+<span class="sd">    It can accomplish these in any way it needs to. The base implementation</span>
+<span class="sd">    utilizes `pytext.data.sources.DataSource`, and sends batches to</span>
+<span class="sd">    `pytext.data.tensorizers.Tensorizer` to create tensors.</span>
+
+<span class="sd">    The `tensorizers` dict passed to the initializer should be considered something like</span>
+<span class="sd">    a signature for the model. Each batch should be a dictionary with the same keys</span>
+<span class="sd">    as the `tensorizers` dict, and values should be tensors arranged in the way</span>
+<span class="sd">    specified by that tensorizer. The tensorizers dict doubles as a simple baseline</span>
+<span class="sd">    implementation of that same signature, but subclasses of Data can override the</span>
+<span class="sd">    implementation using other methods. This value is how the model specifies what</span>
+<span class="sd">    inputs it's looking for.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_HANDLER</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Data.Config"><a class="viewcode-back" href="../../../configs/pytext.data.data.Data.Config.html#pytext.data.data.Data.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: Specify where training/test/eval data come from. The default value</span>
+        <span class="c1">#: will not provide any data.</span>
+        <span class="n">source</span><span class="p">:</span> <span class="n">DataSource</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TSVDataSource</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="c1">#: How training examples are split into batches for the optimizer.</span>
+        <span class="n">batcher</span><span class="p">:</span> <span class="n">Batcher</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">PoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">sort_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1">#: cache numberized result in memory, turn off when CPU memory bound.</span>
+        <span class="n">in_memory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span>
+        <span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">],</span>
+        <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span>
+        <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">init_tensorizers</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">data_source_cls</span> <span class="o">=</span> <span class="n">Registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_SOURCE</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">source</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">data_source_cls</span><span class="p">,</span> <span class="n">ShardedDataSource</span><span class="p">):</span>
+            <span class="c1"># data source is already sharded, we don't need to wrap RowShardedDataSource</span>
+            <span class="n">data_source</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+                <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_SOURCE</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+                <span class="n">schema</span><span class="p">,</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+                <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unsharded_data_source</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+                <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_SOURCE</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">schema</span>
+            <span class="p">)</span>
+            <span class="n">data_source</span> <span class="o">=</span> <span class="n">RowShardedDataSource</span><span class="p">(</span>
+                <span class="n">data_source</span><span class="o">=</span><span class="n">unsharded_data_source</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span>
+            <span class="p">)</span>
+
+        <span class="n">batcher</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">BATCHER</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">batcher</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">data_source</span><span class="p">,</span>
+            <span class="n">tensorizers</span><span class="p">,</span>
+            <span class="n">batcher</span><span class="o">=</span><span class="n">batcher</span><span class="p">,</span>
+            <span class="n">sort_key</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">sort_key</span><span class="p">,</span>
+            <span class="n">in_memory</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">in_memory</span><span class="p">,</span>
+            <span class="n">init_tensorizers</span><span class="o">=</span><span class="n">init_tensorizers</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_source</span><span class="p">:</span> <span class="n">DataSource</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span>
+        <span class="n">batcher</span><span class="p">:</span> <span class="n">Batcher</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">sort_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">in_memory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+        <span class="n">init_tensorizers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">init_tensorizers_from_scratch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""This function should also initialize the passed in tensorizers with</span>
+<span class="sd">        metadata they need for model construction."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span> <span class="o">=</span> <span class="n">data_source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensorizers</span> <span class="o">=</span> <span class="n">tensorizers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batcher</span> <span class="o">=</span> <span class="n">batcher</span> <span class="ow">or</span> <span class="n">Batcher</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sort_key</span> <span class="o">=</span> <span class="n">sort_key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_memory</span> <span class="o">=</span> <span class="n">in_memory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">numberized_cache</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_mutex</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">full_train_data</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data_source</span><span class="o">.</span><span class="n">train_unsharded</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_source</span><span class="p">,</span> <span class="n">ShardedDataSource</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">data_source</span><span class="o">.</span><span class="n">train</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">init_tensorizers</span><span class="p">:</span>
+            <span class="n">initialize_tensorizers</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">full_train_data</span><span class="p">,</span> <span class="n">init_tensorizers_from_scratch</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+                <span class="s2">"Skipped initializing tensorizers since they are loaded from a "</span>
+                <span class="s2">"previously saved state."</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">numberize_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">numberized</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">tensorizer</span><span class="o">.</span><span class="n">numberize</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tensorizer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorizers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="k">yield</span> <span class="n">RowData</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">numberized</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numberized_rows</span><span class="p">,</span> <span class="n">stage</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_mutex</span><span class="p">:</span>
+            <span class="c1"># already have generator caching the numberized data</span>
+            <span class="k">for</span> <span class="n">numberized_row</span> <span class="ow">in</span> <span class="n">numberized_rows</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">numberized_row</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cache_mutex</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">numberized_row</span> <span class="ow">in</span> <span class="n">numberized_rows</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numberized_row</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="n">numberized_row</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">numberized_cache</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">add_row_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>
+            <span class="n">row</span><span class="p">[</span><span class="n">RawExampleFieldName</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+            <span class="k">yield</span> <span class="n">row</span>
+
+    <span class="nd">@generator_iterator</span>
+    <span class="k">def</span> <span class="nf">batches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Stage</span><span class="p">,</span> <span class="n">data_source</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">load_early</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">"""Create batches of tensors to pass to model train_batch.</span>
+<span class="sd">        This function yields dictionaries that mirror the `tensorizers` dict passed to</span>
+<span class="sd">        `__init__`, ie. the keys will be the same, and the tensors will be the shape</span>
+<span class="sd">        expected from the respective tensorizers.</span>
+
+<span class="sd">        `stage` is used to determine which data source is used to create batches.</span>
+<span class="sd">        if data_source is provided, it is used instead of the configured data_sorce</span>
+<span class="sd">        this is to allow setting a different data_source for testing a model.</span>
+
+<span class="sd">        Passing in `load_early` = True disables loading all data in memory and using</span>
+<span class="sd">        PoolingBatcher, so that we get the first batch as quickly as possible.</span>
+<span class="sd">        """</span>
+        <span class="n">data_source</span> <span class="o">=</span> <span class="n">data_source</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span> <span class="n">data_source</span><span class="o">.</span><span class="n">train</span><span class="p">,</span>
+            <span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">:</span> <span class="n">data_source</span><span class="o">.</span><span class="n">test</span><span class="p">,</span>
+            <span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">:</span> <span class="n">data_source</span><span class="o">.</span><span class="n">eval</span><span class="p">,</span>
+        <span class="p">}[</span><span class="n">stage</span><span class="p">]</span>
+
+        <span class="c1"># We add row indices here so that the original order can be reproduced</span>
+        <span class="c1"># after shuffling the data if necessary.</span>
+        <span class="n">indexed_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_row_indices</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+        <span class="c1"># rows and numberized_rows are generators which can iterate over large</span>
+        <span class="c1"># datasets; be careful not to do any operations which will expend them.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_memory</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">load_early</span><span class="p">:</span>
+            <span class="n">numberized_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numberized_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">numberized_rows</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">numberized_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numberize_rows</span><span class="p">(</span><span class="n">indexed_rows</span><span class="p">),</span> <span class="n">stage</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Get numberized rows from cache in stage: {stage}"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">numberized_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numberize_rows</span><span class="p">(</span><span class="n">indexed_rows</span><span class="p">)</span>
+        <span class="n">sort_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sort_key</span>
+
+        <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">[</span><span class="n">sort_key</span><span class="p">]</span><span class="o">.</span><span class="n">sort_key</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">numberized</span><span class="p">[</span><span class="n">sort_key</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">load_early</span><span class="p">:</span>
+            <span class="n">batcher</span> <span class="o">=</span> <span class="n">Batcher</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">batcher</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batcher</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span>
+            <span class="n">numberized_rows</span><span class="p">,</span> <span class="n">sort_key</span><span class="o">=</span><span class="p">(</span><span class="n">key</span> <span class="k">if</span> <span class="n">sort_key</span> <span class="k">else</span> <span class="bp">None</span><span class="p">),</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pad_and_tensorize_batches</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">batches</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

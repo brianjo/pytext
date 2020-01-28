@@ -1,0 +1,10 @@
+data_source
+===========
+
+
+.. toctree::
+
+  pytext.data.sources.data_source.DataSource.Config
+  pytext.data.sources.data_source.RootDataSource.Config
+  pytext.data.sources.data_source.RowShardedDataSource.Config
+  pytext.data.sources.data_source.ShardedDataSource.Config

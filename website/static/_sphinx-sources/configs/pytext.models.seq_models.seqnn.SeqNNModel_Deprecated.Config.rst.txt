@@ -1,0 +1,108 @@
+SeqNNModel_Deprecated.Config
+============================
+
+
+
+**Component:** :class:`SeqNNModel_Deprecated  <pytext.models.seq_models.seqnn.SeqNNModel_Deprecated>`\ 
+
+
+.. py:currentmodule:: pytext.models.seq_models.seqnn
+.. py:class:: SeqNNModel_Deprecated.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **representation**: :doc:`SeqRepresentation.Config <pytext.models.representations.seq_rep.SeqRepresentation.Config>` = :doc:`SeqRepresentation.Config <pytext.models.representations.seq_rep.SeqRepresentation.Config>`\ ()
+    \ 
+
+  **output_layer**: :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>` = :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`\ ()
+    \ 
+
+  **decoder**: :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>` = :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "representation": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "doc_representation": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "dropout": 0.4,
+              "cnn": {
+                  "kernel_num": 100,
+                  "kernel_sizes": [
+                      3,
+                      4
+                  ],
+                  "weight_norm": false,
+                  "dilated": false,
+                  "causal": false
+              }
+          },
+          "seq_representation": {
+              "BiLSTMDocAttention": {
+                  "load_path": null,
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null,
+                  "dropout": 0.4,
+                  "lstm": {
+                      "load_path": null,
+                      "save_path": null,
+                      "freeze": false,
+                      "shared_module_key": null,
+                      "dropout": 0.4,
+                      "lstm_dim": 32,
+                      "num_layers": 1,
+                      "bidirectional": true,
+                      "pack_sequence": true
+                  },
+                  "pooling": {
+                      "SelfAttention": {
+                          "attn_dimension": 64,
+                          "dropout": 0.4
+                      }
+                  },
+                  "mlp_decoder": null
+              }
+          }
+      },
+      "output_layer": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "loss": {
+              "CrossEntropyLoss": {}
+          },
+          "label_weights": null
+      },
+      "decoder": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_dims": [],
+          "out_dim": null,
+          "layer_norm": false,
+          "dropout": 0.0,
+          "activation": "relu"
+      }
+  }

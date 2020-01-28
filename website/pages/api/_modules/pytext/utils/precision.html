@@ -1,0 +1,138 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.precision</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">cuda</span>
+
+
+<span class="n">FP16_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">DELAY_UNSCALE</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+<div class="viewcode-block" id="delay_unscale"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.precision.delay_unscale">[docs]</a><span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">delay_unscale</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">DELAY_UNSCALE</span>
+
+    <span class="c1"># delay_unscale is required for gradients accumulation, model accumulate</span>
+    <span class="c1"># gradient on FP16 parameters when set to True and using the same loss_scale</span>
+    <span class="n">old_delay_unscale</span> <span class="o">=</span> <span class="n">DELAY_UNSCALE</span>
+    <span class="n">DELAY_UNSCALE</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">DELAY_UNSCALE</span> <span class="o">=</span> <span class="n">old_delay_unscale</span></div>
+
+
+<div class="viewcode-block" id="set_fp16"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.precision.set_fp16">[docs]</a><span class="k">def</span> <span class="nf">set_fp16</span><span class="p">(</span><span class="n">fp16_enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">FP16_ENABLED</span>
+
+    <span class="k">if</span> <span class="n">fp16_enabled</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Cuda is not available, should not running fp16..."</span><span class="p">)</span>
+
+        <span class="n">FP16_ENABLED</span> <span class="o">=</span> <span class="n">fp16_enabled</span></div>
+
+
+<div class="viewcode-block" id="maybe_float"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.precision.maybe_float">[docs]</a><span class="k">def</span> <span class="nf">maybe_float</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">FP16_ENABLED</span> <span class="ow">and</span> <span class="n">tensor</span><span class="o">.</span><span class="n">type</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"HalfTensor"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tensor</span></div>
+
+
+<div class="viewcode-block" id="maybe_half"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.precision.maybe_half">[docs]</a><span class="k">def</span> <span class="nf">maybe_half</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">FP16_ENABLED</span> <span class="ow">and</span> <span class="n">tensor</span><span class="o">.</span><span class="n">type</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"FloatTensor"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tensor</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tensor</span></div>
+
+
+<div class="viewcode-block" id="pad_length"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.precision.pad_length">[docs]</a><span class="k">def</span> <span class="nf">pad_length</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">FP16_ENABLED</span><span class="p">:</span>
+        <span class="c1"># To take advantage of tensor core, length should be multiple of 8</span>
+        <span class="n">remainder</span> <span class="o">=</span> <span class="n">n</span> <span class="o">%</span> <span class="mi">8</span>
+        <span class="k">if</span> <span class="n">remainder</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">8</span> <span class="o">-</span> <span class="n">remainder</span>
+
+    <span class="k">return</span> <span class="n">n</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

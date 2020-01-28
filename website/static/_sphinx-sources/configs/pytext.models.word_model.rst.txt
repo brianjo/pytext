@@ -1,0 +1,10 @@
+word_model
+==========
+
+
+.. toctree::
+
+  pytext.models.word_model.ByteModelInput
+  pytext.models.word_model.ModelInput
+  pytext.models.word_model.WordTaggingLiteModel.Config
+  pytext.models.word_model.WordTaggingModel.Config

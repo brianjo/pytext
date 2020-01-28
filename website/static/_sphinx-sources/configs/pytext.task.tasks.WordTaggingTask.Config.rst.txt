@@ -1,0 +1,198 @@
+WordTaggingTask.Config
+======================
+
+
+
+**Component:** :class:`WordTaggingTask  <pytext.task.tasks.WordTaggingTask>`\ 
+
+
+.. py:currentmodule:: pytext.task.tasks
+.. py:class:: WordTaggingTask.Config
+  :noindex:
+
+  **Bases:** :class:`NewTask.Config <pytext.task.new_task.NewTask.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`Data.Config <pytext.data.data.Data.Config>` = :doc:`Data.Config <pytext.data.data.Data.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>` = :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ ()
+    \ 
+
+  **model**: :doc:`WordTaggingModel.Config <pytext.models.word_model.WordTaggingModel.Config>` = :doc:`WordTaggingModel.Config <pytext.models.word_model.WordTaggingModel.Config>`\ ()
+    \ 
+
+  **metric_reporter**: :doc:`SequenceTaggingMetricReporter.Config <pytext.metric_reporters.word_tagging_metric_reporter.SequenceTaggingMetricReporter.Config>` = :doc:`SequenceTaggingMetricReporter.Config <pytext.metric_reporters.word_tagging_metric_reporter.SequenceTaggingMetricReporter.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "data": {
+          "Data": {
+              "source": {
+                  "TSVDataSource": {
+                      "column_mapping": {},
+                      "train_filename": null,
+                      "test_filename": null,
+                      "eval_filename": null,
+                      "field_names": null,
+                      "delimiter": "\t",
+                      "quoted": false,
+                      "drop_incomplete_rows": false
+                  }
+              },
+              "batcher": {
+                  "PoolingBatcher": {
+                      "train_batch_size": 16,
+                      "eval_batch_size": 16,
+                      "test_batch_size": 16,
+                      "pool_num_batches": 10000,
+                      "num_shuffled_pools": 1
+                  }
+              },
+              "sort_key": null,
+              "in_memory": true
+          }
+      },
+      "trainer": {
+          "TaskTrainer": {
+              "epochs": 10,
+              "early_stop_after": 0,
+              "max_clip_norm": null,
+              "report_train_metrics": true,
+              "target_time_limit_seconds": null,
+              "do_eval": true,
+              "load_best_model_after_train": true,
+              "num_samples_to_log_progress": 1000,
+              "num_accumulated_batches": 1,
+              "num_batches_per_epoch": null,
+              "optimizer": {
+                  "Adam": {
+                      "lr": 0.001,
+                      "weight_decay": 1e-05,
+                      "eps": 1e-08
+                  }
+              },
+              "scheduler": null,
+              "sparsifier": null,
+              "fp16_args": {
+                  "FP16OptimizerFairseq": {
+                      "init_loss_scale": 128,
+                      "scale_window": null,
+                      "scale_tolerance": 0.0,
+                      "threshold_loss_scale": null,
+                      "min_loss_scale": 0.0001
+                  }
+              }
+          }
+      },
+      "model": {
+          "WordTaggingModel": {
+              "inputs": {
+                  "tokens": {
+                      "is_input": true,
+                      "column": "text",
+                      "tokenizer": {
+                          "Tokenizer": {
+                              "split_regex": "\\s+",
+                              "lowercase": true
+                          }
+                      },
+                      "add_bos_token": false,
+                      "add_eos_token": false,
+                      "use_eos_token_for_bos": false,
+                      "max_seq_len": null,
+                      "vocab": {
+                          "build_from_data": true,
+                          "size_from_data": 0,
+                          "vocab_files": []
+                      },
+                      "vocab_file_delimiter": " "
+                  },
+                  "labels": {
+                      "is_input": false,
+                      "slot_column": "slots",
+                      "text_column": "text",
+                      "tokenizer": {
+                          "Tokenizer": {
+                              "split_regex": "\\s+",
+                              "lowercase": true
+                          }
+                      },
+                      "allow_unknown": false
+                  }
+              },
+              "embedding": {
+                  "load_path": null,
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null,
+                  "embed_dim": 100,
+                  "embedding_init_strategy": "random",
+                  "embedding_init_range": null,
+                  "export_input_names": [
+                      "tokens_vals"
+                  ],
+                  "pretrained_embeddings_path": "",
+                  "vocab_file": "",
+                  "vocab_size": 0,
+                  "vocab_from_train_data": true,
+                  "vocab_from_all_data": false,
+                  "vocab_from_pretrained_embeddings": false,
+                  "lowercase_tokens": true,
+                  "min_freq": 1,
+                  "mlp_layer_dims": [],
+                  "padding_idx": null,
+                  "cpu_only": false,
+                  "skip_header": true,
+                  "delimiter": " "
+              },
+              "representation": {
+                  "PassThroughRepresentation": {
+                      "load_path": null,
+                      "save_path": null,
+                      "freeze": false,
+                      "shared_module_key": null
+                  }
+              },
+              "output_layer": {
+                  "WordTaggingOutputLayer": {
+                      "load_path": null,
+                      "save_path": null,
+                      "freeze": false,
+                      "shared_module_key": null,
+                      "loss": {
+                          "CrossEntropyLoss": {}
+                      },
+                      "label_weights": {},
+                      "ignore_pad_in_loss": true
+                  }
+              },
+              "decoder": {
+                  "load_path": null,
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null,
+                  "hidden_dims": [],
+                  "out_dim": null,
+                  "layer_norm": false,
+                  "dropout": 0.0,
+                  "activation": "relu"
+              }
+          }
+      },
+      "metric_reporter": {
+          "output_path": "/tmp/test_out.txt",
+          "pep_format": false
+      }
+  }

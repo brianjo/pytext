@@ -1,0 +1,202 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="multitask-training-with-disjoint-datasets">
+<h1>Multitask training with disjoint datasets<a class="headerlink" href="#multitask-training-with-disjoint-datasets" title="Permalink to this headline">¶</a></h1>
+<p>In this tutorial, we will jointly train a classification task with a language modeling task in a multitask setting. The models will share the embedding and representation layers.</p>
+<p>We will use the following datasets:</p>
+<ol class="arabic simple">
+<li><p>Binarized Stanford Sentiment Treebank (SST-2), which is part of the <a class="reference external" href="https://gluebenchmark.com/">GLUE benchmark</a>.  This dataset contains segments from movie reviews labeled with their binary sentiment.</p></li>
+<li><p><a class="reference external" href="https://einstein.ai/research/blog/the-wikitext-long-term-dependency-language-modeling-dataset">WikiText-2</a>, a medium-size language modeling dataset with text extracted from Wikipedia.</p></li>
+</ol>
+<div class="section" id="fetch-and-prepare-the-dataset">
+<h2>1. Fetch and prepare the dataset<a class="headerlink" href="#fetch-and-prepare-the-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Download the dataset in a local directory. We will refer to this as <cite>base_dir</cite> in the next section.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s2">"https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-2-v1.zip"</span> -o wikitext-2-v1.zip
+<span class="gp">$</span> unzip wikitext-2-v1.zip
+<span class="gp">$</span> curl <span class="s2">"https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/o/data%2FSST-2.zip?alt=media&amp;token=aabc5f6b-e466-44a2-b9b4-cf6337f84ac8"</span> -o SST-2.zip
+<span class="gp">$</span> unzip SST-2.zip
+</pre></div>
+</div>
+<p>Remove headers from SST-2 data:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> base_dir/SST-2
+<span class="gp">$</span> sed -i <span class="s1">'1d'</span> train.tsv
+<span class="gp">$</span> sed -i <span class="s1">'1d'</span> dev.tsv
+</pre></div>
+</div>
+<p>Remove empty lines from WikiText:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> base_dir/wikitext-2
+<span class="gp">$</span> sed -i <span class="s1">'/^\s*$/d'</span> train.tsv
+<span class="gp">$</span> sed -i <span class="s1">'/^\s*$/d'</span> valid.tsv
+<span class="gp">$</span> sed -i <span class="s1">'/^\s*$/d'</span> test.tsv
+</pre></div>
+</div>
+</div>
+<div class="section" id="train-a-base-model">
+<h2>2. Train a base model<a class="headerlink" href="#train-a-base-model" title="Permalink to this headline">¶</a></h2>
+<p>Prepare the configuration file for training. A sample config file for the base document classification model can be found in your PyText repository at <code class="docutils literal notranslate"><span class="pre">demo/configs/sst2.json</span></code>. If you haven’t set up PyText, please follow <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>, then make the following changes in the config:</p>
+<ul class="simple">
+<li><p>Set <cite>train_path</cite> to <cite>base_dir/SST-2/train.tsv</cite>.</p></li>
+<li><p>Set <cite>eval_path</cite> to <cite>base_dir/SST-2/eval.tsv</cite>.</p></li>
+<li><p>Set <cite>test_path</cite> to <cite>base_dir/SST-2/test.tsv</cite>.</p></li>
+</ul>
+<p>The test set labels for this tasks are not openly available, therefore we will use the dev set.
+Train the model using the command below.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; demo/configs/sst2.json
+</pre></div>
+</div>
+<p>The output will look like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span>
+<span class="n">loss</span><span class="p">:</span> <span class="mf">0.472868</span>
+<span class="n">Accuracy</span><span class="p">:</span> <span class="mf">85.67</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="configure-for-multitasking">
+<h2>3. Configure for multitasking<a class="headerlink" href="#configure-for-multitasking" title="Permalink to this headline">¶</a></h2>
+<p>The example configuration for this tutorial is at <code class="docutils literal notranslate"><span class="pre">demo/configs/multitask_sst_lm.json</span></code>.
+The main configuration is under <cite>tasks</cite>, which is a dictionary of task name to task config:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>      <span class="s2">"task_weights"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"SST2"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="s2">"LM"</span><span class="p">:</span> <span class="mi">1</span>
+      <span class="p">},</span>
+<span class="s2">"tasks"</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">"SST2"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"DocClassificationTask"</span><span class="p">:</span> <span class="p">{</span> <span class="o">...</span> <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="s2">"LM"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"LMTask"</span><span class="p">:</span> <span class="p">{</span> <span class="o">...</span> <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>You can also modify <cite>task_weights</cite> to weight the loss for each task.
+The sub-tasks can be configured as you would in a single task setting, with the exception of changes described in the next sections.</p>
+</div>
+<div class="section" id="specify-which-parameters-to-share">
+<h2>3. Specify which parameters to share<a class="headerlink" href="#specify-which-parameters-to-share" title="Permalink to this headline">¶</a></h2>
+<p>Parameter sharing is specified at module level with the <cite>shared_module_key</cite> parameter, which is an arbitrary string. Modules with identical <cite>shared_module_key</cite> share parameters.</p>
+<p>Here we will share the BiLSTM module.  Under the <cite>SST</cite> task, we set</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="s2">"representation"</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">"BiLSTMDocAttention"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"lstm"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"shared_module_key"</span><span class="p">:</span> <span class="s2">"SHARED_LSTM"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Under the <cite>LM</cite> task, we set</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="s2">"representation"</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">"shared_module_key"</span><span class="p">:</span> <span class="s2">"SHARED_LSTM"</span>
+<span class="p">},</span>
+</pre></div>
+</div>
+<p>In this case, <cite>BiLSTMDocAttention.lstm</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">DocClassificationTask</span></code> and <cite>representation</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">LMTask</span></code> are both of type <cite>BiLSTM</cite>, therefore parameter sharing is possible.</p>
+</div>
+<div class="section" id="share-the-embedding-layer">
+<h2>3. Share the embedding layer<a class="headerlink" href="#share-the-embedding-layer" title="Permalink to this headline">¶</a></h2>
+<p>The embedding is also a module, and can be similarly shared. This is configured under the <cite>features</cite> section. However, we need to ensure that we use the same vocabulary for both tasks, by specifying a pre-built vocabulary file. First create the vocabulary from the classification task data:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> base_dir/SST-2
+<span class="gp">$</span> cat train.tsv dev.tsv <span class="p">|</span> tr <span class="s1">' '</span> <span class="s1">'\n'</span> <span class="p">|</span> sort <span class="p">|</span> uniq &gt; sst_vocab.txt
+</pre></div>
+</div>
+<p>Then point to this file in configuration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="s2">"features"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"shared_module_key"</span><span class="p">:</span> <span class="s2">"SHARED_EMBEDDING"</span><span class="p">,</span>
+    <span class="s2">"word_feat"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"vocab_file"</span><span class="p">:</span> <span class="s2">"base_dir/SST-2/sst_vocab.txt"</span><span class="p">,</span>
+      <span class="s2">"vocab_size"</span><span class="p">:</span> <span class="mi">15000</span><span class="p">,</span>
+      <span class="s2">"vocab_from_train_data"</span><span class="p">:</span> <span class="n">false</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="train-the-model">
+<h2>3. Train the model<a class="headerlink" href="#train-the-model" title="Permalink to this headline">¶</a></h2>
+<p>You can train the model with</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; demo/configs/multitask_sst_lm.json
+</pre></div>
+</div>
+<p>The output will look like</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span>
+<span class="n">loss</span><span class="p">:</span> <span class="mf">0.455871</span>
+<span class="n">Accuracy</span><span class="p">:</span> <span class="mf">86.12</span>
+</pre></div>
+</div>
+<p>Not a great improvement, but we used a very primitive language modeling task (bi-directional with no masking) for the purposes of this tutorial. Happy multitasking!</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="hierarchical_intent_slot_tutorial.html" title="previous chapter">Hierarchical intent and slot filling</a></li>
+<li>Next: <a href="distributed_training_tutorial.html" title="next chapter">Data Parallel Distributed Training</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

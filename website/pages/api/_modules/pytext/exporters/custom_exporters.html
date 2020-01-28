@@ -1,0 +1,225 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.exporters.custom_exporters</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">caffe2.python</span> <span class="kn">import</span> <span class="n">core</span><span class="p">,</span> <span class="n">workspace</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">FeatureConfig</span><span class="p">,</span> <span class="n">FloatVectorConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.config.module_config</span> <span class="kn">import</span> <span class="n">ExporterType</span>
+<span class="kn">from</span> <span class="nn">pytext.exporters.exporter</span> <span class="kn">import</span> <span class="n">ModelExporter</span>
+<span class="kn">from</span> <span class="nn">pytext.fields</span> <span class="kn">import</span> <span class="n">FieldMeta</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">mobile_onnx</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+
+
+<div class="viewcode-block" id="save_caffe2_pb_net"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.save_caffe2_pb_net">[docs]</a><span class="k">def</span> <span class="nf">save_caffe2_pb_net</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="DenseFeatureExporter"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.DenseFeatureExporter">[docs]</a><span class="k">class</span> <span class="nc">DenseFeatureExporter</span><span class="p">(</span><span class="n">ModelExporter</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Exporter for models that have DenseFeatures as input to the decoder</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="DenseFeatureExporter.get_feature_metadata"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.DenseFeatureExporter.get_feature_metadata">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_feature_metadata</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">feature_config</span><span class="p">:</span> <span class="n">FeatureConfig</span><span class="p">,</span> <span class="n">feature_meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="c1"># add all features EXCEPT dense features. The features exported here</span>
+        <span class="c1"># go through the representation layer</span>
+        <span class="p">(</span>
+            <span class="n">input_names_rep</span><span class="p">,</span>
+            <span class="n">dummy_model_input_rep</span><span class="p">,</span>
+            <span class="n">feature_itos_map_rep</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_exportable_metadata</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">FloatVectorConfig</span><span class="p">),</span>
+            <span class="n">feature_config</span><span class="p">,</span>
+            <span class="n">feature_meta</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># need feature lengths only for non-dense features</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_add_feature_lengths</span><span class="p">(</span><span class="n">input_names_rep</span><span class="p">,</span> <span class="n">dummy_model_input_rep</span><span class="p">)</span>
+
+        <span class="c1"># add dense features. These features don't go through the representation</span>
+        <span class="c1"># layer, instead they go directly to the decoder</span>
+        <span class="p">(</span>
+            <span class="n">input_names_dense</span><span class="p">,</span>
+            <span class="n">dummy_model_input_dense</span><span class="p">,</span>
+            <span class="n">feature_itos_map_dense</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_exportable_metadata</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">FloatVectorConfig</span><span class="p">),</span> <span class="n">feature_config</span><span class="p">,</span> <span class="n">feature_meta</span>
+        <span class="p">)</span>
+
+        <span class="n">feature_itos_map_rep</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">feature_itos_map_dense</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">input_names_rep</span> <span class="o">+</span> <span class="n">input_names_dense</span><span class="p">,</span>
+            <span class="nb">tuple</span><span class="p">(</span><span class="n">dummy_model_input_rep</span> <span class="o">+</span> <span class="n">dummy_model_input_dense</span><span class="p">),</span>
+            <span class="n">feature_itos_map_rep</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="InitPredictNetExporter"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.InitPredictNetExporter">[docs]</a><span class="k">class</span> <span class="nc">InitPredictNetExporter</span><span class="p">(</span><span class="n">ModelExporter</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Exporter for converting models to their caffe2 init and predict nets.</span>
+<span class="sd">    Does not rely on c2_prepared, but rather splits the ONNX model into</span>
+<span class="sd">    the init and predict nets directly.</span>
+
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="InitPredictNetExporter.prepend_operators"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.InitPredictNetExporter.prepend_operators">[docs]</a>    <span class="k">def</span> <span class="nf">prepend_operators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">input_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="n">mobile_onnx</span><span class="o">.</span><span class="n">add_feats_numericalize_ops</span><span class="p">(</span>
+            <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_map</span><span class="p">,</span> <span class="n">input_names</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="InitPredictNetExporter.postprocess_output"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.InitPredictNetExporter.postprocess_output">[docs]</a>    <span class="k">def</span> <span class="nf">postprocess_output</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">output_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">model</span>
+    <span class="p">):</span>
+        <span class="n">model_out</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">export_to_caffe2</span><span class="p">(</span>
+            <span class="n">workspace</span><span class="p">,</span> <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">model_out</span><span class="p">,</span> <span class="o">*</span><span class="n">output_names</span>
+        <span class="p">)</span>
+        <span class="n">final_output_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">final_output_names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InitPredictNetExporter.get_export_paths"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.InitPredictNetExporter.get_export_paths">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">export_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="s2">"init_net.pb"</span><span class="p">),</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="s2">"predict_net.pb"</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="InitPredictNetExporter.export_to_caffe2"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.InitPredictNetExporter.export_to_caffe2">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_caffe2</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+
+        <span class="n">init_net_path</span><span class="p">,</span> <span class="n">predict_net_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_export_paths</span><span class="p">(</span><span class="n">export_path</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Saving caffe2 init net to {init_net_path}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Saving caffe2 init net to {predict_net_path}"</span><span class="p">)</span>
+
+        <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span> <span class="o">=</span> <span class="n">mobile_onnx</span><span class="o">.</span><span class="n">pytorch_to_caffe2</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span><span class="p">,</span>
+            <span class="n">export_path</span><span class="p">,</span>
+            <span class="n">export_onnx_path</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># prepend operators</span>
+        <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">final_input_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepend_operators</span><span class="p">(</span>
+            <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span>
+        <span class="p">)</span>
+        <span class="n">init_net</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">(</span><span class="n">init_net</span><span class="p">)</span>
+        <span class="n">predict_net</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">(</span><span class="n">predict_net</span><span class="p">)</span>
+
+        <span class="c1"># postprocess input</span>
+        <span class="n">mobile_onnx</span><span class="o">.</span><span class="n">create_context</span><span class="p">(</span><span class="n">init_net</span><span class="p">)</span>
+        <span class="n">net_outputs</span><span class="p">,</span> <span class="n">final_out_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocess_output</span><span class="p">(</span>
+            <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span><span class="p">,</span> <span class="n">model</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">net_outputs</span><span class="p">:</span>
+            <span class="n">predict_net</span><span class="o">.</span><span class="n">AddExternalOutput</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="c1"># convert nets to proto</span>
+        <span class="n">init_net</span> <span class="o">=</span> <span class="n">init_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+        <span class="n">predict_net</span> <span class="o">=</span> <span class="n">predict_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+
+        <span class="c1"># save proto files</span>
+        <span class="n">save_caffe2_pb_net</span><span class="p">(</span><span class="n">init_net_path</span><span class="p">,</span> <span class="n">init_net</span><span class="p">)</span>
+        <span class="n">save_caffe2_pb_net</span><span class="p">(</span><span class="n">predict_net_path</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">)</span></div></div>
+
+
+<span class="n">EXPORTER_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">ExporterType</span><span class="o">.</span><span class="n">PREDICTOR</span><span class="p">:</span> <span class="n">ModelExporter</span><span class="p">,</span>
+    <span class="n">ExporterType</span><span class="o">.</span><span class="n">INIT_PREDICT</span><span class="p">:</span> <span class="n">InitPredictNetExporter</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="get_exporter"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.custom_exporters.get_exporter">[docs]</a><span class="k">def</span> <span class="nf">get_exporter</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="n">exporter</span> <span class="o">=</span> <span class="n">EXPORTER_MAP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">exporter</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    <span class="k">return</span> <span class="n">exporter</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

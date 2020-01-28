@@ -1,0 +1,22 @@
+tasks
+=====
+
+
+.. toctree::
+
+  pytext.task.tasks.BertPairRegressionTask.Config
+  pytext.task.tasks.DocumentClassificationTask.Config
+  pytext.task.tasks.DocumentRegressionTask.Config
+  pytext.task.tasks.EnsembleTask.Config
+  pytext.task.tasks.IntentSlotTask.Config
+  pytext.task.tasks.LMTask.Config
+  pytext.task.tasks.MaskedLMTask.Config
+  pytext.task.tasks.NewBertClassificationTask.Config
+  pytext.task.tasks.NewBertPairClassificationTask.Config
+  pytext.task.tasks.PairwiseClassificationTask.Config
+  pytext.task.tasks.QueryDocumentPairwiseRankingTask.Config
+  pytext.task.tasks.RoBERTaNERTask.Config
+  pytext.task.tasks.SemanticParsingTask.Config
+  pytext.task.tasks.SeqNNTask.Config
+  pytext.task.tasks.SquadQATask.Config
+  pytext.task.tasks.WordTaggingTask.Config

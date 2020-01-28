@@ -1,0 +1,426 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.utils</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span><span class="p">,</span> <span class="n">precision</span>
+
+
+<div class="viewcode-block" id="should_iter"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.should_iter">[docs]</a><span class="k">def</span> <span class="nf">should_iter</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+    <span class="sd">"""Whether or not an object looks like a python iterable (not including strings)."""</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">hasattr</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s2">"__iter__"</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_infer_pad_shape</span><span class="p">(</span><span class="n">nested_lists</span><span class="p">):</span>
+    <span class="sd">"""Return the minimal tensor shape which could contain the input data."""</span>
+    <span class="k">yield</span> <span class="nb">len</span><span class="p">(</span><span class="n">nested_lists</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">nested_lists</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">should_iter</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nested_lists</span><span class="p">):</span>
+        <span class="c1"># pad shape to be multiple of 8 when fp16 enabled</span>
+        <span class="k">yield</span> <span class="n">precision</span><span class="o">.</span><span class="n">pad_length</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nested</span><span class="p">)</span> <span class="k">for</span> <span class="n">nested</span> <span class="ow">in</span> <span class="n">nested_lists</span><span class="p">))</span>
+        <span class="n">nested_lists</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">nested_lists</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_make_nested_padding</span><span class="p">(</span><span class="n">pad_shape</span><span class="p">,</span> <span class="n">pad_token</span><span class="p">):</span>
+    <span class="sd">"""Create nested lists of pad_token of shape pad_shape."""</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">pad_token</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">dimension</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">pad_shape</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">result</span> <span class="o">*</span> <span class="n">dimension</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="pad"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.pad">[docs]</a><span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="n">nested_lists</span><span class="p">,</span> <span class="n">pad_token</span><span class="p">,</span> <span class="n">pad_shape</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">"""Pad the input lists with the pad token. If pad_shape is provided, pad to that</span>
+<span class="sd">    shape, otherwise infer the input shape and pad out to a square tensor shape."""</span>
+    <span class="k">if</span> <span class="n">pad_shape</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">pad_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_infer_pad_shape</span><span class="p">(</span><span class="n">nested_lists</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pad_shape</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nested_lists</span>
+    <span class="n">dimension</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span> <span class="o">=</span> <span class="n">pad_shape</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">pad</span><span class="p">(</span><span class="n">nested</span><span class="p">,</span> <span class="n">pad_token</span><span class="p">,</span> <span class="n">rest</span><span class="p">)</span> <span class="k">for</span> <span class="n">nested</span> <span class="ow">in</span> <span class="n">nested_lists</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">+=</span> <span class="p">[</span><span class="n">_make_nested_padding</span><span class="p">(</span><span class="n">rest</span><span class="p">,</span> <span class="n">pad_token</span><span class="p">)]</span> <span class="o">*</span> <span class="p">(</span><span class="n">dimension</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="pad_and_tensorize"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.pad_and_tensorize">[docs]</a><span class="k">def</span> <span class="nf">pad_and_tensorize</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">pad_token</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pad_shape</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">):</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">batch</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">cuda</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+        <span class="n">pad</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">pad_token</span><span class="o">=</span><span class="n">pad_token</span><span class="p">,</span> <span class="n">pad_shape</span><span class="o">=</span><span class="n">pad_shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="shard"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.shard">[docs]</a><span class="k">def</span> <span class="nf">shard</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">num_workers</span><span class="p">):</span>
+    <span class="sd">"""Only return every num_workers example for distributed training."""</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="c1"># might discard remainder %num_workers rows because distributed</span>
+        <span class="c1"># training needs to be in sync</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_workers</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">queue</span><span class="p">[</span><span class="n">rank</span><span class="p">]</span>
+            <span class="n">queue</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="SpecialToken"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.SpecialToken">[docs]</a><span class="k">class</span> <span class="nc">SpecialToken</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># We don't want to compare as equal to actual strings, but we want to behave</span>
+        <span class="c1"># like a string code-wise. Don't use `is` comparison because we want</span>
+        <span class="c1"># SpecialToken instances created across picklings to equals-compare</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SpecialToken</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="fm">__hash__</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="fm">__hash__</span></div>
+
+
+<span class="n">UNK</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__UNKNOWN__"</span><span class="p">)</span>
+<span class="n">PAD</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__PAD__"</span><span class="p">)</span>
+<span class="n">BOS</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__BEGIN_OF_SENTENCE__"</span><span class="p">)</span>
+<span class="n">EOS</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__END_OF_SENTENCE__"</span><span class="p">)</span>
+<span class="n">BOL</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__BEGIN_OF_LIST__"</span><span class="p">)</span>
+<span class="n">EOL</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__END_OF_LIST__"</span><span class="p">)</span>
+<span class="n">MASK</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"__MASK__"</span><span class="p">)</span>
+<span class="c1"># BOS and EOS is too long for Byte-level Language Model.</span>
+<span class="c1"># Todo: find out conbination of bytes with low-frequency and shorter length</span>
+<span class="n">BYTE_BOS</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"^"</span><span class="p">)</span>
+<span class="n">BYTE_EOS</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">"#"</span><span class="p">)</span>
+<span class="n">BYTE_SPACE</span> <span class="o">=</span> <span class="n">SpecialToken</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="n">UNK_INDEX</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">PAD_INDEX</span> <span class="o">=</span> <span class="mi">1</span>
+
+
+<div class="viewcode-block" id="Vocabulary"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary">[docs]</a><span class="k">class</span> <span class="nc">Vocabulary</span><span class="p">:</span>
+    <span class="sd">"""A mapping from indices to vocab elements."""</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">vocab_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">counts</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">replacements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">unk_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">UNK</span><span class="p">,</span>
+        <span class="n">pad_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">PAD</span><span class="p">,</span>
+        <span class="n">bos_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">BOS</span><span class="p">,</span>
+        <span class="n">eos_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">EOS</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span> <span class="o">=</span> <span class="n">vocab_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vocab_list</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span> <span class="o">=</span> <span class="n">unk_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">pad_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span> <span class="o">=</span> <span class="n">bos_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span> <span class="o">=</span> <span class="n">eos_token</span>
+        <span class="k">if</span> <span class="n">replacements</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_tokens</span><span class="p">(</span><span class="n">replacements</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_token_counter</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># count of unk tokens, total tokens</span>
+        <span class="c1"># count of examples with least 75% unk tokens, total examples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_example_counter</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messages_printed</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="Vocabulary.replace_tokens"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.replace_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">replace_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span>
+        <span class="sd">"""Replace tokens in vocab with given replacement.</span>
+<span class="sd">           Used for replacing special strings for special tokens.</span>
+<span class="sd">           e.g. '[UNK]' for UNK"""</span>
+        <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">replacements</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">replacement</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">replacement</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">replacement</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span></div>
+
+<div class="viewcode-block" id="Vocabulary.lookup_all"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.lookup_all">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nested_values</span><span class="p">):</span>
+        <span class="n">res</span><span class="p">,</span> <span class="n">unk_counter</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_all_internal</span><span class="p">(</span><span class="n">nested_values</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_token_counter</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">unk_counter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_token_counter</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">total</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_example_counter</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="ow">and</span> <span class="p">(</span><span class="n">unk_counter</span> <span class="o">/</span> <span class="n">total</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.75</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unk_example_counter</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_example_counter</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">messages_printed</span> <span class="o">&lt;</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">messages_printed</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_token_counter</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"{c1} out of {c2} ({int(100 * c1 / c2)}%) tokens not in vocab"</span><span class="p">)</span>
+                <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_example_counter</span>
+                <span class="k">print</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"{c1} out of {c2} ({int(100 * c1 / c2)}%) examples have &gt;= 75% "</span>
+                    <span class="n">f</span><span class="s2">"tokens not in vocab"</span>
+                <span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">"Example: (first 20 tokens)"</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">nested_values</span><span class="p">[:</span><span class="mi">20</span><span class="p">],</span> <span class="n">flush</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="Vocabulary.lookup_all_internal"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.lookup_all_internal">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_all_internal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nested_values</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Look up a value or nested container of values in the vocab index.</span>
+<span class="sd">        The return value will have the same shape as the input, with all values</span>
+<span class="sd">        replaced with their respective indicies.</span>
+<span class="sd">        """</span>
+
+        <span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">:</span>
+                <span class="n">unk_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_unk_index</span><span class="p">()</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">unk_idx</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">v</span><span class="p">,</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">unk_idx</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">value</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+
+        <span class="k">def</span> <span class="nf">lookup_value</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lookup_all_internal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">should_iter</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">else</span> <span class="n">lookup</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">should_iter</span><span class="p">(</span><span class="n">nested_values</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">lookup_value</span><span class="p">(</span><span class="n">nested_values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">unks</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">nested_values</span><span class="p">:</span>
+                <span class="n">v</span><span class="p">,</span> <span class="n">unk</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">lookup_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="n">unks</span> <span class="o">+=</span> <span class="n">unk</span>
+                <span class="n">total</span> <span class="o">+=</span> <span class="n">t</span>
+            <span class="k">return</span> <span class="n">indices</span><span class="p">,</span> <span class="n">unks</span><span class="p">,</span> <span class="n">total</span></div>
+
+<div class="viewcode-block" id="Vocabulary.get_unk_index"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.get_unk_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Vocabulary.get_pad_index"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.get_pad_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_pad_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Vocabulary.get_bos_index"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.get_bos_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_bos_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Vocabulary.get_eos_index"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.Vocabulary.get_eos_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_eos_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vocab</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VocabBuilder"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.VocabBuilder">[docs]</a><span class="k">class</span> <span class="nc">VocabBuilder</span><span class="p">:</span>
+    <span class="sd">"""Helper class for aggregating and building `Vocabulary` objects."""</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">" "</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_unk</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_index</span> <span class="o">=</span> <span class="n">UNK_INDEX</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_pad</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_index</span> <span class="o">=</span> <span class="n">PAD_INDEX</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_bos</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_index</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_eos</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eos_index</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_bol</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bol_index</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_eol</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eol_index</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="c1"># Some tokenization libraries use special tokens, expose them so they</span>
+        <span class="c1"># can be configured</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span> <span class="o">=</span> <span class="n">UNK</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">PAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span> <span class="o">=</span> <span class="n">BOS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span> <span class="o">=</span> <span class="n">EOS</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">delimiter</span> <span class="o">=</span> <span class="n">delimiter</span>
+
+<div class="viewcode-block" id="VocabBuilder.add_all"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.VocabBuilder.add_all">[docs]</a>    <span class="k">def</span> <span class="nf">add_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""Count a value or nested container of values in the vocabulary."""</span>
+        <span class="k">if</span> <span class="n">should_iter</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VocabBuilder.add"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.VocabBuilder.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""Count a single value in the vocabulary."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="n">value</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="VocabBuilder.add_from_file"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.VocabBuilder.add_from_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_pointer</span><span class="p">,</span> <span class="n">skip_header_line</span><span class="p">,</span> <span class="n">lowercase_tokens</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="n">vocab_from_file</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">skip_header_line</span><span class="p">:</span>
+            <span class="nb">next</span><span class="p">(</span><span class="n">file_pointer</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">file_pointer</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">size</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">vocab_from_file</span><span class="p">)</span> <span class="o">==</span> <span class="n">size</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"Read {i + 1} items from vocab file and loaded {size} tokens. "</span>
+                    <span class="n">f</span><span class="s2">"Skipping rest of the file."</span>
+                <span class="p">)</span>
+                <span class="k">break</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delimiter</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">lowercase_tokens</span><span class="p">:</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">vocab_from_file</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">vocab_from_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="VocabBuilder.make_vocab"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.VocabBuilder.make_vocab">[docs]</a>    <span class="k">def</span> <span class="nf">make_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vocabulary</span><span class="p">:</span>
+        <span class="sd">"""Build a Vocabulary object from the values seen by the builder."""</span>
+        <span class="n">tokens_to_insert</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_unk</span><span class="p">:</span>
+            <span class="n">tokens_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">))</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_pad</span><span class="p">:</span>
+            <span class="n">tokens_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span><span class="p">))</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_bos</span><span class="p">:</span>
+            <span class="n">tokens_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">bos_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span><span class="p">))</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_eos</span><span class="p">:</span>
+            <span class="n">tokens_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">eos_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span><span class="p">))</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_bol</span><span class="p">:</span>
+            <span class="n">tokens_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">bol_index</span><span class="p">,</span> <span class="n">BOL</span><span class="p">))</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="n">BOL</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_eol</span><span class="p">:</span>
+            <span class="n">tokens_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">eol_index</span><span class="p">,</span> <span class="n">EOL</span><span class="p">))</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">[</span><span class="n">EOL</span><span class="p">]</span>
+        <span class="n">vocab_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">tokens_to_insert</span><span class="p">):</span>
+            <span class="n">vocab_list</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Vocabulary</span><span class="p">(</span>
+            <span class="n">vocab_list</span><span class="p">,</span>
+            <span class="n">counts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">,</span>
+            <span class="n">unk_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">,</span>
+            <span class="n">pad_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_token</span><span class="p">,</span>
+            <span class="n">bos_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span>
+            <span class="n">eos_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="VocabBuilder.truncate_to_vocab_size"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.VocabBuilder.truncate_to_vocab_size">[docs]</a>    <span class="k">def</span> <span class="nf">truncate_to_vocab_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">vocab_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_counter</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">)))</span></div></div>
+
+
+<div class="viewcode-block" id="align_target_labels"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.align_target_labels">[docs]</a><span class="k">def</span> <span class="nf">align_target_labels</span><span class="p">(</span>
+    <span class="n">targets_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
+    <span class="n">labels_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+    <span class="n">label_vocab</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given `targets_list` that are ordered according to `labels_list`, align the targets</span>
+<span class="sd">    to match the order of `label_vocab`.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">align_target_label</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">label_vocab</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">targets</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">targets_list</span><span class="p">,</span> <span class="n">labels_list</span><span class="p">)</span>
+    <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="align_target_label"><a class="viewcode-back" href="../../../modules/pytext.data.html#pytext.data.utils.align_target_label">[docs]</a><span class="k">def</span> <span class="nf">align_target_label</span><span class="p">(</span>
+    <span class="n">targets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">label_vocab</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Given `targets` that are ordered according to `labels`, align the targets to match</span>
+<span class="sd">    the order of `label_vocab`.</span>
+<span class="sd">    """</span>
+    <span class="k">assert</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">label_vocab</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+    <span class="n">aligned_targets</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">target</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+        <span class="n">aligned_targets</span><span class="p">[</span><span class="n">label_vocab</span><span class="p">[</span><span class="n">label</span><span class="p">]]</span> <span class="o">=</span> <span class="n">target</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">aligned_targets</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">aligned_targets</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

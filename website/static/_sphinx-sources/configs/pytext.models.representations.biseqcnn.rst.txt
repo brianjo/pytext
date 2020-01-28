@@ -1,0 +1,7 @@
+biseqcnn
+========
+
+
+.. toctree::
+
+  pytext.models.representations.biseqcnn.BSeqCNNRepresentation.Config

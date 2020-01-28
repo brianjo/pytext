@@ -1,0 +1,7 @@
+squad_output_layer
+==================
+
+
+.. toctree::
+
+  pytext.models.output_layers.squad_output_layer.SquadOutputLayer.Config

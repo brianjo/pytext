@@ -1,0 +1,69 @@
+LmFineTuning.Config
+===================
+
+
+
+**Component:** :class:`LmFineTuning  <pytext.optimizer.scheduler.LmFineTuning>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: LmFineTuning.Config
+  :noindex:
+
+  **Bases:** :class:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **cut_frac**: float = ``0.1``
+    The fraction of iterations we increase the learning rate. Default 0.1
+    
+
+  **ratio**: int = ``32``
+    How much smaller the lowest LR is from the maximum LR eta_max.
+    
+
+  **non_pretrained_param_groups**: int = ``2``
+    Number of param_groups, starting from the
+    end, that were not pretrained. The default value is 2, since the base Model
+    class supplies to the optimizer typically one param_group from the embedding
+    and one param_group from its other components.
+    
+
+  **lm_lr_multiplier**: float = ``1.0``
+    Factor to multiply lr for all pretrained layers by.
+    
+
+  **lm_use_per_layer_lr**: bool = ``False``
+    Whether to make each pretrained layer's lr
+    one-half as large as the next (higher) layer.
+    
+
+  **lm_gradual_unfreezing**: bool = ``True``
+    Whether to unfreeze layers one by one (per epoch).
+    
+
+  **last_epoch**: int = ``-1``
+    Though the name is `last_epoch`, it means `last batch update`.
+    last_batch_update: = current_epoch_number * num_batches_per_epoch + batch_id
+    after each batch update, it will increment 1
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "cut_frac": 0.1,
+      "ratio": 32,
+      "non_pretrained_param_groups": 2,
+      "lm_lr_multiplier": 1.0,
+      "lm_use_per_layer_lr": false,
+      "lm_gradual_unfreezing": true,
+      "last_epoch": -1
+  }

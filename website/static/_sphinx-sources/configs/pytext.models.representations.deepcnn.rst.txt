@@ -1,0 +1,7 @@
+deepcnn
+=======
+
+
+.. toctree::
+
+  pytext.models.representations.deepcnn.DeepCNNRepresentation.Config

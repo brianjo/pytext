@@ -1,0 +1,64 @@
+BatcherSchedulerConfig
+======================
+
+
+
+**Component:** :class:`Module  <pytext.models.module.Module>`\ 
+
+
+.. py:currentmodule:: pytext.data.dynamic_pooling_batcher
+.. py:class:: BatcherSchedulerConfig
+  :noindex:
+
+  **Bases:** :class:`Module.Config <pytext.models.module.Module.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **start_batch_size**: int = ``32``
+    \ 
+
+  **end_batch_size**: int = ``256``
+    \ 
+
+  **epoch_period**: int = ``10``
+    \ 
+
+  **step_size**: int = ``1``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`ExponentialBatcherSchedulerConfig <pytext.data.dynamic_pooling_batcher.ExponentialBatcherSchedulerConfig>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "start_batch_size": 32,
+      "end_batch_size": 256,
+      "epoch_period": 10,
+      "step_size": 1
+  }

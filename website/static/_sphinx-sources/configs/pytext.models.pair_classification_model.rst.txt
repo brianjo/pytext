@@ -1,0 +1,9 @@
+pair_classification_model
+=========================
+
+
+.. toctree::
+
+  pytext.models.pair_classification_model.BasePairwiseModel.Config
+  pytext.models.pair_classification_model.ModelInput
+  pytext.models.pair_classification_model.PairwiseModel.Config

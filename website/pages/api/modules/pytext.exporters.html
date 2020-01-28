@@ -1,0 +1,602 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-exporters-package">
+<h1>pytext.exporters package<a class="headerlink" href="#pytext-exporters-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.exporters.custom_exporters">
+<span id="pytext-exporters-custom-exporters-module"></span><h2>pytext.exporters.custom_exporters module<a class="headerlink" href="#module-pytext.exporters.custom_exporters" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.exporters.custom_exporters.DenseFeatureExporter">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.exporters.custom_exporters.</code><code class="sig-name descname">DenseFeatureExporter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">input_names</em>, <em class="sig-param">dummy_model_input</em>, <em class="sig-param">vocab_map</em>, <em class="sig-param">output_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#DenseFeatureExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.DenseFeatureExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.exporters.exporter.ModelExporter" title="pytext.exporters.exporter.ModelExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.exporters.exporter.ModelExporter</span></code></a></p>
+<p>Exporter for models that have DenseFeatures as input to the decoder</p>
+<dl class="method">
+<dt id="pytext.exporters.custom_exporters.DenseFeatureExporter.get_feature_metadata">
+<em class="property">classmethod </em><code class="sig-name descname">get_feature_metadata</code><span class="sig-paren">(</span><em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig, feature_meta: Dict[str, pytext.fields.field.FieldMeta]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#DenseFeatureExporter.get_feature_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.DenseFeatureExporter.get_feature_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.exporters.custom_exporters.InitPredictNetExporter">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.exporters.custom_exporters.</code><code class="sig-name descname">InitPredictNetExporter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">input_names</em>, <em class="sig-param">dummy_model_input</em>, <em class="sig-param">vocab_map</em>, <em class="sig-param">output_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.InitPredictNetExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.exporters.exporter.ModelExporter" title="pytext.exporters.exporter.ModelExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.exporters.exporter.ModelExporter</span></code></a></p>
+<p>Exporter for converting models to their caffe2 init and predict nets.
+Does not rely on c2_prepared, but rather splits the ONNX model into
+the init and predict nets directly.</p>
+<dl class="method">
+<dt id="pytext.exporters.custom_exporters.InitPredictNetExporter.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path: str</em>, <em class="sig-param">export_onnx_path: str = None</em><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.InitPredictNetExporter.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>export pytorch model to caffe2 by first using ONNX to convert logic in forward
+function to a caffe2 net, and then prepend/append additional operators to
+the caffe2 net according to the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Model</em>) – pytorch model to export</p></li>
+<li><p><strong>export_path</strong> (<em>str</em>) – path to save the exported caffe2 model</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – path to save the exported onnx model</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of caffe2 model output names</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>final_output_names</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.custom_exporters.InitPredictNetExporter.get_export_paths">
+<code class="sig-name descname">get_export_paths</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.get_export_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.InitPredictNetExporter.get_export_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.custom_exporters.InitPredictNetExporter.postprocess_output">
+<code class="sig-name descname">postprocess_output</code><span class="sig-paren">(</span><em class="sig-param">init_net, predict_net, workspace, output_names: List[str], model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.postprocess_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.InitPredictNetExporter.postprocess_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Postprocess the model output, generate additional blobs for human readable
+prediction. By default it use export function of output layer from pytorch
+model to append additional operators to caffe2 net</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_net</strong> (<em>caffe2.python.Net</em>) – caffe2 init net created by the current graph</p></li>
+<li><p><strong>predict_net</strong> (<em>caffe2.python.Net</em>) – caffe2 net created by the current graph</p></li>
+<li><p><strong>workspace</strong> (<em>caffe2.python.workspace</em>) – caffe2 current workspace</p></li>
+<li><p><strong>output_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current output names of the caffe2 net</p></li>
+<li><p><strong>py_model</strong> (<em>Model</em>) – original pytorch model object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of blobs that will be added to the caffe2 model
+final_output_names: list of output names of the blobs to add</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>result</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.custom_exporters.InitPredictNetExporter.prepend_operators">
+<code class="sig-name descname">prepend_operators</code><span class="sig-paren">(</span><em class="sig-param">init_net, predict_net, input_names: List[str]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.prepend_operators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.InitPredictNetExporter.prepend_operators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend operators to the converted caffe2 net, do nothing by default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c2_prepared</strong> (<em>Caffe2Rep</em>) – caffe2 net rep</p></li>
+<li><p><strong>input_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current input names to the caffe2 net</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>caffe2 net with prepended operators
+input_names (List[str]): list of input names for the new net</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>c2_prepared (Caffe2Rep)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.exporters.custom_exporters.get_exporter">
+<code class="sig-prename descclassname">pytext.exporters.custom_exporters.</code><code class="sig-name descname">get_exporter</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#get_exporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.get_exporter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.exporters.custom_exporters.save_caffe2_pb_net">
+<code class="sig-prename descclassname">pytext.exporters.custom_exporters.</code><code class="sig-name descname">save_caffe2_pb_net</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#save_caffe2_pb_net"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.custom_exporters.save_caffe2_pb_net" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.exporters.exporter">
+<span id="pytext-exporters-exporter-module"></span><h2>pytext.exporters.exporter module<a class="headerlink" href="#module-pytext.exporters.exporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.exporters.exporter.ModelExporter">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.exporters.exporter.</code><code class="sig-name descname">ModelExporter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">input_names</em>, <em class="sig-param">dummy_model_input</em>, <em class="sig-param">vocab_map</em>, <em class="sig-param">output_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Model exporter exports a PyTorch model to Caffe2 model using ONNX</p>
+<dl class="attribute">
+<dt id="pytext.exporters.exporter.ModelExporter.input_names">
+<code class="sig-name descname">input_names</code><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.input_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>names of the input variables to model forward
+function, in a flattened way.
+e.g: forward(tokens, dict) where tokens is List[Tensor] and dict is
+a tuple of value and length: (List[Tensor], List[Tensor]) the
+input names should looks like [‘token’, ‘dict_value’, ‘dict_length’]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[Str]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.exporters.exporter.ModelExporter.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>dummy values to define the
+shape of input tensors, should exactly match the shape of the model
+forward function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.exporters.exporter.ModelExporter.vocab_map">
+<code class="sig-name descname">vocab_map</code><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.vocab_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>dict of input feature names
+to corresponding index_to_string array, e.g:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"text"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"&lt;UNK&gt;"</span><span class="p">,</span> <span class="s2">"W1"</span><span class="p">,</span> <span class="s2">"W2"</span><span class="p">,</span> <span class="s2">"W3"</span><span class="p">,</span> <span class="s2">"W4"</span><span class="p">,</span> <span class="s2">"W5"</span><span class="p">,</span> <span class="s2">"W6"</span><span class="p">,</span> <span class="s2">"W7"</span><span class="p">,</span> <span class="s2">"W8"</span><span class="p">],</span>
+    <span class="s2">"dict"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"&lt;UNK&gt;"</span><span class="p">,</span> <span class="s2">"D1"</span><span class="p">,</span> <span class="s2">"D2"</span><span class="p">,</span> <span class="s2">"D3"</span><span class="p">,</span> <span class="s2">"D4"</span><span class="p">,</span> <span class="s2">"D5"</span><span class="p">,</span> <span class="s2">"D6"</span><span class="p">,</span> <span class="s2">"D7"</span><span class="p">,</span> <span class="s2">"D8"</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Dict[str, List[str]]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.exporters.exporter.ModelExporter.output_names">
+<code class="sig-name descname">output_names</code><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.output_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>names of output variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[Str]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path: str</em>, <em class="sig-param">export_onnx_path: str = None</em><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>export pytorch model to caffe2 by first using ONNX to convert logic in forward
+function to a caffe2 net, and then prepend/append additional operators to
+the caffe2 net according to the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Model</em>) – pytorch model to export</p></li>
+<li><p><strong>export_path</strong> (<em>str</em>) – path to save the exported caffe2 model</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – path to save the exported onnx model</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of caffe2 model output names</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>final_output_names</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.export_to_metrics">
+<code class="sig-name descname">export_to_metrics</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">metric_channels</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.export_to_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.export_to_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the pytorch model to tensorboard as a graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Model</em>) – pytorch model to export</p></li>
+<li><p><strong>metric_channels</strong> (<em>List</em><em>[</em><em>Channel</em><em>]</em>) – outputs of model’s execution graph</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config, feature_config: pytext.config.field_config.FeatureConfig, target_config: Union[pytext.config.pytext_config.ConfigBase, List[pytext.config.pytext_config.ConfigBase]], meta: pytext.data.data_handler.CommonMetadata, *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather all the necessary metadata from configs and global metadata to be
+used in exporter</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.get_extra_params">
+<code class="sig-name descname">get_extra_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.get_extra_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.get_extra_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of blobs to be added as extra params to the caffe2 model</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.get_feature_metadata">
+<em class="property">classmethod </em><code class="sig-name descname">get_feature_metadata</code><span class="sig-paren">(</span><em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig, feature_meta: Dict[str, pytext.fields.field.FieldMeta]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.get_feature_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.get_feature_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.postprocess_output">
+<code class="sig-name descname">postprocess_output</code><span class="sig-paren">(</span><em class="sig-param">init_net: caffe2.python.core.Net, predict_net: caffe2.python.core.Net, workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;, output_names: List[str], py_model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.postprocess_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.postprocess_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Postprocess the model output, generate additional blobs for human readable
+prediction. By default it use export function of output layer from pytorch
+model to append additional operators to caffe2 net</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_net</strong> (<em>caffe2.python.Net</em>) – caffe2 init net created by the current graph</p></li>
+<li><p><strong>predict_net</strong> (<em>caffe2.python.Net</em>) – caffe2 net created by the current graph</p></li>
+<li><p><strong>workspace</strong> (<em>caffe2.python.workspace</em>) – caffe2 current workspace</p></li>
+<li><p><strong>output_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current output names of the caffe2 net</p></li>
+<li><p><strong>py_model</strong> (<em>Model</em>) – original pytorch model object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of blobs that will be added to the caffe2 model
+final_output_names: list of output names of the blobs to add</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>result</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.exporter.ModelExporter.prepend_operators">
+<code class="sig-name descname">prepend_operators</code><span class="sig-paren">(</span><em class="sig-param">c2_prepared: caffe2.python.onnx.backend_rep.Caffe2Rep, input_names: List[str]</em><span class="sig-paren">)</span> → Tuple[caffe2.python.onnx.backend_rep.Caffe2Rep, List[str]]<a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.prepend_operators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.exporter.ModelExporter.prepend_operators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend operators to the converted caffe2 net, do nothing by default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c2_prepared</strong> (<em>Caffe2Rep</em>) – caffe2 net rep</p></li>
+<li><p><strong>input_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current input names to the caffe2 net</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>caffe2 net with prepended operators
+input_names (List[str]): list of input names for the new net</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>c2_prepared (Caffe2Rep)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.exporters">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.exporters" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.exporters.ModelExporter">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.exporters.</code><code class="sig-name descname">ModelExporter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">input_names</em>, <em class="sig-param">dummy_model_input</em>, <em class="sig-param">vocab_map</em>, <em class="sig-param">output_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Model exporter exports a PyTorch model to Caffe2 model using ONNX</p>
+<dl class="attribute">
+<dt id="pytext.exporters.ModelExporter.input_names">
+<code class="sig-name descname">input_names</code><a class="headerlink" href="#pytext.exporters.ModelExporter.input_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>names of the input variables to model forward
+function, in a flattened way.
+e.g: forward(tokens, dict) where tokens is List[Tensor] and dict is
+a tuple of value and length: (List[Tensor], List[Tensor]) the
+input names should looks like [‘token’, ‘dict_value’, ‘dict_length’]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[Str]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.exporters.ModelExporter.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><a class="headerlink" href="#pytext.exporters.ModelExporter.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>dummy values to define the
+shape of input tensors, should exactly match the shape of the model
+forward function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.exporters.ModelExporter.vocab_map">
+<code class="sig-name descname">vocab_map</code><a class="headerlink" href="#pytext.exporters.ModelExporter.vocab_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>dict of input feature names
+to corresponding index_to_string array, e.g:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"text"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"&lt;UNK&gt;"</span><span class="p">,</span> <span class="s2">"W1"</span><span class="p">,</span> <span class="s2">"W2"</span><span class="p">,</span> <span class="s2">"W3"</span><span class="p">,</span> <span class="s2">"W4"</span><span class="p">,</span> <span class="s2">"W5"</span><span class="p">,</span> <span class="s2">"W6"</span><span class="p">,</span> <span class="s2">"W7"</span><span class="p">,</span> <span class="s2">"W8"</span><span class="p">],</span>
+    <span class="s2">"dict"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"&lt;UNK&gt;"</span><span class="p">,</span> <span class="s2">"D1"</span><span class="p">,</span> <span class="s2">"D2"</span><span class="p">,</span> <span class="s2">"D3"</span><span class="p">,</span> <span class="s2">"D4"</span><span class="p">,</span> <span class="s2">"D5"</span><span class="p">,</span> <span class="s2">"D6"</span><span class="p">,</span> <span class="s2">"D7"</span><span class="p">,</span> <span class="s2">"D8"</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Dict[str, List[str]]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.exporters.ModelExporter.output_names">
+<code class="sig-name descname">output_names</code><a class="headerlink" href="#pytext.exporters.ModelExporter.output_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>names of output variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[Str]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path: str</em>, <em class="sig-param">export_onnx_path: str = None</em><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>export pytorch model to caffe2 by first using ONNX to convert logic in forward
+function to a caffe2 net, and then prepend/append additional operators to
+the caffe2 net according to the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Model</em>) – pytorch model to export</p></li>
+<li><p><strong>export_path</strong> (<em>str</em>) – path to save the exported caffe2 model</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – path to save the exported onnx model</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of caffe2 model output names</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>final_output_names</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.export_to_metrics">
+<code class="sig-name descname">export_to_metrics</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">metric_channels</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.export_to_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.export_to_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the pytorch model to tensorboard as a graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Model</em>) – pytorch model to export</p></li>
+<li><p><strong>metric_channels</strong> (<em>List</em><em>[</em><em>Channel</em><em>]</em>) – outputs of model’s execution graph</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config, feature_config: pytext.config.field_config.FeatureConfig, target_config: Union[pytext.config.pytext_config.ConfigBase, List[pytext.config.pytext_config.ConfigBase]], meta: pytext.data.data_handler.CommonMetadata, *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather all the necessary metadata from configs and global metadata to be
+used in exporter</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.get_extra_params">
+<code class="sig-name descname">get_extra_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.get_extra_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.get_extra_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of blobs to be added as extra params to the caffe2 model</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.get_feature_metadata">
+<em class="property">classmethod </em><code class="sig-name descname">get_feature_metadata</code><span class="sig-paren">(</span><em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig, feature_meta: Dict[str, pytext.fields.field.FieldMeta]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.get_feature_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.get_feature_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.postprocess_output">
+<code class="sig-name descname">postprocess_output</code><span class="sig-paren">(</span><em class="sig-param">init_net: caffe2.python.core.Net, predict_net: caffe2.python.core.Net, workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;, output_names: List[str], py_model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.postprocess_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.postprocess_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Postprocess the model output, generate additional blobs for human readable
+prediction. By default it use export function of output layer from pytorch
+model to append additional operators to caffe2 net</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_net</strong> (<em>caffe2.python.Net</em>) – caffe2 init net created by the current graph</p></li>
+<li><p><strong>predict_net</strong> (<em>caffe2.python.Net</em>) – caffe2 net created by the current graph</p></li>
+<li><p><strong>workspace</strong> (<em>caffe2.python.workspace</em>) – caffe2 current workspace</p></li>
+<li><p><strong>output_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current output names of the caffe2 net</p></li>
+<li><p><strong>py_model</strong> (<em>Model</em>) – original pytorch model object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of blobs that will be added to the caffe2 model
+final_output_names: list of output names of the blobs to add</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>result</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.ModelExporter.prepend_operators">
+<code class="sig-name descname">prepend_operators</code><span class="sig-paren">(</span><em class="sig-param">c2_prepared: caffe2.python.onnx.backend_rep.Caffe2Rep, input_names: List[str]</em><span class="sig-paren">)</span> → Tuple[caffe2.python.onnx.backend_rep.Caffe2Rep, List[str]]<a class="reference internal" href="../_modules/pytext/exporters/exporter.html#ModelExporter.prepend_operators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.ModelExporter.prepend_operators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend operators to the converted caffe2 net, do nothing by default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c2_prepared</strong> (<em>Caffe2Rep</em>) – caffe2 net rep</p></li>
+<li><p><strong>input_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current input names to the caffe2 net</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>caffe2 net with prepended operators
+input_names (List[str]): list of input names for the new net</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>c2_prepared (Caffe2Rep)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.exporters.DenseFeatureExporter">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.exporters.</code><code class="sig-name descname">DenseFeatureExporter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">input_names</em>, <em class="sig-param">dummy_model_input</em>, <em class="sig-param">vocab_map</em>, <em class="sig-param">output_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#DenseFeatureExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.DenseFeatureExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.exporters.exporter.ModelExporter" title="pytext.exporters.exporter.ModelExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.exporters.exporter.ModelExporter</span></code></a></p>
+<p>Exporter for models that have DenseFeatures as input to the decoder</p>
+<dl class="method">
+<dt id="pytext.exporters.DenseFeatureExporter.get_feature_metadata">
+<em class="property">classmethod </em><code class="sig-name descname">get_feature_metadata</code><span class="sig-paren">(</span><em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig, feature_meta: Dict[str, pytext.fields.field.FieldMeta]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#DenseFeatureExporter.get_feature_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.DenseFeatureExporter.get_feature_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.exporters.InitPredictNetExporter">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.exporters.</code><code class="sig-name descname">InitPredictNetExporter</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">input_names</em>, <em class="sig-param">dummy_model_input</em>, <em class="sig-param">vocab_map</em>, <em class="sig-param">output_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.InitPredictNetExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.exporters.exporter.ModelExporter" title="pytext.exporters.exporter.ModelExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.exporters.exporter.ModelExporter</span></code></a></p>
+<p>Exporter for converting models to their caffe2 init and predict nets.
+Does not rely on c2_prepared, but rather splits the ONNX model into
+the init and predict nets directly.</p>
+<dl class="method">
+<dt id="pytext.exporters.InitPredictNetExporter.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">export_path: str</em>, <em class="sig-param">export_onnx_path: str = None</em><span class="sig-paren">)</span> → List[str]<a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.InitPredictNetExporter.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>export pytorch model to caffe2 by first using ONNX to convert logic in forward
+function to a caffe2 net, and then prepend/append additional operators to
+the caffe2 net according to the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Model</em>) – pytorch model to export</p></li>
+<li><p><strong>export_path</strong> (<em>str</em>) – path to save the exported caffe2 model</p></li>
+<li><p><strong>export_onnx_path</strong> (<em>str</em>) – path to save the exported onnx model</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of caffe2 model output names</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>final_output_names</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.InitPredictNetExporter.get_export_paths">
+<code class="sig-name descname">get_export_paths</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.get_export_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.InitPredictNetExporter.get_export_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.InitPredictNetExporter.postprocess_output">
+<code class="sig-name descname">postprocess_output</code><span class="sig-paren">(</span><em class="sig-param">init_net, predict_net, workspace, output_names: List[str], model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.postprocess_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.InitPredictNetExporter.postprocess_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Postprocess the model output, generate additional blobs for human readable
+prediction. By default it use export function of output layer from pytorch
+model to append additional operators to caffe2 net</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_net</strong> (<em>caffe2.python.Net</em>) – caffe2 init net created by the current graph</p></li>
+<li><p><strong>predict_net</strong> (<em>caffe2.python.Net</em>) – caffe2 net created by the current graph</p></li>
+<li><p><strong>workspace</strong> (<em>caffe2.python.workspace</em>) – caffe2 current workspace</p></li>
+<li><p><strong>output_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current output names of the caffe2 net</p></li>
+<li><p><strong>py_model</strong> (<em>Model</em>) – original pytorch model object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of blobs that will be added to the caffe2 model
+final_output_names: list of output names of the blobs to add</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>result</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.exporters.InitPredictNetExporter.prepend_operators">
+<code class="sig-name descname">prepend_operators</code><span class="sig-paren">(</span><em class="sig-param">init_net, predict_net, input_names: List[str]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/exporters/custom_exporters.html#InitPredictNetExporter.prepend_operators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.exporters.InitPredictNetExporter.prepend_operators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend operators to the converted caffe2 net, do nothing by default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c2_prepared</strong> (<em>Caffe2Rep</em>) – caffe2 net rep</p></li>
+<li><p><strong>input_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – current input names to the caffe2 net</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>caffe2 net with prepended operators
+input_names (List[str]): list of input names for the new net</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>c2_prepared (Caffe2Rep)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.data.tokenizers.html" title="previous chapter">pytext.data.tokenizers package</a></li>
+<li>Next: <a href="pytext.fields.html" title="next chapter">pytext.fields package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

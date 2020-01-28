@@ -1,0 +1,259 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.masked_lm</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">fairseq.modules.transformer_sentence_encoder</span> <span class="kn">import</span> <span class="n">init_bert_params</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.data.bert_tensorizer</span> <span class="kn">import</span> <span class="n">BERTTensorizerBase</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">BOS</span><span class="p">,</span> <span class="n">EOS</span><span class="p">,</span> <span class="n">MASK</span><span class="p">,</span> <span class="n">PAD</span><span class="p">,</span> <span class="n">UNK</span><span class="p">,</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders.mlp_decoder</span> <span class="kn">import</span> <span class="n">MLPDecoder</span>
+<span class="kn">from</span> <span class="nn">pytext.models.masking_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MaskingStrategy</span><span class="p">,</span>
+    <span class="n">frequency_based_masking</span><span class="p">,</span>
+    <span class="n">random_masking</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers.lm_output_layer</span> <span class="kn">import</span> <span class="n">LMOutputLayer</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.transformer_sentence_encoder</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransformerSentenceEncoder</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.transformer_sentence_encoder_base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransformerSentenceEncoderBase</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="MaskedLanguageModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.masked_lm.MaskedLanguageModel">[docs]</a><span class="k">class</span> <span class="nc">MaskedLanguageModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">"""Masked language model for BERT style pre-training."""</span>
+
+    <span class="n">SUPPORT_FP16_OPTIMIZER</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">InputConfig</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">BERTTensorizerBase</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BERTTensorizerBase</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">128</span>
+            <span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">InputConfig</span> <span class="o">=</span> <span class="n">InputConfig</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">TransformerSentenceEncoderBase</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TransformerSentenceEncoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">LMOutputLayer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LMOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">mask_prob</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.15</span>
+        <span class="n">mask_bos</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c1"># masking</span>
+        <span class="n">masking_strategy</span><span class="p">:</span> <span class="n">MaskingStrategy</span> <span class="o">=</span> <span class="n">MaskingStrategy</span><span class="o">.</span><span class="n">RANDOM</span>
+        <span class="c1"># tie weights determines whether the input embedding weights are used</span>
+        <span class="c1"># in the output vocabulary projection as well</span>
+        <span class="n">tie_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="MaskedLanguageModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.masked_lm.MaskedLanguageModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">token_tensorizer</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="n">token_tensorizer</span><span class="o">.</span><span class="n">vocab</span>
+
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span>
+            <span class="n">output_encoded_layers</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">padding_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="fm">__len__</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="n">in_dim</span><span class="o">=</span><span class="n">encoder</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span> <span class="n">out_dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span> <span class="s2">"apply_bert_init"</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">init_bert_params</span><span class="p">)</span>
+        <span class="c1"># if weights are not shared then we need to ensure that the decoder</span>
+        <span class="c1"># params are initialized in the same was as the encoder params</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">tie_weights</span><span class="p">:</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">decoder</span><span class="o">.</span><span class="n">mlp</span><span class="o">.</span><span class="n">modules</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">_embedding</span><span class="p">()</span><span class="o">.</span><span class="n">weight</span>
+
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">encoder</span><span class="p">,</span>
+            <span class="n">decoder</span><span class="p">,</span>
+            <span class="n">output_layer</span><span class="p">,</span>
+            <span class="n">token_tensorizer</span><span class="p">,</span>
+            <span class="n">vocab</span><span class="p">,</span>
+            <span class="n">mask_prob</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">mask_prob</span><span class="p">,</span>
+            <span class="n">mask_bos</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">mask_bos</span><span class="p">,</span>
+            <span class="n">masking_strategy</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">masking_strategy</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">TransformerSentenceEncoderBase</span><span class="p">,</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">LMOutputLayer</span><span class="p">,</span>
+        <span class="n">token_tensorizer</span><span class="p">:</span> <span class="n">BERTTensorizerBase</span><span class="p">,</span>
+        <span class="n">vocab</span><span class="p">:</span> <span class="n">Vocabulary</span><span class="p">,</span>
+        <span class="n">mask_prob</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">mask_prob</span><span class="p">,</span>
+        <span class="n">mask_bos</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">mask_bos</span><span class="p">,</span>
+        <span class="n">masking_strategy</span><span class="p">:</span> <span class="n">MaskingStrategy</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">masking_strategy</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">:</span> <span class="n">Stage</span> <span class="o">=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_tensorizer</span> <span class="o">=</span> <span class="n">token_tensorizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_prob</span> <span class="o">=</span> <span class="n">mask_prob</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_bos</span> <span class="o">=</span> <span class="n">mask_bos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">masking_strategy</span> <span class="o">=</span> <span class="n">masking_strategy</span>
+
+        <span class="c1"># initialize the frequency based sampling weights if these will be used</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_sampling_weights</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">masking_strategy</span> <span class="o">==</span> <span class="n">MaskingStrategy</span><span class="o">.</span><span class="n">FREQUENCY</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">token_sampling_weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">counts</span><span class="p">]</span>
+
+            <span class="c1"># Set probability of masking special tokens to be very low, since it doesn't</span>
+            <span class="c1"># make sense to use them for MLM (unless there are no other tokens in the</span>
+            <span class="c1"># the batch).</span>
+            <span class="n">tokens_to_avoid_masking</span> <span class="o">=</span> <span class="p">[</span><span class="n">PAD</span><span class="p">,</span> <span class="n">UNK</span><span class="p">,</span> <span class="n">MASK</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_bos</span><span class="p">:</span>
+                <span class="n">tokens_to_avoid_masking</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">BOS</span><span class="p">,</span> <span class="n">EOS</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens_to_avoid_masking</span><span class="p">:</span>
+                <span class="n">token_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">token_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">token_sampling_weights</span><span class="p">[</span><span class="n">token_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-20</span>
+
+<div class="viewcode-block" id="MaskedLanguageModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.masked_lm.MaskedLanguageModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="o">*</span><span class="n">other</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_mask</span><span class="p">,</span> <span class="n">mask_mask</span><span class="p">,</span> <span class="n">rand_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_mask</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="n">masked_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_input</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">mask_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">MASK</span><span class="p">])</span>
+        <span class="n">masked_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_input</span><span class="p">(</span>
+            <span class="n">masked_tokens</span><span class="p">,</span> <span class="n">rand_mask</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint_like</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">masked_tokens</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MaskedLanguageModel.arrange_targets"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.masked_lm.MaskedLanguageModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="o">*</span><span class="n">other</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">masked_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_output</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
+        <span class="c1"># (masked targets, #predicted tokens, #input tokens)</span>
+        <span class="k">return</span> <span class="n">masked_target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MaskedLanguageModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.masked_lm.MaskedLanguageModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="n">encoded_layers</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">encoded_layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">bool</span><span class="p">(),</span> <span class="p">:])</span></div>
+
+    <span class="k">def</span> <span class="nf">_select_tokens_to_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">mask_prob</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">masking_strategy</span> <span class="o">==</span> <span class="n">MaskingStrategy</span><span class="o">.</span><span class="n">RANDOM</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">random_masking</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">mask_prob</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_bos</span><span class="p">:</span>
+                <span class="n">bos_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token_tensorizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">]</span>
+                <span class="n">mask</span> <span class="o">*=</span> <span class="p">(</span><span class="n">tokens</span> <span class="o">!=</span> <span class="n">bos_idx</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">mask</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">masking_strategy</span> <span class="o">==</span> <span class="n">MaskingStrategy</span><span class="o">.</span><span class="n">FREQUENCY</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">frequency_based_masking</span><span class="p">(</span>
+                <span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_sampling_weights</span><span class="p">,</span> <span class="n">mask_prob</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">"Specified Masking Strategy isnt currently implemented."</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_tokens_to_mask</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_prob</span><span class="p">)</span>
+        <span class="n">pad_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">())</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+        <span class="n">mask</span> <span class="o">*=</span> <span class="n">pad_mask</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mask</span><span class="o">.</span><span class="n">byte</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="c1"># Keep one masked token to avoid failure in the loss calculation.</span>
+            <span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand_like</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">rand_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">probs</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">*</span> <span class="n">mask</span>
+        <span class="n">mask_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">probs</span> <span class="o">&gt;=</span> <span class="mf">0.2</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">*</span> <span class="n">mask</span>
+        <span class="k">return</span> <span class="n">mask</span><span class="p">,</span> <span class="n">pad_mask</span><span class="p">,</span> <span class="n">mask_mask</span><span class="p">,</span> <span class="n">rand_mask</span>
+
+    <span class="k">def</span> <span class="nf">_mask_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tokens</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">replacement</span> <span class="o">*</span> <span class="n">mask</span>
+
+    <span class="k">def</span> <span class="nf">_mask_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">masked_select</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">mask</span><span class="o">.</span><span class="n">bool</span><span class="p">())</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

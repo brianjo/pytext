@@ -1,0 +1,48 @@
+LabelListTensorizer.Config
+==========================
+
+
+
+**Component:** :class:`LabelListTensorizer  <pytext.data.tensorizers.LabelListTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: LabelListTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``False``
+    \ 
+
+  **column**: str = ``'label'``
+    \ 
+
+  **allow_unknown**: bool = ``False``
+    \ 
+
+  **pad_in_vocab**: bool = ``False``
+    \ 
+
+  **label_vocab**: Optional[list[str]] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": false,
+      "column": "label",
+      "allow_unknown": false,
+      "pad_in_vocab": false,
+      "label_vocab": null
+  }

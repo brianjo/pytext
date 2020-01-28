@@ -1,0 +1,27 @@
+NLLLoss.Config
+==============
+
+
+
+**Component:** :class:`NLLLoss  <pytext.loss.loss.NLLLoss>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: NLLLoss.Config
+  :noindex:
+
+  **Bases:** :class:`Loss.Config <pytext.loss.loss.Loss.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

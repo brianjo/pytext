@@ -1,0 +1,199 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.output_layers.output_layer_base</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">caffe2.python</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">pytext.loss</span> <span class="kn">import</span> <span class="n">Loss</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">Module</span>
+
+
+<div class="viewcode-block" id="OutputLayerBase"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.output_layer_base.OutputLayerBase">[docs]</a><span class="k">class</span> <span class="nc">OutputLayerBase</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Base class for all output layers in PyText. The responsibilities of this layer are</span>
+
+<span class="sd">        1. Implement how loss is computed from logits and targets.</span>
+<span class="sd">        2. Implement how to get predictions from logits.</span>
+<span class="sd">        3. Implement the Caffe2 operator for performing the above tasks. This is</span>
+<span class="sd">            used when PyText exports PyTorch model to Caffe2.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        loss_fn (type): The loss function object to use for computing loss.</span>
+<span class="sd">            Defaults to None.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        loss_fn: The loss function object to use for computing loss.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">target_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Loss</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_names</span> <span class="o">=</span> <span class="n">target_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss_fn</span>
+
+<div class="viewcode-block" id="OutputLayerBase.get_loss"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.output_layer_base.OutputLayerBase.get_loss">[docs]</a>    <span class="k">def</span> <span class="nf">get_loss</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logit</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="nb">reduce</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""Compute and return the loss given logits and targets.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            logit (torch.Tensor): Logits returned :class:`~pytext.models.Model`.</span>
+<span class="sd">            target (torch.Tensor): True label/target to compute loss against.</span>
+<span class="sd">            context (Optional[Dict[str, Any]]): Context is a dictionary of items</span>
+<span class="sd">                that's passed as additional metadata by the</span>
+<span class="sd">                :class:`~pytext.data.DataHandler`. Defaults to None.</span>
+<span class="sd">            reduce (bool): Whether to reduce loss over the batch. Defaults to True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Model loss.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">logit</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="nb">reduce</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="k">else</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="OutputLayerBase.get_pred"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.output_layer_base.OutputLayerBase.get_pred">[docs]</a>    <span class="k">def</span> <span class="nf">get_pred</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logit</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">targets</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">"""Compute and return prediction and scores from the model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            logit (torch.Tensor): Logits returned :class:`~pytext.models.Model`.</span>
+<span class="sd">            targets (Optional[torch.Tensor]): True label/target. Only used by</span>
+<span class="sd">                :class:`~pytext.models.output_layer.LMOutputLayer`. Defaults to None.</span>
+<span class="sd">            context (Optional[Dict[str, Any]]): Context is a dictionary of items</span>
+<span class="sd">                that's passed as additional metadata by the</span>
+<span class="sd">                :class:`~pytext.data.DataHandler`. Defaults to None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]: Model prediction and scores.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">logit</span><span class="p">,</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="OutputLayerBase.export_to_caffe2"><a class="viewcode-back" href="../../../../modules/pytext.models.output_layers.html#pytext.models.output_layers.output_layer_base.OutputLayerBase.export_to_caffe2">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_caffe2</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">workspace</span><span class="p">,</span>
+        <span class="n">init_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">predict_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">model_out</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">BlobReference</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Exports the output layer to Caffe2 by manually adding the necessary operators</span>
+<span class="sd">        to the init_net and predict_net and, returns the list of external output</span>
+<span class="sd">        blobs to be added to the model. By default this does nothing, so any</span>
+<span class="sd">        sub-class must override this method (if necessary).</span>
+
+<span class="sd">        To learn about Caffe2 computation graphs and why we need two networks,</span>
+<span class="sd">        `init_net` and `predict_net`/`exec_net` read</span>
+<span class="sd">        https://caffe2.ai/docs/intro-tutorial#null__nets-and-operators.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            workspace (core.workspace): Caffe2 `workspace` to use for adding the</span>
+<span class="sd">                operator. See https://caffe2.ai/docs/workspace.html to learn about</span>
+<span class="sd">                Caffe2 workspace.</span>
+<span class="sd">            init_net (core.Net): Caffe2 `init_net` to add the operator to.</span>
+<span class="sd">            predict_net (core.Net): Caffe2 `predict_net` to add the operator to.</span>
+<span class="sd">            model_out (torch.Tensor): Output logit Tensor from the model to .</span>
+<span class="sd">            output_name (str): Name of `model_out` to use in Caffe2 net.</span>
+<span class="sd">            label_names (List[str]): List of names of the targets/labels to</span>
+<span class="sd">                expose from the Caffe2 net.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[core.BlobReference]: List of output blobs that the `output_layer`</span>
+<span class="sd">                generates.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[]</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

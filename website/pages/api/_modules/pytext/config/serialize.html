@@ -1,0 +1,357 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.config.serialize</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.utils</span> <span class="kn">import</span> <span class="n">eprint</span>
+
+<span class="kn">from</span> <span class="nn">.component</span> <span class="kn">import</span> <span class="n">Registry</span>
+<span class="kn">from</span> <span class="nn">.config_adapter</span> <span class="kn">import</span> <span class="n">upgrade_to_latest</span>
+<span class="kn">from</span> <span class="nn">.pytext_config</span> <span class="kn">import</span> <span class="n">PyTextConfig</span>
+
+
+<div class="viewcode-block" id="ConfigParseError"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.ConfigParseError">[docs]</a><span class="k">class</span> <span class="nc">ConfigParseError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="UnionTypeError"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.UnionTypeError">[docs]</a><span class="k">class</span> <span class="nc">UnionTypeError</span><span class="p">(</span><span class="n">ConfigParseError</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="EnumTypeError"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.EnumTypeError">[docs]</a><span class="k">class</span> <span class="nc">EnumTypeError</span><span class="p">(</span><span class="n">ConfigParseError</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="MissingValueError"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.MissingValueError">[docs]</a><span class="k">class</span> <span class="nc">MissingValueError</span><span class="p">(</span><span class="n">ConfigParseError</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IncorrectTypeError"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.IncorrectTypeError">[docs]</a><span class="k">class</span> <span class="nc">IncorrectTypeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<span class="k">def</span> <span class="nf">_canonical_typename</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s2">"_name"</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_name</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".Config"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">name</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">".Config"</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">name</span>
+
+
+<span class="k">def</span> <span class="nf">_extend_tuple_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">sub_cls_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_cls_list</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_cls_list</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">sub_cls_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigParseError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"{len(value)} values found which is more than number of types in tuple {cls}"</span>
+            <span class="p">)</span>
+        <span class="k">del</span> <span class="n">sub_cls_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">sub_cls_list</span><span class="o">.</span><span class="n">extend</span><span class="p">((</span><span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_cls_list</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">sub_cls_list</span>
+
+
+<div class="viewcode-block" id="build_subclass_dict"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.build_subclass_dict">[docs]</a><span class="k">def</span> <span class="nf">build_subclass_dict</span><span class="p">(</span><span class="n">subclasses</span><span class="p">):</span>
+    <span class="n">subclasses_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">subclass</span> <span class="ow">in</span> <span class="n">subclasses</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span> <span class="o">!=</span> <span class="n">subclass</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">subclass</span><span class="p">,</span> <span class="s2">"__EXPANSIBLE__"</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="n">Registry</span><span class="o">.</span><span class="n">subconfigs</span><span class="p">(</span><span class="n">subclass</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                    <span class="n">subclasses_dict</span><span class="p">[</span><span class="n">_canonical_typename</span><span class="p">(</span><span class="n">child</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">child</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">subclasses_dict</span><span class="p">[</span><span class="n">_canonical_typename</span><span class="p">(</span><span class="n">subclass</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">subclass</span>
+    <span class="k">return</span> <span class="n">subclasses_dict</span></div>
+
+
+<span class="k">def</span> <span class="nf">_union_from_json</span><span class="p">(</span><span class="n">subclasses</span><span class="p">,</span> <span class="n">json_obj</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_dict</span><span class="p">(</span><span class="n">json_obj</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">IncorrectTypeError</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"incorrect Union value {json_obj} for union {subclasses}"</span>
+        <span class="p">)</span>
+    <span class="n">subclasses_dict</span> <span class="o">=</span> <span class="n">build_subclass_dict</span><span class="p">(</span><span class="n">subclasses</span><span class="p">)</span>
+
+    <span class="n">type_name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">json_obj</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">json_obj</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="n">subclasses_dict</span><span class="p">:</span>
+        <span class="n">json_obj</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">json_obj</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">type_name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">subclasses_dict</span><span class="p">))</span>
+        <span class="n">eprint</span><span class="p">(</span>
+            <span class="s2">"WARNING - Can not find class type in json: "</span>
+            <span class="n">f</span><span class="s2">"trying with first class {type_name} in the union."</span>
+        <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_value_from_json</span><span class="p">(</span><span class="n">subclasses_dict</span><span class="p">[</span><span class="n">type_name</span><span class="p">],</span> <span class="n">json_obj</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">UnionTypeError</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"failed to parse union {subclasses} from json payload {json_obj}"</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+
+<span class="k">def</span> <span class="nf">_is_optional</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_get_class_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">==</span> <span class="n">Union</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span>
+
+
+<span class="k">def</span> <span class="nf">_enum_from_json</span><span class="p">(</span><span class="n">enum_cls</span><span class="p">,</span> <span class="n">json_obj</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">enum_cls</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">json_obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">e</span>
+    <span class="k">raise</span> <span class="n">EnumTypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">"invalid enum value {json_obj} for {enum_cls}"</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_value_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">cls_type</span> <span class="o">=</span> <span class="n">_get_class_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>
+    <span class="c1"># Unions must be first because Union explicitly doesn't</span>
+    <span class="c1"># support __subclasscheck__.</span>
+    <span class="c1"># optional with more than 2 classes is treated as Union</span>
+    <span class="k">elif</span> <span class="n">_is_optional</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">sub_cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_value_from_json</span><span class="p">(</span><span class="n">sub_cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="c1"># nested config</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"_fields"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">config_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">cls_type</span> <span class="o">==</span> <span class="n">Union</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_union_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_enum_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
+        <span class="n">sub_cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">_value_from_json</span><span class="p">(</span><span class="n">sub_cls</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">_value_from_json</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_extend_tuple_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="n">value</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+        <span class="n">sub_cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">_value_from_json</span><span class="p">(</span><span class="n">sub_cls</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="c1"># built in types</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_is_type_specifier</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_try_component_config_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">_is_type_specifier</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">Registry</span><span class="o">.</span><span class="n">subconfigs</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">type_name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">type_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">_canonical_typename</span><span class="p">(</span><span class="n">option</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">_value_from_json</span><span class="p">(</span><span class="n">option</span><span class="p">,</span> <span class="n">value</span><span class="p">[</span><span class="n">type_name</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"could not find specified component class {type_name}"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="pytext_config_from_json"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.pytext_config_from_json">[docs]</a><span class="k">def</span> <span class="nf">pytext_config_from_json</span><span class="p">(</span><span class="n">json_obj</span><span class="p">,</span> <span class="n">ignore_fields</span><span class="o">=</span><span class="p">(),</span> <span class="n">auto_upgrade</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">auto_upgrade</span><span class="p">:</span>
+        <span class="n">json_obj</span> <span class="o">=</span> <span class="n">upgrade_to_latest</span><span class="p">(</span><span class="n">json_obj</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">config_from_json</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">json_obj</span><span class="p">,</span> <span class="n">ignore_fields</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="config_from_json"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.config_from_json">[docs]</a><span class="k">def</span> <span class="nf">config_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_obj</span><span class="p">,</span> <span class="n">ignore_fields</span><span class="o">=</span><span class="p">()):</span>
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"__EXPANSIBLE__"</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="n">component_config</span> <span class="o">=</span> <span class="n">_try_component_config_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">component_config</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">component_config</span>
+    <span class="n">parsed_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"_fields"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">IncorrectTypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">"{cls} is not a valid config class"</span><span class="p">)</span>
+    <span class="n">cls_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+    <span class="c1"># Non-EXPANSIBLE classes can be found in configs</span>
+    <span class="n">cls_name_wo_config</span> <span class="o">=</span> <span class="n">cls_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">unknown_fields</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">set</span><span class="p">(</span><span class="n">json_obj</span><span class="p">)</span>
+        <span class="o">-</span> <span class="p">{</span><span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__annotations__</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="o">-</span> <span class="p">{</span><span class="n">cls_name_wo_config</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">unknown_fields</span><span class="p">:</span>
+        <span class="n">cls_fields</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__annotations__</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">raise</span> <span class="n">ConfigParseError</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">"Unknown fields for class {cls_name} with fields {cls_fields} </span><span class="se">\</span>
+<span class="s2">            detected in config json: {unknown_fields}"</span>
+        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">f_cls</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__annotations__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">is_optional</span> <span class="o">=</span> <span class="n">_is_optional</span><span class="p">(</span><span class="n">f_cls</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">json_obj</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_field_defaults</span><span class="p">:</span>
+                <span class="c1"># if using default value, no conversion is needed</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_field_defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">_value_from_json</span><span class="p">(</span><span class="n">f_cls</span><span class="p">,</span> <span class="n">json_obj</span><span class="p">[</span><span class="n">field</span><span class="p">])</span>
+            <span class="k">except</span> <span class="n">ConfigParseError</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ConfigParseError</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"failed to parse {field} to {f_cls} with json payload </span><span class="se">\</span>
+<span class="s2">                    {json_obj[field]}"</span>
+                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="c1"># validate value</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_optional</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingValueError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"missing value for {field} in class {cls_name} with json {json_obj}"</span>
+            <span class="p">)</span>
+        <span class="n">parsed_dict</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">parsed_dict</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_value_to_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">cls_type</span> <span class="o">=</span> <span class="n">_get_class_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">_is_optional</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>
+    <span class="c1"># optional with more than 2 classes is treated as Union</span>
+    <span class="k">elif</span> <span class="n">_is_optional</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">sub_cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_value_to_json</span><span class="p">(</span><span class="n">sub_cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">cls_type</span> <span class="o">==</span> <span class="n">Union</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"__EXPANSIBLE__"</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="n">real_cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">real_cls</span><span class="p">,</span> <span class="s2">"_fields"</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">config_to_json</span><span class="p">(</span><span class="n">real_cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">_canonical_typename</span><span class="p">(</span><span class="n">real_cls</span><span class="p">):</span> <span class="n">value</span><span class="p">}</span>
+    <span class="c1"># nested config</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"_fields"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">config_to_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
+        <span class="n">sub_cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">_value_to_json</span><span class="p">(</span><span class="n">sub_cls</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">_value_to_json</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_extend_tuple_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="n">value</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_type</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+        <span class="n">sub_cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__args__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">_value_to_json</span><span class="p">(</span><span class="n">sub_cls</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<div class="viewcode-block" id="config_to_json"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.config_to_json">[docs]</a><span class="k">def</span> <span class="nf">config_to_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config_obj</span><span class="p">):</span>
+    <span class="n">json_result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"_fields"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">IncorrectTypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">"{cls} is not a valid config class"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">f_cls</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__annotations__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config_obj</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+        <span class="n">json_result</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">_value_to_json</span><span class="p">(</span><span class="n">f_cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json_result</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_class_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    type(cls) has an inconsistent behavior between 3.6 and 3.7 because of</span>
+<span class="sd">    changes in the typing module. We therefore rely on __extra (3.6) and</span>
+<span class="sd">    __origin__ (3.7), present only in classes from typing to extract the origin</span>
+<span class="sd">    of the class for comparison, otherwise default to the type sent directly</span>
+<span class="sd">    :param cls: class to infer</span>
+<span class="sd">    :return: class or in the case of classes from typing module, the real type</span>
+<span class="sd">    (Union, List) of the created object</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"__extra__"</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"__origin__"</span><span class="p">,</span> <span class="bp">cls</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_is_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">"""support all dict-like types</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"__contains__"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="parse_config"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.serialize.parse_config">[docs]</a><span class="k">def</span> <span class="nf">parse_config</span><span class="p">(</span><span class="n">config_json</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Parse PyTextConfig object from parameter string or parameter file</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="s2">"config"</span> <span class="ow">in</span> <span class="n">config_json</span><span class="p">:</span>
+        <span class="n">config_json</span> <span class="o">=</span> <span class="n">config_json</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">pytext_config_from_json</span><span class="p">(</span><span class="n">config_json</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

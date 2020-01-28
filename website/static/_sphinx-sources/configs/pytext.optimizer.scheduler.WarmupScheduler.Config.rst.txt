@@ -1,0 +1,38 @@
+WarmupScheduler.Config
+======================
+
+
+
+**Component:** :class:`WarmupScheduler  <pytext.optimizer.scheduler.WarmupScheduler>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: WarmupScheduler.Config
+  :noindex:
+
+  **Bases:** :class:`BatchScheduler.Config <pytext.optimizer.scheduler.BatchScheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **warmup_steps**: int = ``10000``
+    number of training steps over which to increase learning rate
+    
+
+  **inverse_sqrt_decay**: bool = ``False``
+    whether to perform inverse sqrt decay after the warmup phase
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "warmup_steps": 10000,
+      "inverse_sqrt_decay": false
+  }

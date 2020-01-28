@@ -1,0 +1,7 @@
+seq_rep
+=======
+
+
+.. toctree::
+
+  pytext.models.representations.seq_rep.SeqRepresentation.Config

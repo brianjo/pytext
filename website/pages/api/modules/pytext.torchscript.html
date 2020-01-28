@@ -1,0 +1,183 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-torchscript-package">
+<h1>pytext.torchscript package<a class="headerlink" href="#pytext-torchscript-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytext.torchscript.tensorizer.html">pytext.torchscript.tensorizer package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.bert">pytext.torchscript.tensorizer.bert module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.normalizer">pytext.torchscript.tensorizer.normalizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.roberta">pytext.torchscript.tensorizer.roberta module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.tensorizer">pytext.torchscript.tensorizer.tensorizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer.xlm">pytext.torchscript.tensorizer.xlm module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tensorizer.html#module-pytext.torchscript.tensorizer">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.torchscript.tokenizer.html">pytext.torchscript.tokenizer package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tokenizer.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tokenizer.html#module-pytext.torchscript.tokenizer.bpe">pytext.torchscript.tokenizer.bpe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tokenizer.html#module-pytext.torchscript.tokenizer.tokenizer">pytext.torchscript.tokenizer.tokenizer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.torchscript.tokenizer.html#module-pytext.torchscript.tokenizer">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.torchscript.module">
+<span id="pytext-torchscript-module-module"></span><h2>pytext.torchscript.module module<a class="headerlink" href="#module-pytext.torchscript.module" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.module.ScriptModule">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.module.</code><code class="sig-name descname">ScriptModule</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/module.html#ScriptModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.module.ScriptModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.module.ScriptTextModule">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.module.</code><code class="sig-name descname">ScriptTextModule</code><span class="sig-paren">(</span><em class="sig-param">model: torch.jit.ScriptModule</em>, <em class="sig-param">output_layer: torch.jit.ScriptModule</em>, <em class="sig-param">tensorizer: pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/module.html#ScriptTextModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.module.ScriptTextModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.module.ScriptModule" title="pytext.torchscript.module.ScriptModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.module.ScriptModule</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.module.ScriptTokenLanguageModule">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.module.</code><code class="sig-name descname">ScriptTokenLanguageModule</code><span class="sig-paren">(</span><em class="sig-param">model: torch.jit.ScriptModule</em>, <em class="sig-param">output_layer: torch.jit.ScriptModule</em>, <em class="sig-param">tensorizer: pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/module.html#ScriptTokenLanguageModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.module.ScriptTokenLanguageModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.module.ScriptModule" title="pytext.torchscript.module.ScriptModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.module.ScriptModule</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.module.ScriptTokenLanguageModuleWithDenseFeature">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.module.</code><code class="sig-name descname">ScriptTokenLanguageModuleWithDenseFeature</code><span class="sig-paren">(</span><em class="sig-param">model: torch.jit.ScriptModule</em>, <em class="sig-param">output_layer: torch.jit.ScriptModule</em>, <em class="sig-param">tensorizer: pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/module.html#ScriptTokenLanguageModuleWithDenseFeature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.module.ScriptTokenLanguageModuleWithDenseFeature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.module.ScriptModule" title="pytext.torchscript.module.ScriptModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.module.ScriptModule</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.module.ScriptTokenModule">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.module.</code><code class="sig-name descname">ScriptTokenModule</code><span class="sig-paren">(</span><em class="sig-param">model: torch.jit.ScriptModule</em>, <em class="sig-param">output_layer: torch.jit.ScriptModule</em>, <em class="sig-param">tensorizer: pytext.torchscript.tensorizer.tensorizer.ScriptTensorizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/module.html#ScriptTokenModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.module.ScriptTokenModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.module.ScriptModule" title="pytext.torchscript.module.ScriptModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.module.ScriptModule</span></code></a></p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.torchscript.module.get_script_module_cls">
+<code class="sig-prename descclassname">pytext.torchscript.module.</code><code class="sig-name descname">get_script_module_cls</code><span class="sig-paren">(</span><em class="sig-param">input_type: pytext.torchscript.utils.ScriptInputType</em><span class="sig-paren">)</span> → torch.jit.ScriptModule<a class="reference internal" href="../_modules/pytext/torchscript/module.html#get_script_module_cls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.module.get_script_module_cls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.utils">
+<span id="pytext-torchscript-utils-module"></span><h2>pytext.torchscript.utils module<a class="headerlink" href="#module-pytext.torchscript.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.utils.ScriptInputType">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.utils.</code><code class="sig-name descname">ScriptInputType</code><a class="reference internal" href="../_modules/pytext/torchscript/utils.html#ScriptInputType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.utils.ScriptInputType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="method">
+<dt id="pytext.torchscript.utils.ScriptInputType.is_text">
+<code class="sig-name descname">is_text</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/utils.html#ScriptInputType.is_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.utils.ScriptInputType.is_text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.utils.ScriptInputType.is_token">
+<code class="sig-name descname">is_token</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/utils.html#ScriptInputType.is_token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.utils.ScriptInputType.is_token" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.torchscript.utils.ScriptInputType.text">
+<code class="sig-name descname">text</code><em class="property"> = 1</em><a class="headerlink" href="#pytext.torchscript.utils.ScriptInputType.text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.torchscript.utils.ScriptInputType.token">
+<code class="sig-name descname">token</code><em class="property"> = 2</em><a class="headerlink" href="#pytext.torchscript.utils.ScriptInputType.token" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.vocab">
+<span id="pytext-torchscript-vocab-module"></span><h2>pytext.torchscript.vocab module<a class="headerlink" href="#module-pytext.torchscript.vocab" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.vocab.ScriptVocabulary">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.vocab.</code><code class="sig-name descname">ScriptVocabulary</code><span class="sig-paren">(</span><em class="sig-param">vocab_list</em>, <em class="sig-param">unk_idx: int = 0</em>, <em class="sig-param">pad_idx: int = -1</em>, <em class="sig-param">bos_idx: int = -1</em>, <em class="sig-param">eos_idx: int = -1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/vocab.html#ScriptVocabulary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.vocab.ScriptVocabulary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.torchscript" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.task.html" title="previous chapter">pytext.task package</a></li>
+<li>Next: <a href="pytext.torchscript.tensorizer.html" title="next chapter">pytext.torchscript.tensorizer package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

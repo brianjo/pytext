@@ -1,0 +1,7 @@
+sparse_transformer_sentence_encoder
+===================================
+
+
+.. toctree::
+
+  pytext.models.representations.sparse_transformer_sentence_encoder.SparseTransformerSentenceEncoder.Config

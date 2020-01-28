@@ -1,0 +1,295 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.semantic_parsers.rnng.rnng_data_structures</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sized</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span> <span class="kn">as</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.utils</span> <span class="kn">import</span> <span class="n">reverse_tensor_list</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.cuda</span> <span class="kn">import</span> <span class="n">FloatTensor</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.tensor</span> <span class="kn">import</span> <span class="n">xaviervar</span>
+
+
+<div class="viewcode-block" id="Element"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.Element">[docs]</a><span class="k">class</span> <span class="nc">Element</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Generic element representing a token / non-terminal / sub-tree on a stack.</span>
+<span class="sd">    Used to compute valid actions in the RNNG parser.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">=</span> <span class="n">node</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">node</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StackLSTM"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.StackLSTM">[docs]</a><span class="k">class</span> <span class="nc">StackLSTM</span><span class="p">(</span><span class="n">Sized</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    The Stack LSTM from Dyer et al: https://arxiv.org/abs/1505.08075</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lstm</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Shapes:</span>
+<span class="sd">            initial_state: (lstm_layers, 1, lstm_hidden_dim) each</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span> <span class="o">=</span> <span class="n">lstm</span>
+        <span class="n">initial_state</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">FloatTensor</span><span class="p">(</span><span class="n">lstm</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lstm</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">FloatTensor</span><span class="p">(</span><span class="n">lstm</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lstm</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="c1"># Stack of (state, (embedding, element))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">initial_state</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lstm_output</span><span class="p">(</span><span class="n">initial_state</span><span class="p">),</span> <span class="n">Element</span><span class="p">(</span><span class="s2">"Root"</span><span class="p">)))</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_lstm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Shapes:</span>
+<span class="sd">            state: (lstm_layers, 1, lstm_hidden_dim) each</span>
+<span class="sd">            return value: (1, lstm_hidden_dim)</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<div class="viewcode-block" id="StackLSTM.push"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.StackLSTM.push">[docs]</a>    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Shapes:</span>
+<span class="sd">            expression: (1, lstm_input_dim)</span>
+<span class="sd">        """</span>
+        <span class="n">old_top_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Unsqueezing expression for sequence_length = 1</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">new_top_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">old_top_state</span><span class="p">)</span>
+        <span class="c1"># Push in (state, (embedding, element))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">new_top_state</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lstm_output</span><span class="p">(</span><span class="n">new_top_state</span><span class="p">),</span> <span class="n">element</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="StackLSTM.pop"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.StackLSTM.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Element</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Pops and returns tuple of output embedding (1, lstm_hidden_dim) and element</span>
+<span class="sd">        """</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="StackLSTM.embedding"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.StackLSTM.embedding">[docs]</a>    <span class="k">def</span> <span class="nf">embedding</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Shapes:</span>
+<span class="sd">            return value: (1, lstm_hidden_dim)</span>
+<span class="sd">        """</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"stack size must be greater than 0"</span>
+
+        <span class="n">top_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lstm_output</span><span class="p">(</span><span class="n">top_state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StackLSTM.element_from_top"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.StackLSTM.element_from_top">[docs]</a>    <span class="k">def</span> <span class="nf">element_from_top</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Element</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)][</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"-&gt;"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">])</span>
+
+<div class="viewcode-block" id="StackLSTM.copy"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.StackLSTM.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">other</span> <span class="o">=</span> <span class="n">StackLSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="p">)</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">other</span></div></div>
+
+
+<div class="viewcode-block" id="CompositionalNN"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.CompositionalNN">[docs]</a><span class="k">class</span> <span class="nc">CompositionalNN</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Combines a list / sequence of embeddings into one using a biLSTM</span>
+<span class="sd">    """</span>
+
+    <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"lstm_dim"</span><span class="p">,</span> <span class="s2">"linear_seq"</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span> <span class="o">=</span> <span class="n">lstm_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_fwd</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">lstm_dim</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_rev</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">lstm_dim</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_seq</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">lstm_dim</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Tanh</span><span class="p">())</span>
+
+    <span class="nd">@torch.jit.script_method</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cpu"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Embed the sequence. If the input corresponds to [IN:GL where am I at]:</span>
+<span class="sd">        - x will contain the embeddings of [at I am where IN:GL] in that order.</span>
+<span class="sd">        - Forward LSTM will embed the sequence [IN:GL where am I at].</span>
+<span class="sd">        - Backward LSTM will embed the sequence [IN:GL at I am where].</span>
+<span class="sd">        The final hidden states are concatenated and then projected.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Embeddings of the input tokens in *reversed* order</span>
+<span class="sd">        Shapes:</span>
+<span class="sd">            x: (1, lstm_dim) each</span>
+<span class="sd">            return value: (1, lstm_dim)</span>
+<span class="sd">        """</span>
+        <span class="c1"># reset hidden state every time</span>
+        <span class="n">lstm_hidden_fwd</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">xaviervar</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">xaviervar</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">lstm_hidden_rev</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">xaviervar</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">xaviervar</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">nonterminal_element</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">reversed_rest</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># Always put nonterminal_element at the front</span>
+        <span class="n">fwd_input</span> <span class="o">=</span> <span class="p">[</span><span class="n">nonterminal_element</span><span class="p">]</span> <span class="o">+</span> <span class="n">reverse_tensor_list</span><span class="p">(</span><span class="n">reversed_rest</span><span class="p">)</span>
+        <span class="n">rev_input</span> <span class="o">=</span> <span class="p">[</span><span class="n">nonterminal_element</span><span class="p">]</span> <span class="o">+</span> <span class="n">reversed_rest</span>
+        <span class="n">stacked_fwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_fwd</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">fwd_input</span><span class="p">),</span> <span class="n">lstm_hidden_fwd</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">stacked_rev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_rev</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">rev_input</span><span class="p">),</span> <span class="n">lstm_hidden_rev</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">combined</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">stacked_fwd</span><span class="p">,</span> <span class="n">stacked_rev</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">subtree_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_seq</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">subtree_embedding</span></div>
+
+
+<div class="viewcode-block" id="CompositionalSummationNN"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.CompositionalSummationNN">[docs]</a><span class="k">class</span> <span class="nc">CompositionalSummationNN</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Simpler version of CompositionalNN</span>
+<span class="sd">    """</span>
+
+    <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"lstm_dim"</span><span class="p">,</span> <span class="s2">"linear_seq"</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span> <span class="o">=</span> <span class="n">lstm_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_seq</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">lstm_dim</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Tanh</span><span class="p">())</span>
+
+    <span class="nd">@torch.jit.script_method</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cpu"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">combined</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">subtree_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_seq</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">subtree_embedding</span></div>
+
+
+<div class="viewcode-block" id="ParserState"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.ParserState">[docs]</a><span class="k">class</span> <span class="nc">ParserState</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Maintains state of the Parser. Useful for beam search</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parser</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer_stackrnn</span> <span class="o">=</span> <span class="n">StackLSTM</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">buff_rnn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack_stackrnn</span> <span class="o">=</span> <span class="n">StackLSTM</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">stack_rnn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_stackrnn</span> <span class="o">=</span> <span class="n">StackLSTM</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">action_rnn</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">predicted_actions_idx</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_scores</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_open_NT</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_open_NT</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">found_unsupported</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">()</span>
+
+        <span class="c1"># negative cumulative log prob so sort(states) is in descending order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neg_prob</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="ParserState.finished"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.ParserState.finished">[docs]</a>    <span class="k">def</span> <span class="nf">finished</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="ParserState.copy"><a class="viewcode-back" href="../../../../../modules/pytext.models.semantic_parsers.rnng.html#pytext.models.semantic_parsers.rnng.rnng_data_structures.ParserState.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">other</span> <span class="o">=</span> <span class="n">ParserState</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">buffer_stackrnn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer_stackrnn</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">stack_stackrnn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack_stackrnn</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">action_stackrnn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">action_stackrnn</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">predicted_actions_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predicted_actions_idx</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">action_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">action_scores</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">num_open_NT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_open_NT</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">is_open_NT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_open_NT</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">neg_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neg_prob</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">found_unsupported</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">found_unsupported</span>
+
+        <span class="c1"># detach to avoid making copies, only called in inference to share data</span>
+        <span class="n">other</span><span class="o">.</span><span class="n">action_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">action_p</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">other</span></div>
+
+    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">neg_prob</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">neg_prob</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">neg_prob</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">neg_prob</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../../index.html">Module code</a><ul>
+<li><a href="../../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,1016 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-models-embeddings-package">
+<h1>pytext.models.embeddings package<a class="headerlink" href="#pytext-models-embeddings-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.models.embeddings.char_embedding">
+<span id="pytext-models-embeddings-char-embedding-module"></span><h2>pytext.models.embeddings.char_embedding module<a class="headerlink" href="#module-pytext.models.embeddings.char_embedding" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.char_embedding.</code><code class="sig-name descname">CharacterEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int, embed_dim: int, out_channels: int, kernel_sizes: List[int], highway_layers: int, projection_dim: Optional[int], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#CharacterEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a></p>
+<p>Module for character aware CNN embeddings for tokens. It uses convolution
+followed by max-pooling over character embeddings to obtain an embedding
+vector for each token.</p>
+<p>Implementation is loosely based on <a class="reference external" href="https://arxiv.org/abs/1508.06615">https://arxiv.org/abs/1508.06615</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_embeddings</strong> (<em>int</em>) – Total number of characters (vocabulary size).</p></li>
+<li><p><strong>embed_dim</strong> (<em>int</em>) – Size of character embeddings to be passed to convolutions.</p></li>
+<li><p><strong>out_channels</strong> (<em>int</em>) – Number of output channels.</p></li>
+<li><p><strong>kernel_sizes</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – Dimension of input Tensor passed to MLP.</p></li>
+<li><p><strong>highway_layers</strong> (<em>int</em>) – Number of highway layers applied to pooled output.</p></li>
+<li><p><strong>projection_dim</strong> (<em>int</em>) – If specified, size of output embedding for token, via
+a linear projection from convolution output.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.char_embed">
+<code class="sig-name descname">char_embed</code><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.char_embed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Character embedding table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.Embedding</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.convs">
+<code class="sig-name descname">convs</code><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.convs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolution layers that operate on character</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.ModuleList</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">embeddings.</code></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.highway_layers">
+<code class="sig-name descname">highway_layers</code><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.highway_layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Highway layers on top of convolution output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.projection">
+<code class="sig-name descname">projection</code><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.projection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Final linear layer to token embedding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.embedding_dim">
+<code class="sig-name descname">embedding_dim</code><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.embedding_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of the final token embedding produced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">chars: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#CharacterEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a batch of sentences such that tokens are broken into character ids,
+produce token embedding vectors for each sentence in the batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chars</strong> (<em>torch.Tensor</em>) – Batch of sentences where each token is broken</p></li>
+<li><p><strong>characters.</strong> (<em>into</em>) – </p></li>
+<li><p><strong>Dimension</strong> – batch size X maximum sentence length X maximum word length</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Embedded batch of sentences. Dimension:
+batch size X maximum sentence length, token embedding size.
+Token embedding size = <cite>out_channels * len(self.convs))</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.char_embedding.CharacterEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.CharFeatConfig</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">vocab_size: Optional[int] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#CharacterEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.char_embedding.CharacterEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of CharacterEmbedding from
+the module’s config object and the field’s metadata object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>CharFeatConfig</em>) – Configuration object specifying all the
+parameters of CharacterEmbedding.</p></li>
+<li><p><strong>metadata</strong> (<em>FieldMeta</em>) – Object containing this field’s metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of CharacterEmbedding.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.embeddings.char_embedding.Highway">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.char_embedding.</code><code class="sig-name descname">Highway</code><span class="sig-paren">(</span><em class="sig-param">input_dim: int</em>, <em class="sig-param">num_layers: int = 1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#Highway"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.char_embedding.Highway" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>A <cite>Highway layer &lt;https://arxiv.org/abs/1505.00387&gt;</cite>.
+Adopted from the AllenNLP implementation.</p>
+<dl class="method">
+<dt id="pytext.models.embeddings.char_embedding.Highway.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x: torch.Tensor</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#Highway.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.char_embedding.Highway.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.char_embedding.Highway.reset_parameters">
+<code class="sig-name descname">reset_parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#Highway.reset_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.char_embedding.Highway.reset_parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.embeddings.contextual_token_embedding">
+<span id="pytext-models-embeddings-contextual-token-embedding-module"></span><h2>pytext.models.embeddings.contextual_token_embedding module<a class="headerlink" href="#module-pytext.models.embeddings.contextual_token_embedding" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.contextual_token_embedding.</code><code class="sig-name descname">ContextualTokenEmbedding</code><span class="sig-paren">(</span><em class="sig-param">embedding_dim: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/contextual_token_embedding.html#ContextualTokenEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a></p>
+<p>Module for providing token embeddings from a pretrained model.</p>
+<dl class="method">
+<dt id="pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">embedding: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/embeddings/contextual_token_embedding.html#ContextualTokenEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.ContextualTokenEmbeddingConfig</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/contextual_token_embedding.html#ContextualTokenEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.embeddings.dict_embedding">
+<span id="pytext-models-embeddings-dict-embedding-module"></span><h2>pytext.models.embeddings.dict_embedding module<a class="headerlink" href="#module-pytext.models.embeddings.dict_embedding" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.dict_embedding.DictEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.dict_embedding.</code><code class="sig-name descname">DictEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int</em>, <em class="sig-param">embed_dim: int</em>, <em class="sig-param">pooling_type: pytext.config.module_config.PoolingType</em>, <em class="sig-param">pad_index: int = 1</em>, <em class="sig-param">unk_index: int = 0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/dict_embedding.html#DictEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.dict_embedding.DictEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.sparse.Embedding</span></code></p>
+<p>Module for dictionary feature embeddings for tokens. Dictionary features are
+also known as gazetteer features. These are per token discrete features that
+the module learns embeddings for.
+Example: For the utterance <em>Order coffee from Starbucks</em>, the dictionary
+features could be</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+    <span class="p">{</span><span class="s2">"tokenIdx"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"drink/beverage"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">"music/song"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">}},</span>
+    <span class="p">{</span><span class="s2">"tokenIdx"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"store/coffee_shop"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>::
+Thus, for a given token there can be more than one dictionary features each
+of which has a confidence score. The final embedding for a token is the
+weighted average of the dictionary embeddings followed by a pooling operation
+such that the module produces an embedding vector per token.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_embeddings</strong> (<em>int</em>) – Total number of dictionary features (vocabulary size).</p></li>
+<li><p><strong>embed_dim</strong> (<em>int</em>) – Size of embedding vector.</p></li>
+<li><p><strong>pooling_type</strong> (<em>PoolingType</em>) – Type of pooling for combining the dictionary
+feature embeddings.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.dict_embedding.DictEmbedding.pooling_type">
+<code class="sig-name descname">pooling_type</code><a class="headerlink" href="#pytext.models.embeddings.dict_embedding.DictEmbedding.pooling_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type of pooling for combining the dictionary
+feature embeddings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>PoolingType</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.dict_embedding.DictEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">feats: torch.Tensor</em>, <em class="sig-param">weights: torch.Tensor</em>, <em class="sig-param">lengths: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/embeddings/dict_embedding.html#DictEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.dict_embedding.DictEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a batch of sentences such containing dictionary feature ids per
+token, produce token embedding vectors for each sentence in the batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feats</strong> (<em>torch.Tensor</em>) – Batch of sentences with dictionary feature ids.
+shape: [bsz, seq_len * max_feat_per_token]</p></li>
+<li><p><strong>weights</strong> (<em>torch.Tensor</em>) – Batch of sentences with dictionary feature
+weights for the dictionary features.
+shape: [bsz, seq_len * max_feat_per_token]</p></li>
+<li><p><strong>lengths</strong> (<em>torch.Tensor</em>) – Batch of sentences with the number of
+dictionary features per token.
+shape: [bsz, seq_len]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Embedded batch of sentences. Dimension:
+batch size X maximum sentence length, token embedding size.
+Token embedding size = <cite>embed_dim</cite> passed to the constructor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.dict_embedding.DictEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.DictFeatConfig</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em>, <em class="sig-param">tensorizer: Optional[pytext.data.tensorizers.Tensorizer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/dict_embedding.html#DictEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.dict_embedding.DictEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of DictEmbedding from
+the module’s config object and the field’s metadata object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>DictFeatConfig</em>) – Configuration object specifying all the</p></li>
+<li><p><strong>of DictEmbedding.</strong> (<em>parameters</em>) – </p></li>
+<li><p><strong>metadata</strong> (<em>FieldMeta</em>) – Object containing this field’s metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of DictEmbedding.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.embeddings.embedding_base">
+<span id="pytext-models-embeddings-embedding-base-module"></span><h2>pytext.models.embeddings.embedding_base module<a class="headerlink" href="#module-pytext.models.embeddings.embedding_base" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.embedding_base.EmbeddingBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.embedding_base.</code><code class="sig-name descname">EmbeddingBase</code><span class="sig-paren">(</span><em class="sig-param">embedding_dim: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_base.html#EmbeddingBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.module.Module" title="pytext.models.module.Module"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.module.Module</span></code></a></p>
+<p>Base class for token level embedding modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>embedding_dim</strong> (<em>int</em>) – Size of embedding vector.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.embedding_base.EmbeddingBase.num_emb_modules">
+<code class="sig-name descname">num_emb_modules</code><a class="headerlink" href="#pytext.models.embeddings.embedding_base.EmbeddingBase.num_emb_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of ways to embed a token.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.embedding_base.EmbeddingBase.embedding_dim">
+<code class="sig-name descname">embedding_dim</code><a class="headerlink" href="#pytext.models.embeddings.embedding_base.EmbeddingBase.embedding_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Size of embedding vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.embedding_base.EmbeddingBase.get_param_groups_for_optimizer">
+<code class="sig-name descname">get_param_groups_for_optimizer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[Dict[str, torch.nn.parameter.Parameter]]<a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_base.html#EmbeddingBase.get_param_groups_for_optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_base.EmbeddingBase.get_param_groups_for_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Organize module parameters into param_groups (or layers), so the optimizer
+and / or schedulers can have custom behavior per layer.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.embedding_base.EmbeddingBase.visualize">
+<code class="sig-name descname">visualize</code><span class="sig-paren">(</span><em class="sig-param">summary_writer: &lt;Mock name='mock.SummaryWriter' id='5106000848'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_base.html#EmbeddingBase.visualize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_base.EmbeddingBase.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden in sub classes to implement Tensorboard visualization of
+embedding space</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.embeddings.embedding_list">
+<span id="pytext-models-embeddings-embedding-list-module"></span><h2>pytext.models.embeddings.embedding_list module<a class="headerlink" href="#module-pytext.models.embeddings.embedding_list" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.embedding_list.</code><code class="sig-name descname">EmbeddingList</code><span class="sig-paren">(</span><em class="sig-param">embeddings: Iterable[pytext.models.embeddings.embedding_base.EmbeddingBase], concat: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.container.ModuleList</span></code></p>
+<p>There are more than one way to embed a token and this module provides a way
+to generate a list of sub-embeddings, concat embedding tensors into a single
+Tensor or return a tuple of Tensors that can be used by downstream modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>embeddings</strong> (<em>Iterable</em><em>[</em><em>EmbeddingBase</em><em>]</em>) – A sequence of embedding modules to</p></li>
+<li><p><strong>a token.</strong> (<em>embed</em>) – </p></li>
+<li><p><strong>concat</strong> (<em>bool</em>) – Whether to concatenate the embedding vectors emitted from</p></li>
+<li><p><strong>modules.</strong> (<em>embeddings</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.num_emb_modules">
+<code class="sig-name descname">num_emb_modules</code><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.num_emb_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of flattened embeddings in <cite>embeddings</cite>,
+e.g: ((e1, e2), e3) has 3 in total</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.input_start_indices">
+<code class="sig-name descname">input_start_indices</code><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.input_start_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of indices of the sub-embeddings
+in the embedding list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[int]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.concat">
+<code class="sig-name descname">concat</code><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.concat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to concatenate the embedding vectors emitted from
+<cite>embeddings</cite> modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.embedding_dim">
+<code class="sig-name descname">embedding_dim</code><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.embedding_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total embedding size, can be a single int or tuple of
+int depending on concat setting</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*emb_input</em><span class="sig-paren">)</span> → Union[torch.Tensor, Tuple[torch.Tensor]]<a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get embeddings from all sub-embeddings and either concatenate them
+into one Tensor or return them in a tuple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*emb_input</strong> (<em>type</em>) – Sequence of token level embeddings to combine.
+The inputs should match the size of configured embeddings. Each
+of them is either a Tensor or a tuple of Tensors.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>If <cite>concat</cite> is True then</dt><dd><p>a Tensor is returned by concatenating all embeddings. Otherwise
+all embeddings are returned in a tuple.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[torch.Tensor, Tuple[torch.Tensor]]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.get_param_groups_for_optimizer">
+<code class="sig-name descname">get_param_groups_for_optimizer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[Dict[str, torch.nn.parameter.Parameter]]<a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList.get_param_groups_for_optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.get_param_groups_for_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Organize child embedding parameters into param_groups (or layers), so the
+optimizer and / or schedulers can have custom behavior per layer. The
+param_groups from each child embedding are aligned at the first (lowest)
+param_group.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.embedding_list.EmbeddingList.visualize">
+<code class="sig-name descname">visualize</code><span class="sig-paren">(</span><em class="sig-param">summary_writer: &lt;Mock name='mock.SummaryWriter' id='5106000848'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList.visualize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.embedding_list.EmbeddingList.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden in sub classes to implement Tensorboard visualization of
+embedding space</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.embeddings.word_embedding">
+<span id="pytext-models-embeddings-word-embedding-module"></span><h2>pytext.models.embeddings.word_embedding module<a class="headerlink" href="#module-pytext.models.embeddings.word_embedding" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.word_embedding.WordEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.word_embedding.</code><code class="sig-name descname">WordEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int</em>, <em class="sig-param">embedding_dim: int = 300</em>, <em class="sig-param">embeddings_weight: Optional[torch.Tensor] = None</em>, <em class="sig-param">init_range: Optional[List[int]] = None</em>, <em class="sig-param">unk_token_idx: int = 0</em>, <em class="sig-param">mlp_layer_dims: List[int] = ()</em>, <em class="sig-param">padding_idx: Optional[int] = None</em>, <em class="sig-param">vocab: Optional[List[str]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.word_embedding.WordEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a></p>
+<p>A word embedding wrapper module around <cite>torch.nn.Embedding</cite> with options to
+initialize the word embedding weights and add MLP layers acting on each word.</p>
+<p>Note: Embedding weights for UNK token are always initialized to zeros.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_embeddings</strong> (<em>int</em>) – Total number of words/tokens (vocabulary size).</p></li>
+<li><p><strong>embedding_dim</strong> (<em>int</em>) – Size of embedding vector.</p></li>
+<li><p><strong>embeddings_weight</strong> (<em>torch.Tensor</em>) – Pretrained weights to initialize the
+embedding table with.</p></li>
+<li><p><strong>init_range</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – Range of uniform distribution to initialize the
+weights with if <cite>embeddings_weight</cite> is None.</p></li>
+<li><p><strong>unk_token_idx</strong> (<em>int</em>) – Index of UNK token in the word vocabulary.</p></li>
+<li><p><strong>mlp_layer_dims</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – List of layer dimensions (if any) to add
+on top of the embedding lookup.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.word_embedding.WordEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.word_embedding.WordEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.word_embedding.WordEmbedding.freeze">
+<code class="sig-name descname">freeze</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.freeze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.word_embedding.WordEmbedding.freeze" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.word_embedding.WordEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.WordFeatConfig</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">tensorizer: Optional[pytext.data.tensorizers.Tensorizer] = None</em>, <em class="sig-param">init_from_saved_state: Optional[bool] = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.word_embedding.WordEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of WordEmbedding from
+the module’s config object and the field’s metadata object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>WordFeatConfig</em>) – Configuration object specifying all the</p></li>
+<li><p><strong>of WordEmbedding.</strong> (<em>parameters</em>) – </p></li>
+<li><p><strong>metadata</strong> (<em>FieldMeta</em>) – Object containing this field’s metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of WordEmbedding.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.word_embedding.WordEmbedding.visualize">
+<code class="sig-name descname">visualize</code><span class="sig-paren">(</span><em class="sig-param">summary_writer: &lt;Mock name='mock.SummaryWriter' id='5106000848'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.visualize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.word_embedding.WordEmbedding.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden in sub classes to implement Tensorboard visualization of
+embedding space</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.embeddings">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.models.embeddings" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.embeddings.EmbeddingBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.</code><code class="sig-name descname">EmbeddingBase</code><span class="sig-paren">(</span><em class="sig-param">embedding_dim: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_base.html#EmbeddingBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.module.Module" title="pytext.models.module.Module"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.module.Module</span></code></a></p>
+<p>Base class for token level embedding modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>embedding_dim</strong> (<em>int</em>) – Size of embedding vector.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.EmbeddingBase.num_emb_modules">
+<code class="sig-name descname">num_emb_modules</code><a class="headerlink" href="#pytext.models.embeddings.EmbeddingBase.num_emb_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of ways to embed a token.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.EmbeddingBase.embedding_dim">
+<code class="sig-name descname">embedding_dim</code><a class="headerlink" href="#pytext.models.embeddings.EmbeddingBase.embedding_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Size of embedding vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.EmbeddingBase.get_param_groups_for_optimizer">
+<code class="sig-name descname">get_param_groups_for_optimizer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[Dict[str, torch.nn.parameter.Parameter]]<a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_base.html#EmbeddingBase.get_param_groups_for_optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingBase.get_param_groups_for_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Organize module parameters into param_groups (or layers), so the optimizer
+and / or schedulers can have custom behavior per layer.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.EmbeddingBase.visualize">
+<code class="sig-name descname">visualize</code><span class="sig-paren">(</span><em class="sig-param">summary_writer: &lt;Mock name='mock.SummaryWriter' id='5106000848'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_base.html#EmbeddingBase.visualize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingBase.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden in sub classes to implement Tensorboard visualization of
+embedding space</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.embeddings.EmbeddingList">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.</code><code class="sig-name descname">EmbeddingList</code><span class="sig-paren">(</span><em class="sig-param">embeddings: Iterable[pytext.models.embeddings.embedding_base.EmbeddingBase], concat: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.container.ModuleList</span></code></p>
+<p>There are more than one way to embed a token and this module provides a way
+to generate a list of sub-embeddings, concat embedding tensors into a single
+Tensor or return a tuple of Tensors that can be used by downstream modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>embeddings</strong> (<em>Iterable</em><em>[</em><em>EmbeddingBase</em><em>]</em>) – A sequence of embedding modules to</p></li>
+<li><p><strong>a token.</strong> (<em>embed</em>) – </p></li>
+<li><p><strong>concat</strong> (<em>bool</em>) – Whether to concatenate the embedding vectors emitted from</p></li>
+<li><p><strong>modules.</strong> (<em>embeddings</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.EmbeddingList.num_emb_modules">
+<code class="sig-name descname">num_emb_modules</code><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.num_emb_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of flattened embeddings in <cite>embeddings</cite>,
+e.g: ((e1, e2), e3) has 3 in total</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.EmbeddingList.input_start_indices">
+<code class="sig-name descname">input_start_indices</code><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.input_start_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of indices of the sub-embeddings
+in the embedding list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>List[int]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.EmbeddingList.concat">
+<code class="sig-name descname">concat</code><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.concat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to concatenate the embedding vectors emitted from
+<cite>embeddings</cite> modules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.EmbeddingList.embedding_dim">
+<code class="sig-name descname">embedding_dim</code><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.embedding_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total embedding size, can be a single int or tuple of
+int depending on concat setting</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.EmbeddingList.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*emb_input</em><span class="sig-paren">)</span> → Union[torch.Tensor, Tuple[torch.Tensor]]<a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get embeddings from all sub-embeddings and either concatenate them
+into one Tensor or return them in a tuple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*emb_input</strong> (<em>type</em>) – Sequence of token level embeddings to combine.
+The inputs should match the size of configured embeddings. Each
+of them is either a Tensor or a tuple of Tensors.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>If <cite>concat</cite> is True then</dt><dd><p>a Tensor is returned by concatenating all embeddings. Otherwise
+all embeddings are returned in a tuple.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[torch.Tensor, Tuple[torch.Tensor]]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.EmbeddingList.get_param_groups_for_optimizer">
+<code class="sig-name descname">get_param_groups_for_optimizer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → List[Dict[str, torch.nn.parameter.Parameter]]<a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList.get_param_groups_for_optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.get_param_groups_for_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Organize child embedding parameters into param_groups (or layers), so the
+optimizer and / or schedulers can have custom behavior per layer. The
+param_groups from each child embedding are aligned at the first (lowest)
+param_group.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.EmbeddingList.visualize">
+<code class="sig-name descname">visualize</code><span class="sig-paren">(</span><em class="sig-param">summary_writer: &lt;Mock name='mock.SummaryWriter' id='5106000848'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/embedding_list.html#EmbeddingList.visualize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.EmbeddingList.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden in sub classes to implement Tensorboard visualization of
+embedding space</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.embeddings.WordEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.</code><code class="sig-name descname">WordEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int</em>, <em class="sig-param">embedding_dim: int = 300</em>, <em class="sig-param">embeddings_weight: Optional[torch.Tensor] = None</em>, <em class="sig-param">init_range: Optional[List[int]] = None</em>, <em class="sig-param">unk_token_idx: int = 0</em>, <em class="sig-param">mlp_layer_dims: List[int] = ()</em>, <em class="sig-param">padding_idx: Optional[int] = None</em>, <em class="sig-param">vocab: Optional[List[str]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.WordEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a></p>
+<p>A word embedding wrapper module around <cite>torch.nn.Embedding</cite> with options to
+initialize the word embedding weights and add MLP layers acting on each word.</p>
+<p>Note: Embedding weights for UNK token are always initialized to zeros.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_embeddings</strong> (<em>int</em>) – Total number of words/tokens (vocabulary size).</p></li>
+<li><p><strong>embedding_dim</strong> (<em>int</em>) – Size of embedding vector.</p></li>
+<li><p><strong>embeddings_weight</strong> (<em>torch.Tensor</em>) – Pretrained weights to initialize the
+embedding table with.</p></li>
+<li><p><strong>init_range</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – Range of uniform distribution to initialize the
+weights with if <cite>embeddings_weight</cite> is None.</p></li>
+<li><p><strong>unk_token_idx</strong> (<em>int</em>) – Index of UNK token in the word vocabulary.</p></li>
+<li><p><strong>mlp_layer_dims</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – List of layer dimensions (if any) to add
+on top of the embedding lookup.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.WordEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">input</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.WordEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.WordEmbedding.freeze">
+<code class="sig-name descname">freeze</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.freeze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.WordEmbedding.freeze" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.WordEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.WordFeatConfig</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">tensorizer: Optional[pytext.data.tensorizers.Tensorizer] = None</em>, <em class="sig-param">init_from_saved_state: Optional[bool] = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.WordEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of WordEmbedding from
+the module’s config object and the field’s metadata object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>WordFeatConfig</em>) – Configuration object specifying all the</p></li>
+<li><p><strong>of WordEmbedding.</strong> (<em>parameters</em>) – </p></li>
+<li><p><strong>metadata</strong> (<em>FieldMeta</em>) – Object containing this field’s metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of WordEmbedding.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.WordEmbedding.visualize">
+<code class="sig-name descname">visualize</code><span class="sig-paren">(</span><em class="sig-param">summary_writer: &lt;Mock name='mock.SummaryWriter' id='5106000848'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/word_embedding.html#WordEmbedding.visualize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.WordEmbedding.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden in sub classes to implement Tensorboard visualization of
+embedding space</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.embeddings.DictEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.</code><code class="sig-name descname">DictEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int</em>, <em class="sig-param">embed_dim: int</em>, <em class="sig-param">pooling_type: pytext.config.module_config.PoolingType</em>, <em class="sig-param">pad_index: int = 1</em>, <em class="sig-param">unk_index: int = 0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/dict_embedding.html#DictEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.DictEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.sparse.Embedding</span></code></p>
+<p>Module for dictionary feature embeddings for tokens. Dictionary features are
+also known as gazetteer features. These are per token discrete features that
+the module learns embeddings for.
+Example: For the utterance <em>Order coffee from Starbucks</em>, the dictionary
+features could be</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+    <span class="p">{</span><span class="s2">"tokenIdx"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"drink/beverage"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">"music/song"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">}},</span>
+    <span class="p">{</span><span class="s2">"tokenIdx"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"store/coffee_shop"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>::
+Thus, for a given token there can be more than one dictionary features each
+of which has a confidence score. The final embedding for a token is the
+weighted average of the dictionary embeddings followed by a pooling operation
+such that the module produces an embedding vector per token.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_embeddings</strong> (<em>int</em>) – Total number of dictionary features (vocabulary size).</p></li>
+<li><p><strong>embed_dim</strong> (<em>int</em>) – Size of embedding vector.</p></li>
+<li><p><strong>pooling_type</strong> (<em>PoolingType</em>) – Type of pooling for combining the dictionary
+feature embeddings.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.DictEmbedding.pooling_type">
+<code class="sig-name descname">pooling_type</code><a class="headerlink" href="#pytext.models.embeddings.DictEmbedding.pooling_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type of pooling for combining the dictionary
+feature embeddings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>PoolingType</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.DictEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">feats: torch.Tensor</em>, <em class="sig-param">weights: torch.Tensor</em>, <em class="sig-param">lengths: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/embeddings/dict_embedding.html#DictEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.DictEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a batch of sentences such containing dictionary feature ids per
+token, produce token embedding vectors for each sentence in the batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feats</strong> (<em>torch.Tensor</em>) – Batch of sentences with dictionary feature ids.
+shape: [bsz, seq_len * max_feat_per_token]</p></li>
+<li><p><strong>weights</strong> (<em>torch.Tensor</em>) – Batch of sentences with dictionary feature
+weights for the dictionary features.
+shape: [bsz, seq_len * max_feat_per_token]</p></li>
+<li><p><strong>lengths</strong> (<em>torch.Tensor</em>) – Batch of sentences with the number of
+dictionary features per token.
+shape: [bsz, seq_len]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Embedded batch of sentences. Dimension:
+batch size X maximum sentence length, token embedding size.
+Token embedding size = <cite>embed_dim</cite> passed to the constructor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.DictEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.DictFeatConfig</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em>, <em class="sig-param">tensorizer: Optional[pytext.data.tensorizers.Tensorizer] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/dict_embedding.html#DictEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.DictEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of DictEmbedding from
+the module’s config object and the field’s metadata object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>DictFeatConfig</em>) – Configuration object specifying all the</p></li>
+<li><p><strong>of DictEmbedding.</strong> (<em>parameters</em>) – </p></li>
+<li><p><strong>metadata</strong> (<em>FieldMeta</em>) – Object containing this field’s metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of DictEmbedding.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.embeddings.CharacterEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.</code><code class="sig-name descname">CharacterEmbedding</code><span class="sig-paren">(</span><em class="sig-param">num_embeddings: int, embed_dim: int, out_channels: int, kernel_sizes: List[int], highway_layers: int, projection_dim: Optional[int], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#CharacterEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a></p>
+<p>Module for character aware CNN embeddings for tokens. It uses convolution
+followed by max-pooling over character embeddings to obtain an embedding
+vector for each token.</p>
+<p>Implementation is loosely based on <a class="reference external" href="https://arxiv.org/abs/1508.06615">https://arxiv.org/abs/1508.06615</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_embeddings</strong> (<em>int</em>) – Total number of characters (vocabulary size).</p></li>
+<li><p><strong>embed_dim</strong> (<em>int</em>) – Size of character embeddings to be passed to convolutions.</p></li>
+<li><p><strong>out_channels</strong> (<em>int</em>) – Number of output channels.</p></li>
+<li><p><strong>kernel_sizes</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – Dimension of input Tensor passed to MLP.</p></li>
+<li><p><strong>highway_layers</strong> (<em>int</em>) – Number of highway layers applied to pooled output.</p></li>
+<li><p><strong>projection_dim</strong> (<em>int</em>) – If specified, size of output embedding for token, via
+a linear projection from convolution output.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.CharacterEmbedding.char_embed">
+<code class="sig-name descname">char_embed</code><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.char_embed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Character embedding table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.Embedding</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.CharacterEmbedding.convs">
+<code class="sig-name descname">convs</code><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.convs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolution layers that operate on character</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.ModuleList</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">embeddings.</code></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.CharacterEmbedding.highway_layers">
+<code class="sig-name descname">highway_layers</code><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.highway_layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Highway layers on top of convolution output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.CharacterEmbedding.projection">
+<code class="sig-name descname">projection</code><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.projection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Final linear layer to token embedding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.embeddings.CharacterEmbedding.embedding_dim">
+<code class="sig-name descname">embedding_dim</code><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.embedding_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of the final token embedding produced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.CharacterEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">chars: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#CharacterEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a batch of sentences such that tokens are broken into character ids,
+produce token embedding vectors for each sentence in the batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chars</strong> (<em>torch.Tensor</em>) – Batch of sentences where each token is broken</p></li>
+<li><p><strong>characters.</strong> (<em>into</em>) – </p></li>
+<li><p><strong>Dimension</strong> – batch size X maximum sentence length X maximum word length</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Embedded batch of sentences. Dimension:
+batch size X maximum sentence length, token embedding size.
+Token embedding size = <cite>out_channels * len(self.convs))</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.CharacterEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.CharFeatConfig</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">vocab_size: Optional[int] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/char_embedding.html#CharacterEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.CharacterEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of CharacterEmbedding from
+the module’s config object and the field’s metadata object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>CharFeatConfig</em>) – Configuration object specifying all the
+parameters of CharacterEmbedding.</p></li>
+<li><p><strong>metadata</strong> (<em>FieldMeta</em>) – Object containing this field’s metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of CharacterEmbedding.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.embeddings.ContextualTokenEmbedding">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.embeddings.</code><code class="sig-name descname">ContextualTokenEmbedding</code><span class="sig-paren">(</span><em class="sig-param">embedding_dim: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/contextual_token_embedding.html#ContextualTokenEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.ContextualTokenEmbedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.embeddings.embedding_base.EmbeddingBase" title="pytext.models.embeddings.embedding_base.EmbeddingBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.embeddings.embedding_base.EmbeddingBase</span></code></a></p>
+<p>Module for providing token embeddings from a pretrained model.</p>
+<dl class="method">
+<dt id="pytext.models.embeddings.ContextualTokenEmbedding.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">embedding: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/embeddings/contextual_token_embedding.html#ContextualTokenEmbedding.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.ContextualTokenEmbedding.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.embeddings.ContextualTokenEmbedding.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.field_config.ContextualTokenEmbeddingConfig</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/embeddings/contextual_token_embedding.html#ContextualTokenEmbedding.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.embeddings.ContextualTokenEmbedding.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.models.html">pytext.models package</a><ul>
+<li>Previous: <a href="pytext.models.decoders.html" title="previous chapter">pytext.models.decoders package</a></li>
+<li>Next: <a href="pytext.models.ensembles.html" title="next chapter">pytext.models.ensembles package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,136 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="data-parallel-distributed-training">
+<h1>Data Parallel Distributed Training<a class="headerlink" href="#data-parallel-distributed-training" title="Permalink to this headline">¶</a></h1>
+<p>Distributed training enables one to easily parallelize computations across processes
+and clusters of machines. To do so, it leverages messaging passing semantics allowing
+each process to communicate data to any of the other processes.</p>
+<p>PyText exploits <code class="docutils literal notranslate"><span class="pre">DistributedDataParallel</span></code> for synchronizing gradients and <code class="docutils literal notranslate"><span class="pre">torch.multiprocessing</span></code>
+to spawn multiple processes which each setup the distributed environment with <a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> as
+default backend, initialize the process group, and finally execute the given run function.
+The module is replicated on each machine and each device (e.g every single process),
+and each such replica handles a portion of the input partitioned by PyText’s <code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code>.
+For more on distributed training in PyTorch, refer to <a class="reference external" href="https://pytorch.org/tutorials/intermediate/dist_tuto.html">Writing distributed applications with PyTorch</a>.</p>
+<p>In this tutorial, we will train a DocNN model on a single node with 8 GPUs using the SST dataset.</p>
+<div class="section" id="requirement">
+<h2>1. Requirement<a class="headerlink" href="#requirement" title="Permalink to this headline">¶</a></h2>
+<p>Distributed training is only available for GPUs, so you’ll need GPU-equipped server or virtual machine to run this tutorial.</p>
+<dl class="simple">
+<dt>Notes:</dt><dd><ul class="simple">
+<li><p>This demo use a local temporary file for initializing the distributed processes group,
+which means it only works on a single node. Please make sure to set <cite>distributed_world_size</cite>
+less than or equal to the maximum available GPUs on the server.</p></li>
+<li><p>For distributed training on clusters of machines, you can use a shared file accessible to
+all the hosts (ex: <a class="reference external" href="file:///mnt/nfs/sharedfile">file:///mnt/nfs/sharedfile</a>) or the TCP init method. More info on
+<a class="reference external" href="https://pytorch.org/docs/stable/distributed.html#initialization">distributed initialization</a>.</p></li>
+<li><p>In <code class="docutils literal notranslate"><span class="pre">demo/configs/distributed_docnn.json</span></code>, set <cite>distributed_world_size</cite> to 1 to disable
+distributed training, and set <cite>use_cuda_if_available</cite> to <cite>false</cite> to disable training on GPU.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="fetch-the-dataset">
+<h2>2. Fetch the dataset<a class="headerlink" href="#fetch-the-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Download the <a class="reference external" href="https://gluebenchmark.com/tasks">SST dataset (The Stanford Sentiment Treebank)</a> to a local directory. We will refer to this as <cite>base_dir</cite> in the next section.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unzip SST-2.zip <span class="o">&amp;&amp;</span> <span class="nb">cd</span> SST-2
+<span class="gp">$</span> sed 1d train.tsv <span class="p">|</span> head -1000 &gt; train_tiny.tsv
+<span class="gp">$</span> sed 1d dev.tsv <span class="p">|</span> head -100 &gt; eval_tiny.tsv
+</pre></div>
+</div>
+</div>
+<div class="section" id="prepare-configuration-file">
+<h2>3. Prepare configuration file<a class="headerlink" href="#prepare-configuration-file" title="Permalink to this headline">¶</a></h2>
+<p>Prepare the configuration file for training. A sample config file can be found in your PyText repository at <code class="docutils literal notranslate"><span class="pre">demo/configs/distributed_docnn.json</span></code>. If you haven’t set up PyText, please follow <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>.</p>
+<p>The two parameters that are used for distributed training are:</p>
+<ul class="simple">
+<li><p><cite>distributed_world_size</cite>: total number of GPUs used for distributed training, e.g. if set to 40 with every server having 8 GPU, 5 servers will be fully used.</p></li>
+<li><p><cite>use_cuda_if_available</cite>: set to <cite>true</cite> for training on GPUs.</p></li>
+</ul>
+<p>For this tutorial, please change the following in the config file.</p>
+<ul class="simple">
+<li><p>Set <cite>train_path</cite> to <cite>base_dir/train_tiny.tsv</cite>.</p></li>
+<li><p>Set <cite>eval_path</cite> to <cite>base_dir/eval_tiny.tsv</cite>.</p></li>
+<li><p>Set <cite>test_path</cite> to <cite>base_dir/eval_tiny.tsv</cite>.</p></li>
+</ul>
+</div>
+<div class="section" id="train-model-with-the-downloaded-dataset">
+<h2>4. Train model with the downloaded dataset<a class="headerlink" href="#train-model-with-the-downloaded-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Train the model using the command below</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; demo/configs/distributed_docnn.json
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="disjoint_multitask_tutorial.html" title="previous chapter">Multitask training with disjoint datasets</a></li>
+<li>Next: <a href="xlm_r.html" title="next chapter">XLM-RoBERTa</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

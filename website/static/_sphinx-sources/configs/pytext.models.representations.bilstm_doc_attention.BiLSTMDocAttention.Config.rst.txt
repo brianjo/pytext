@@ -1,0 +1,102 @@
+BiLSTMDocAttention.Config
+=========================
+
+
+
+**Component:** :class:`BiLSTMDocAttention  <pytext.models.representations.bilstm_doc_attention.BiLSTMDocAttention>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.bilstm_doc_attention
+.. py:class:: BiLSTMDocAttention.Config
+  :noindex:
+
+  **Bases:** :class:`RepresentationBase.Config <pytext.models.representations.representation_base.RepresentationBase.Config>`\ 
+
+  
+  Configuration class for `BiLSTM`.
+  
+  .. attribute:: dropout
+  
+     Dropout probability to use. Defaults to 0.4.
+  
+     :type: float
+  
+  .. attribute:: lstm
+  
+     Config for the BiLSTM.
+  
+     :type: BiLSTM.Config
+  
+  .. attribute:: pooling
+  
+     Config for the underlying pooling module.
+  
+     :type: ConfigBase
+  
+  .. attribute:: mlp_decoder
+  
+     Config for the non-linear
+     projection module.
+  
+     :type: MLPDecoder.Config
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **dropout**: float = ``0.4``
+    \ 
+
+  **lstm**: :doc:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>` = :doc:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>`\ ()
+    \ 
+
+  **pooling**: Union[:doc:`SelfAttention.Config <pytext.models.representations.pooling.SelfAttention.Config>`, :doc:`MaxPool.Config <pytext.models.representations.pooling.MaxPool.Config>`, :doc:`MeanPool.Config <pytext.models.representations.pooling.MeanPool.Config>`, :doc:`NoPool.Config <pytext.models.representations.pooling.NoPool.Config>`, :doc:`LastTimestepPool.Config <pytext.models.representations.pooling.LastTimestepPool.Config>`] = :doc:`SelfAttention.Config <pytext.models.representations.pooling.SelfAttention.Config>`\ ()
+    \ 
+
+  **mlp_decoder**: Optional[:doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "dropout": 0.4,
+      "lstm": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "dropout": 0.4,
+          "lstm_dim": 32,
+          "num_layers": 1,
+          "bidirectional": true,
+          "pack_sequence": true
+      },
+      "pooling": {
+          "SelfAttention": {
+              "attn_dimension": 64,
+              "dropout": 0.4
+          }
+      },
+      "mlp_decoder": null
+  }

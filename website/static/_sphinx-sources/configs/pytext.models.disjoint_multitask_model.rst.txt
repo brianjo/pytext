@@ -1,0 +1,8 @@
+disjoint_multitask_model
+========================
+
+
+.. toctree::
+
+  pytext.models.disjoint_multitask_model.DisjointMultitaskModel.Config
+  pytext.models.disjoint_multitask_model.NewDisjointMultitaskModel.Config

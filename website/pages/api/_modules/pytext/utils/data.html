@@ -1,0 +1,357 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.data</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">builtins</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+
+<div class="viewcode-block" id="simple_tokenize"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.simple_tokenize">[docs]</a><span class="k">def</span> <span class="nf">simple_tokenize</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="no_tokenize"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.no_tokenize">[docs]</a><span class="k">def</span> <span class="nf">no_tokenize</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="get_substring_from_offsets"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.get_substring_from_offsets">[docs]</a><span class="k">def</span> <span class="nf">get_substring_from_offsets</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">byte_offset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Access substring of a text using byte offset, if the switch is turned on.</span>
+<span class="sd">    Otherwise return substring as the usual text[start:end]</span>
+<span class="sd">    """</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf8"</span><span class="p">)</span> <span class="k">if</span> <span class="n">byte_offset</span> <span class="k">else</span> <span class="n">text</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf8"</span><span class="p">)</span> <span class="k">if</span> <span class="n">byte_offset</span> <span class="k">else</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="byte_length"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.byte_length">[docs]</a><span class="k">def</span> <span class="nf">byte_length</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Return the string length in term of byte offset</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf8"</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="char_offset_to_byte_offset"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.char_offset_to_byte_offset">[docs]</a><span class="k">def</span> <span class="nf">char_offset_to_byte_offset</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">char_offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Convert a char offset to byte offset</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">byte_length</span><span class="p">(</span><span class="n">text</span><span class="p">[:</span><span class="n">char_offset</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Slot"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.Slot">[docs]</a><span class="k">class</span> <span class="nc">Slot</span><span class="p">:</span>
+    <span class="n">B_LABEL_PREFIX</span> <span class="o">=</span> <span class="s2">"B-"</span>
+    <span class="n">I_LABEL_PREFIX</span> <span class="o">=</span> <span class="s2">"I-"</span>
+    <span class="n">NO_LABEL_SLOT</span> <span class="o">=</span> <span class="s2">"NoLabel"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">end</span>
+
+<div class="viewcode-block" id="Slot.token_overlap"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.Slot.token_overlap">[docs]</a>    <span class="k">def</span> <span class="nf">token_overlap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_start</span><span class="p">,</span> <span class="n">token_end</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">token_end</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">token_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">))</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">token_end</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">token_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span></div>
+
+<div class="viewcode-block" id="Slot.token_label"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.Slot.token_label">[docs]</a>    <span class="k">def</span> <span class="nf">token_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_bio_labels</span><span class="p">,</span> <span class="n">token_start</span><span class="p">,</span> <span class="n">token_end</span><span class="p">):</span>
+        <span class="n">token_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span>
+        <span class="n">token_overlap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_overlap</span><span class="p">(</span><span class="n">token_start</span><span class="p">,</span> <span class="n">token_end</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">use_bio_labels</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">token_start</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="ow">and</span> <span class="n">token_overlap</span><span class="p">:</span>
+                <span class="n">token_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_label_name</span>
+            <span class="k">elif</span> <span class="n">token_start</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="ow">and</span> <span class="n">token_overlap</span><span class="p">:</span>
+                <span class="n">token_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_label_name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">token_overlap</span><span class="p">:</span>
+                <span class="n">token_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span>
+        <span class="k">return</span> <span class="n">token_label</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">b_label_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"{}{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B_LABEL_PREFIX</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">i_label_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"{}{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">I_LABEL_PREFIX</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"{}:{}:{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_slot_string"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.parse_slot_string">[docs]</a><span class="k">def</span> <span class="nf">parse_slot_string</span><span class="p">(</span><span class="n">slots_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Slot</span><span class="p">]:</span>
+    <span class="n">slots</span> <span class="o">=</span> <span class="n">slots_field</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">slots_field</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="n">slot_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">slots</span><span class="p">:</span>
+        <span class="n">slot_toks</span> <span class="o">=</span> <span class="n">slot</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">slot_toks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">curr_slot</span> <span class="o">=</span> <span class="n">Slot</span><span class="p">(</span><span class="n">slot_toks</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">slot_toks</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">slot_toks</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">slot_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_slot</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">slot_list</span></div>
+
+
+<div class="viewcode-block" id="parse_token"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.parse_token">[docs]</a><span class="k">def</span> <span class="nf">parse_token</span><span class="p">(</span>
+    <span class="n">utterance</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token_range</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]:</span>
+    <span class="n">range_bounds</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">token_range</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">token_range</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">token_range</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">utterance</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">e</span><span class="p">],</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span> <span class="k">for</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="ow">in</span> <span class="n">range_bounds</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="parse_json_array"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.parse_json_array">[docs]</a><span class="k">def</span> <span class="nf">parse_json_array</span><span class="p">(</span><span class="n">json_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_text</span><span class="p">)</span></div>
+
+
+<span class="c1"># In order to process each field independently, we need to align slot labels</span>
+<div class="viewcode-block" id="align_slot_labels"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.align_slot_labels">[docs]</a><span class="k">def</span> <span class="nf">align_slot_labels</span><span class="p">(</span>
+    <span class="n">token_ranges</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">slots_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use_bio_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">parse_and_align_slot_labels_list</span><span class="p">(</span><span class="n">token_ranges</span><span class="p">,</span> <span class="n">slots_field</span><span class="p">,</span> <span class="n">use_bio_labels</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_and_align_slot_labels_list"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.parse_and_align_slot_labels_list">[docs]</a><span class="k">def</span> <span class="nf">parse_and_align_slot_labels_list</span><span class="p">(</span>
+    <span class="n">token_ranges</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">slots_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use_bio_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="p">):</span>
+    <span class="n">slots_field</span> <span class="o">=</span> <span class="n">slots_field</span> <span class="ow">or</span> <span class="s2">""</span>
+    <span class="n">slot_list</span> <span class="o">=</span> <span class="n">parse_slot_string</span><span class="p">(</span><span class="n">slots_field</span><span class="p">)</span>
+
+    <span class="n">token_labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span> <span class="ow">in</span> <span class="n">token_ranges</span><span class="p">:</span>
+        <span class="n">tok_label</span> <span class="o">=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span>
+        <span class="n">max_overlap</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slot_list</span><span class="p">:</span>
+            <span class="n">curr_overlap</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">token_overlap</span><span class="p">(</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">curr_overlap</span> <span class="o">&gt;</span> <span class="n">max_overlap</span><span class="p">:</span>
+                <span class="n">max_overlap</span> <span class="o">=</span> <span class="n">curr_overlap</span>
+                <span class="n">tok_label</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">token_label</span><span class="p">(</span><span class="n">use_bio_labels</span><span class="p">,</span> <span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span><span class="p">)</span>
+        <span class="n">token_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tok_label</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">token_labels</span></div>
+
+
+<div class="viewcode-block" id="ResultRow"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.ResultRow">[docs]</a><span class="k">class</span> <span class="nc">ResultRow</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">metrics_dict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">for</span> <span class="n">m_name</span><span class="p">,</span> <span class="n">m_val</span> <span class="ow">in</span> <span class="n">metrics_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m_name</span><span class="p">,</span> <span class="n">m_val</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ResultTable"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.ResultTable">[docs]</a><span class="k">class</span> <span class="nc">ResultTable</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">class_names</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">preds</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">class_n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">class_names</span><span class="p">):</span>
+            <span class="n">metrics_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">metrics_dict</span><span class="p">[</span><span class="s2">"num_samples"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">metrics_dict</span><span class="p">[</span><span class="s2">"num_correct"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">==</span> <span class="n">i</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">preds</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">metrics_dict</span><span class="p">[</span><span class="s2">"precision"</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">metrics_dict</span><span class="p">[</span><span class="s2">"recall"</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">metrics_dict</span><span class="p">[</span><span class="s2">"f1"</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ResultRow</span><span class="p">(</span><span class="n">class_n</span><span class="p">,</span> <span class="n">metrics_dict</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="strip_bio_prefix"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.strip_bio_prefix">[docs]</a><span class="k">def</span> <span class="nf">strip_bio_prefix</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">Slot</span><span class="o">.</span><span class="n">B_LABEL_PREFIX</span><span class="p">)</span> <span class="ow">or</span> <span class="n">label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">Slot</span><span class="o">.</span><span class="n">I_LABEL_PREFIX</span><span class="p">):</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">Slot</span><span class="o">.</span><span class="n">B_LABEL_PREFIX</span><span class="p">)</span> <span class="p">:]</span>
+    <span class="k">return</span> <span class="n">label</span></div>
+
+
+<div class="viewcode-block" id="merge_token_labels_by_bio"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.merge_token_labels_by_bio">[docs]</a><span class="k">def</span> <span class="nf">merge_token_labels_by_bio</span><span class="p">(</span><span class="n">token_ranges</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="n">summary_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">previous_B</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+        <span class="c1"># Take action only if the prefix is not i</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">Slot</span><span class="o">.</span><span class="n">I_LABEL_PREFIX</span><span class="p">):</span>
+            <span class="c1"># Label the previous chunk</span>
+            <span class="k">if</span> <span class="n">previous_B</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">begin</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">previous_B</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="s2">":"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">),</span> <span class="n">strip_bio_prefix</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])])</span>
+                <span class="p">)</span>
+            <span class="c1"># Assign the begin location of new chunk</span>
+            <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">Slot</span><span class="o">.</span><span class="n">B_LABEL_PREFIX</span><span class="p">):</span>
+                <span class="n">previous_B</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># label == Slot.NO_LABEL_SLOT</span>
+                <span class="n">previous_B</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c1"># Take last token into account</span>
+    <span class="k">if</span> <span class="n">previous_B</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">begin</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">previous_B</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">":"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">),</span> <span class="n">strip_bio_prefix</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">summary_list</span></div>
+
+
+<div class="viewcode-block" id="merge_token_labels_by_label"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.merge_token_labels_by_label">[docs]</a><span class="k">def</span> <span class="nf">merge_token_labels_by_label</span><span class="p">(</span><span class="n">token_ranges</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="c1"># no bio prefix in labels</span>
+    <span class="n">begin</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">summary_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)):</span>
+        <span class="c1"># Extend</span>
+        <span class="k">if</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">:</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Update and start new</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">":"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">),</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]))</span>
+            <span class="n">begin</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Update and skip</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">":"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">),</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]))</span>
+
+        <span class="c1"># Skip</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">begin</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">token_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Take last token into account</span>
+    <span class="k">if</span> <span class="n">labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Slot</span><span class="o">.</span><span class="n">NO_LABEL_SLOT</span><span class="p">:</span>
+        <span class="n">summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">":"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">),</span> <span class="n">labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]))</span>
+
+    <span class="k">return</span> <span class="n">summary_list</span></div>
+
+
+<div class="viewcode-block" id="merge_token_labels_to_slot"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.merge_token_labels_to_slot">[docs]</a><span class="k">def</span> <span class="nf">merge_token_labels_to_slot</span><span class="p">(</span><span class="n">token_ranges</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">use_bio_label</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="c1"># ensures that all labels, some of which may be SpecialToken tyeps,</span>
+    <span class="c1"># are normalized to string for the metric reporter</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+    <span class="n">summary_list</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">merge_token_labels_by_bio</span><span class="p">(</span><span class="n">token_ranges</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">use_bio_label</span>
+        <span class="k">else</span> <span class="n">merge_token_labels_by_label</span><span class="p">(</span><span class="n">token_ranges</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">summary_list</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_number"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.is_number">[docs]</a><span class="k">def</span> <span class="nf">is_number</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">float</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">unicodedata</span><span class="o">.</span><span class="n">numeric</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+
+<div class="viewcode-block" id="unkify"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.data.unkify">[docs]</a><span class="k">def</span> <span class="nf">unkify</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="s2">"&lt;unk&gt;"</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">token</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="s2">"&lt;unk&gt;-NUM"</span>
+
+    <span class="k">return</span> <span class="n">res</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

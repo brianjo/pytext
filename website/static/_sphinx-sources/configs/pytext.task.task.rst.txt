@@ -1,0 +1,8 @@
+task
+====
+
+
+.. toctree::
+
+  pytext.task.task.TaskBase.Config
+  pytext.task.task.Task_Deprecated.Config

@@ -1,0 +1,7 @@
+docnn
+=====
+
+
+.. toctree::
+
+  pytext.models.representations.docnn.DocNNRepresentation.Config

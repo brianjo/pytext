@@ -1,0 +1,1005 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-optimizer-package">
+<h1>pytext.optimizer package<a class="headerlink" href="#pytext-optimizer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytext.optimizer.sparsifiers.html">pytext.optimizer.sparsifiers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#module-pytext.optimizer.sparsifiers.blockwise_sparsifier">pytext.optimizer.sparsifiers.blockwise_sparsifier module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#module-pytext.optimizer.sparsifiers.sparsifier">pytext.optimizer.sparsifiers.sparsifier module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.sparsifiers.html#module-pytext.optimizer.sparsifiers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.optimizer.activations">
+<span id="pytext-optimizer-activations-module"></span><h2>pytext.optimizer.activations module<a class="headerlink" href="#module-pytext.optimizer.activations" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.activations.GeLU">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.activations.</code><code class="sig-name descname">GeLU</code><a class="reference internal" href="../_modules/pytext/optimizer/activations.html#GeLU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.activations.GeLU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Implements Gaussian Error Linear Units (GELUs).</p>
+<p>Reference:
+Gaussian Error Linear Units (GELUs). Dan Hendrycks, Kevin Gimpel.
+Technical Report, 2017. <a class="reference external" href="https://arxiv.org/pdf/1606.08415.pdf">https://arxiv.org/pdf/1606.08415.pdf</a></p>
+<dl class="method">
+<dt id="pytext.optimizer.activations.GeLU.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/activations.html#GeLU.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.activations.GeLU.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.activations.get_activation">
+<code class="sig-prename descclassname">pytext.optimizer.activations.</code><code class="sig-name descname">get_activation</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/activations.html#get_activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.activations.get_activation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.fairseq_fp16_utils">
+<span id="pytext-optimizer-fairseq-fp16-utils-module"></span><h2>pytext.optimizer.fairseq_fp16_utils module<a class="headerlink" href="#module-pytext.optimizer.fairseq_fp16_utils" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fairseq_fp16_utils.</code><code class="sig-name descname">Fairseq_FP16OptimizerMixin</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.backward">
+<code class="sig-name descname">backward</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.backward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the sum of gradients of the given tensor w.r.t. graph leaves.</p>
+<p>Compared to <code class="xref py py-func docutils literal notranslate"><span class="pre">fairseq.optim.FairseqOptimizer.backward()</span></code>, this
+function additionally dynamically scales the loss to avoid gradient
+underflow.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.build_fp32_params">
+<em class="property">classmethod </em><code class="sig-name descname">build_fp32_params</code><span class="sig-paren">(</span><em class="sig-param">params</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.build_fp32_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.build_fp32_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clips gradient norm and updates dynamic loss scaler.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em>, <em class="sig-param">optimizer_overrides=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an optimizer state dict.</p>
+<p>In general we should prefer the configuration of the existing optimizer
+instance (e.g., learning rate) over that found in the state_dict. This
+allows us to resume training from a checkpoint using a new set of
+optimizer args.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.multiply_grads">
+<code class="sig-name descname">multiply_grads</code><span class="sig-paren">(</span><em class="sig-param">c</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.multiply_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.multiply_grads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiplies grads by a constant <code class="docutils literal notranslate"><span class="pre">c</span></code>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.state_dict">
+<code class="sig-name descname">state_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the optimizer’s state dict.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a single optimization step.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.zero_grad">
+<code class="sig-name descname">zero_grad</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_FP16OptimizerMixin.zero_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.zero_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the gradients of all optimized parameters.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fairseq_fp16_utils.</code><code class="sig-name descname">Fairseq_MemoryEfficientFP16OptimizerMixin</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.backward">
+<code class="sig-name descname">backward</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.backward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the sum of gradients of the given tensor w.r.t. graph leaves.</p>
+<p>Compared to <code class="xref py py-func docutils literal notranslate"><span class="pre">fairseq.optim.FairseqOptimizer.backward()</span></code>, this
+function additionally dynamically scales the loss to avoid gradient
+underflow.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clips gradient norm and updates dynamic loss scaler.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em>, <em class="sig-param">optimizer_overrides=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an optimizer state dict.</p>
+<p>In general we should prefer the configuration of the existing optimizer
+instance (e.g., learning rate) over that found in the state_dict. This
+allows us to resume training from a checkpoint using a new set of
+optimizer args.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.multiply_grads">
+<code class="sig-name descname">multiply_grads</code><span class="sig-paren">(</span><em class="sig-param">c</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.multiply_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.multiply_grads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiplies grads by a constant <em>c</em>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.state_dict">
+<code class="sig-name descname">state_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the optimizer’s state dict.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a single optimization step.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.zero_grad">
+<code class="sig-name descname">zero_grad</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fairseq_fp16_utils.html#Fairseq_MemoryEfficientFP16OptimizerMixin.zero_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.zero_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the gradients of all optimized parameters.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.fp16_optimizer">
+<span id="pytext-optimizer-fp16-optimizer-module"></span><h2>pytext.optimizer.fp16_optimizer module<a class="headerlink" href="#module-pytext.optimizer.fp16_optimizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">DynamicLossScaler</code><span class="sig-paren">(</span><em class="sig-param">init_scale</em>, <em class="sig-param">scale_factor</em>, <em class="sig-param">scale_window</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler.check_overflow">
+<code class="sig-name descname">check_overflow</code><span class="sig-paren">(</span><em class="sig-param">params</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler.check_overflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler.check_overflow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler.check_overflow_">
+<code class="sig-name descname">check_overflow_</code><span class="sig-paren">(</span><em class="sig-param">grad</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler.check_overflow_"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler.check_overflow_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler.unscale">
+<code class="sig-name descname">unscale</code><span class="sig-paren">(</span><em class="sig-param">grad</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler.unscale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler.unscale" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler.unscale_grads">
+<code class="sig-name descname">unscale_grads</code><span class="sig-paren">(</span><em class="sig-param">param_groups</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler.unscale_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler.unscale_grads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler.update_scale">
+<code class="sig-name descname">update_scale</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler.update_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler.update_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>According to overflow situation, adjust loss scale.</p>
+<p>Once overflow happened, we decrease the scale by scale_factor.
+Setting tolerance is another approach depending on cases.</p>
+<p>If we haven’t had overflows for #scale_window times, we should increase
+the scale by scale_factor.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.DynamicLossScaler.upscale">
+<code class="sig-name descname">upscale</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#DynamicLossScaler.upscale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.DynamicLossScaler.upscale" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">FP16Optimizer</code><span class="sig-paren">(</span><em class="sig-param">fp32_optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.backward">
+<code class="sig-name descname">backward</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.backward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.backward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em>, <em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.finalize">
+<code class="sig-name descname">finalize</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.finalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.finalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.param_groups">
+<em class="property">property </em><code class="sig-name descname">param_groups</code><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.param_groups" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.pre_export">
+<code class="sig-name descname">pre_export</code><span class="sig-paren">(</span><em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.pre_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.pre_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.state_dict">
+<code class="sig-name descname">state_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16Optimizer.zero_grad">
+<code class="sig-name descname">zero_grad</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16Optimizer.zero_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer.zero_grad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">FP16OptimizerApex</code><span class="sig-paren">(</span><em class="sig-param">fp32_optimizer: pytext.optimizer.optimizers.Optimizer, model: torch.nn.modules.module.Module, opt_level: str, init_loss_scale: Optional[int], min_loss_scale: Optional[float]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer" title="pytext.optimizer.fp16_optimizer.FP16Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.fp16_optimizer.FP16Optimizer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.backward">
+<code class="sig-name descname">backward</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.backward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.backward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em>, <em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">fp16_config: pytext.optimizer.fp16_optimizer.FP16OptimizerApex.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">fp32_config: pytext.optimizer.optimizers.Optimizer.Config</em>, <em class="sig-param">*unused</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.pre_export">
+<code class="sig-name descname">pre_export</code><span class="sig-paren">(</span><em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.pre_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.pre_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.state_dict">
+<code class="sig-name descname">state_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.zero_grad">
+<code class="sig-name descname">zero_grad</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerApex.zero_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerApex.zero_grad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">FP16OptimizerDeprecated</code><span class="sig-paren">(</span><em class="sig-param">init_optimizer</em>, <em class="sig-param">init_scale</em>, <em class="sig-param">scale_factor</em>, <em class="sig-param">scale_window</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.finalize">
+<code class="sig-name descname">finalize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated.finalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.finalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.scale_loss">
+<code class="sig-name descname">scale_loss</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated.scale_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.scale_loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.state_dict">
+<code class="sig-name descname">state_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated.state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Realize weights update.</p>
+<p>Update the grads from model to master. During iteration for parameters,
+we check overflow after floating grads and copy. Then do unscaling.</p>
+<p>If overflow doesn’t happen, call inner optimizer’s step() and copy
+back the updated weights from inner optimizer to model.</p>
+<p>Update loss scale according to overflow checking result.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.zero_grad">
+<code class="sig-name descname">zero_grad</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerDeprecated.zero_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated.zero_grad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">FP16OptimizerFairseq</code><span class="sig-paren">(</span><em class="sig-param">fp16_params</em>, <em class="sig-param">fp32_optimizer</em>, <em class="sig-param">init_loss_scale</em>, <em class="sig-param">scale_window</em>, <em class="sig-param">scale_tolerance</em>, <em class="sig-param">threshold_loss_scale</em>, <em class="sig-param">min_loss_scale</em>, <em class="sig-param">num_accumulated_batches</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerFairseq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">fairseq.optim.fp16_optimizer._FP16OptimizerMixin</span></code>, <a class="reference internal" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer" title="pytext.optimizer.fp16_optimizer.FP16Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.fp16_optimizer.FP16Optimizer</span></code></a></p>
+<p>Wrap an <em>optimizer</em> to support FP16 (mixed precision) training.</p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em>, <em class="sig-param">unused_model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerFairseq.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clips gradient norm and updates dynamic loss scaler.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">fp16_config: pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">fp32_config: pytext.optimizer.optimizers.Optimizer.Config</em>, <em class="sig-param">num_accumulated_batches: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerFairseq.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.pre_export">
+<code class="sig-name descname">pre_export</code><span class="sig-paren">(</span><em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#FP16OptimizerFairseq.pre_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.pre_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.GeneratorFP16Optimizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">GeneratorFP16Optimizer</code><span class="sig-paren">(</span><em class="sig-param">init_optimizer</em>, <em class="sig-param">init_scale=65536.0</em>, <em class="sig-param">scale_factor=2</em>, <em class="sig-param">scale_window=2000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#GeneratorFP16Optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.GeneratorFP16Optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.fp16_optimizer.PureFP16Optimizer" title="pytext.optimizer.fp16_optimizer.PureFP16Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.fp16_optimizer.PureFP16Optimizer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.GeneratorFP16Optimizer.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#GeneratorFP16Optimizer.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.GeneratorFP16Optimizer.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an optimizer state dict.</p>
+<p>We prefer the configuration of the existing optimizer instance.
+After we load state dict to inner_optimizer, we create the copy of
+references of parameters again as in init().</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.GeneratorFP16Optimizer.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#GeneratorFP16Optimizer.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.GeneratorFP16Optimizer.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates weights.</p>
+<dl>
+<dt>Effects:</dt><dd><p>Check overflow, if not, when inner_optimizer supports memory-effcient
+step, do overall unscale and call memory-efficient step.</p>
+<p>If it doesn’t support, modify each parameter list in param_groups
+of inner_optimizer to a generator of the tensors. Call normal step
+then, data type changing will be added automatically in that function.</p>
+<p>No matter whether it is overflow, we need to update scale at the
+last step.</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">MemoryEfficientFP16OptimizerFairseq</code><span class="sig-paren">(</span><em class="sig-param">fp16_params</em>, <em class="sig-param">optimizer</em>, <em class="sig-param">init_loss_scale</em>, <em class="sig-param">scale_window</em>, <em class="sig-param">scale_tolerance</em>, <em class="sig-param">threshold_loss_scale</em>, <em class="sig-param">min_loss_scale</em>, <em class="sig-param">num_accumulated_batches</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#MemoryEfficientFP16OptimizerFairseq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">fairseq.optim.fp16_optimizer._MemoryEfficientFP16OptimizerMixin</span></code>, <a class="reference internal" href="#pytext.optimizer.fp16_optimizer.FP16Optimizer" title="pytext.optimizer.fp16_optimizer.FP16Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.fp16_optimizer.FP16Optimizer</span></code></a></p>
+<p>Wrap the mem efficient <em>optimizer</em> to support FP16 (mixed precision) training.</p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em>, <em class="sig-param">unused_model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#MemoryEfficientFP16OptimizerFairseq.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clips gradient norm and updates dynamic loss scaler.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">fp16_config: pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em>, <em class="sig-param">fp32_config: pytext.optimizer.optimizers.Optimizer.Config</em>, <em class="sig-param">num_accumulated_batches: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#MemoryEfficientFP16OptimizerFairseq.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.pre_export">
+<code class="sig-name descname">pre_export</code><span class="sig-paren">(</span><em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#MemoryEfficientFP16OptimizerFairseq.pre_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.pre_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.fp16_optimizer.PureFP16Optimizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">PureFP16Optimizer</code><span class="sig-paren">(</span><em class="sig-param">init_optimizer</em>, <em class="sig-param">init_scale=65536.0</em>, <em class="sig-param">scale_factor=2</em>, <em class="sig-param">scale_window=2000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#PureFP16Optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.PureFP16Optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated" title="pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.fp16_optimizer.FP16OptimizerDeprecated</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.PureFP16Optimizer.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#PureFP16Optimizer.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.PureFP16Optimizer.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an optimizer state dict.</p>
+<p>We prefer the configuration of the existing optimizer instance.
+Realize the same logic as in init() – point the param_groups of outer
+optimizer to that of the inner_optimizer.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.PureFP16Optimizer.scale_loss">
+<code class="sig-name descname">scale_loss</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#PureFP16Optimizer.scale_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.PureFP16Optimizer.scale_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale the loss.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss</strong> (<em>pytext.Loss</em>) – loss function object</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.fp16_optimizer.PureFP16Optimizer.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#PureFP16Optimizer.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.PureFP16Optimizer.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the weights in inner optimizer.</p>
+<p>If inner optimizer supports memory efficient, check overflow,
+unscale and call advanced step.</p>
+<p>Otherwise, float weights and grads, check whether grads are overflow
+during the iteration, if not overflow, unscale grads and call inner
+optimizer’s step; If overflow happens, do nothing, wait to the end
+to call half weights and grads (grads will be eliminated in zero_grad)</p>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.fp16_optimizer.convert_generator">
+<code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">convert_generator</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">scale</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#convert_generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.convert_generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the generator for parameter tensors.</p>
+<p>For each parameter, we float and unscale it. After the caller calls next(),
+we realize the half process and start next parameter’s processing.</p>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.fp16_optimizer.generate_params">
+<code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">generate_params</code><span class="sig-paren">(</span><em class="sig-param">param_groups</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#generate_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.generate_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.fp16_optimizer.initialize">
+<code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">initialize</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">optimizer</em>, <em class="sig-param">opt_level</em>, <em class="sig-param">init_scale=65536</em>, <em class="sig-param">scale_factor=2.0</em>, <em class="sig-param">scale_window=2000</em>, <em class="sig-param">memory_efficient=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.initialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.fp16_optimizer.master_params">
+<code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">master_params</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#master_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.master_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.fp16_optimizer.scale_loss">
+<code class="sig-prename descclassname">pytext.optimizer.fp16_optimizer.</code><code class="sig-name descname">scale_loss</code><span class="sig-paren">(</span><em class="sig-param">loss</em>, <em class="sig-param">optimizer</em>, <em class="sig-param">delay_unscale=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/fp16_optimizer.html#scale_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.fp16_optimizer.scale_loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.lamb">
+<span id="pytext-optimizer-lamb-module"></span><h2>pytext.optimizer.lamb module<a class="headerlink" href="#module-pytext.optimizer.lamb" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.lamb.Lamb">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.lamb.</code><code class="sig-name descname">Lamb</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">lr=0.001</em>, <em class="sig-param">betas=(0.9</em>, <em class="sig-param">0.999)</em>, <em class="sig-param">eps=1e-06</em>, <em class="sig-param">weight_decay=0</em>, <em class="sig-param">min_trust=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/lamb.html#Lamb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.lamb.Lamb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
+<p>Implements Lamb algorithm.
+THIS WAS DIRECTLY COPIED OVER FROM pytorch/contrib:
+<a class="reference external" href="https://github.com/cybertronai/pytorch-lamb">https://github.com/cybertronai/pytorch-lamb</a>
+It has been proposed in <cite>Large Batch Optimization for Deep Learning: Training BERT in 76 minutes</cite>.
+<a class="reference external" href="https://arxiv.org/abs/1904.00962">https://arxiv.org/abs/1904.00962</a></p>
+<p>Has the option for minimum trust LAMB as described in “Single Headed
+Attention RNN: Stop Thinking With Your Head” section 6.3
+<a class="reference external" href="https://arxiv.org/abs/1911.11423">https://arxiv.org/abs/1911.11423</a></p>
+<dl class="method">
+<dt id="pytext.optimizer.lamb.Lamb.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.lamb.Lamb.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/lamb.html#Lamb.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.lamb.Lamb.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.lamb.Lamb.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/lamb.html#Lamb.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.lamb.Lamb.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a single optimization step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>closure</strong> (<em>callable</em><em>, </em><em>optional</em>) – A closure that reevaluates the model
+and returns the loss.</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.optimizers">
+<span id="pytext-optimizer-optimizers-module"></span><h2>pytext.optimizer.optimizers module<a class="headerlink" href="#module-pytext.optimizer.optimizers" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.optimizers.Adagrad">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.optimizers.</code><code class="sig-name descname">Adagrad</code><span class="sig-paren">(</span><em class="sig-param">parameters</em>, <em class="sig-param">lr</em>, <em class="sig-param">weight_decay</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Adagrad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Adagrad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.adagrad.Adagrad</span></code>, <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Adagrad.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.optimizers.Adagrad.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Adagrad.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Adagrad.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.optimizers.Adam">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.optimizers.</code><code class="sig-name descname">Adam</code><span class="sig-paren">(</span><em class="sig-param">parameters</em>, <em class="sig-param">lr</em>, <em class="sig-param">weight_decay</em>, <em class="sig-param">eps</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Adam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Adam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.adam.Adam</span></code>, <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Adam.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.optimizers.Adam.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Adam.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Adam.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.optimizers.AdamW">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.optimizers.</code><code class="sig-name descname">AdamW</code><span class="sig-paren">(</span><em class="sig-param">parameters</em>, <em class="sig-param">lr</em>, <em class="sig-param">weight_decay</em>, <em class="sig-param">eps</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#AdamW"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.AdamW" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.adamw.AdamW</span></code>, <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a></p>
+<p>Adds PyText support for
+Decoupled Weight Decay Regularization for Adam as done in the paper:
+<a class="reference external" href="https://arxiv.org/abs/1711.05101">https://arxiv.org/abs/1711.05101</a>
+for more information read the fast.ai blog on this optimization
+method here: <a class="reference external" href="https://www.fast.ai/2018/07/02/adam-weight-decay/">https://www.fast.ai/2018/07/02/adam-weight-decay/</a></p>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.AdamW.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.optimizers.AdamW.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#AdamW.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.AdamW.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.optimizers.Optimizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.optimizers.</code><code class="sig-name descname">Optimizer</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Optimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Optimizer.backward">
+<code class="sig-name descname">backward</code><span class="sig-paren">(</span><em class="sig-param">loss</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Optimizer.backward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer.backward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Optimizer.clip_grad_norm">
+<code class="sig-name descname">clip_grad_norm</code><span class="sig-paren">(</span><em class="sig-param">max_norm</em>, <em class="sig-param">model=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Optimizer.clip_grad_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer.clip_grad_norm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Optimizer.finalize">
+<code class="sig-name descname">finalize</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → bool<a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Optimizer.finalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer.finalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Optimizer.multiply_grads">
+<code class="sig-name descname">multiply_grads</code><span class="sig-paren">(</span><em class="sig-param">c</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Optimizer.multiply_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer.multiply_grads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiplies grads by a constant <em>c</em>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Optimizer.params">
+<em class="property">property </em><code class="sig-name descname">params</code><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer.params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an iterable of the parameters held by the optimizer.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.Optimizer.pre_export">
+<code class="sig-name descname">pre_export</code><span class="sig-paren">(</span><em class="sig-param">model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#Optimizer.pre_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.Optimizer.pre_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.optimizers.SGD">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.optimizers.</code><code class="sig-name descname">SGD</code><span class="sig-paren">(</span><em class="sig-param">parameters</em>, <em class="sig-param">lr</em>, <em class="sig-param">momentum</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#SGD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.SGD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.sgd.SGD</span></code>, <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.optimizers.SGD.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.optimizers.SGD.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#SGD.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.SGD.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.optimizer.optimizers.learning_rates">
+<code class="sig-prename descclassname">pytext.optimizer.optimizers.</code><code class="sig-name descname">learning_rates</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/optimizers.html#learning_rates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.optimizers.learning_rates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.radam">
+<span id="pytext-optimizer-radam-module"></span><h2>pytext.optimizer.radam module<a class="headerlink" href="#module-pytext.optimizer.radam" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.radam.RAdam">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.radam.</code><code class="sig-name descname">RAdam</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">lr=0.001</em>, <em class="sig-param">betas=(0.9</em>, <em class="sig-param">0.999)</em>, <em class="sig-param">eps=1e-08</em>, <em class="sig-param">weight_decay=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/radam.html#RAdam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.radam.RAdam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
+<p>Implements rectified adam as derived in the following paper:
+“On the Variance of the Adaptive Learning Rate and Beyond”
+(<a class="reference external" href="https://arxiv.org/abs/1908.03265">https://arxiv.org/abs/1908.03265</a>)</p>
+<p>This code is mostly a direct copy-paste of the code provided by the authors here:
+<a class="reference external" href="https://github.com/LiyuanLucasLiu/RAdam/blob/master/radam.py">https://github.com/LiyuanLucasLiu/RAdam/blob/master/radam.py</a></p>
+<dl class="method">
+<dt id="pytext.optimizer.radam.RAdam.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.radam.RAdam.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/radam.html#RAdam.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.radam.RAdam.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.radam.RAdam.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/radam.html#RAdam.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.radam.RAdam.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a single optimization step (parameter update).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>closure</strong> (<em>callable</em>) – A closure that reevaluates the model and
+returns the loss. Optional for most optimizers.</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.scheduler">
+<span id="pytext-optimizer-scheduler-module"></span><h2>pytext.optimizer.scheduler module<a class="headerlink" href="#module-pytext.optimizer.scheduler" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.BatchScheduler">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">BatchScheduler</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#BatchScheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.BatchScheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.scheduler.Scheduler" title="pytext.optimizer.scheduler.Scheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.Scheduler</span></code></a></p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.BatchScheduler.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">total_epochs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#BatchScheduler.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.BatchScheduler.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.CosineAnnealingLR">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">CosineAnnealingLR</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">T_max</em>, <em class="sig-param">eta_min=0</em>, <em class="sig-param">last_epoch=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#CosineAnnealingLR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.CosineAnnealingLR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler.CosineAnnealingLR</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.BatchScheduler" title="pytext.optimizer.scheduler.BatchScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.BatchScheduler</span></code></a></p>
+<p>Wrapper around <cite>torch.optim.lr_scheduler.CosineAnnealingLR</cite>
+See the original documentation for more details.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.CosineAnnealingLR.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.CosineAnnealingLR.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#CosineAnnealingLR.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.CosineAnnealingLR.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.CosineAnnealingLR.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><em class="sig-param">metrics=None</em>, <em class="sig-param">epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#CosineAnnealingLR.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.CosineAnnealingLR.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.CyclicLR">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">CyclicLR</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">base_lr</em>, <em class="sig-param">max_lr</em>, <em class="sig-param">step_size_up=2000</em>, <em class="sig-param">step_size_down=None</em>, <em class="sig-param">mode='triangular'</em>, <em class="sig-param">gamma=1.0</em>, <em class="sig-param">scale_fn=None</em>, <em class="sig-param">scale_mode='cycle'</em>, <em class="sig-param">cycle_momentum=True</em>, <em class="sig-param">base_momentum=0.8</em>, <em class="sig-param">max_momentum=0.9</em>, <em class="sig-param">last_epoch=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#CyclicLR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.CyclicLR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler.CyclicLR</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.BatchScheduler" title="pytext.optimizer.scheduler.BatchScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.BatchScheduler</span></code></a></p>
+<p>Wrapper around <cite>torch.optim.lr_scheduler.CyclicLR</cite>
+See the original documentation for more details</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.CyclicLR.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.CyclicLR.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#CyclicLR.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.CyclicLR.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.CyclicLR.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><em class="sig-param">metrics=None</em>, <em class="sig-param">epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#CyclicLR.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.CyclicLR.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.ExponentialLR">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">ExponentialLR</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">gamma</em>, <em class="sig-param">last_epoch=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#ExponentialLR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.ExponentialLR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler.ExponentialLR</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.Scheduler" title="pytext.optimizer.scheduler.Scheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.Scheduler</span></code></a></p>
+<p>Wrapper around <cite>torch.optim.lr_scheduler.ExponentialLR</cite>
+See the original documentation for more details.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.ExponentialLR.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.ExponentialLR.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#ExponentialLR.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.ExponentialLR.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.ExponentialLR.step_epoch">
+<code class="sig-name descname">step_epoch</code><span class="sig-paren">(</span><em class="sig-param">metrics=None</em>, <em class="sig-param">epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#ExponentialLR.step_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.ExponentialLR.step_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.LmFineTuning">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">LmFineTuning</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">cut_frac=0.1</em>, <em class="sig-param">ratio=32</em>, <em class="sig-param">non_pretrained_param_groups=2</em>, <em class="sig-param">lm_lr_multiplier=1.0</em>, <em class="sig-param">lm_use_per_layer_lr=False</em>, <em class="sig-param">lm_gradual_unfreezing=True</em>, <em class="sig-param">last_epoch=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#LmFineTuning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.LmFineTuning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.BatchScheduler" title="pytext.optimizer.scheduler.BatchScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.BatchScheduler</span></code></a></p>
+<p>Fine-tuning methods from the paper
+“[arXiv:1801.06146]Universal Language Model Fine-tuning for Text Classification”.</p>
+<p>Specifically, modifies training schedule using slanted triangular learning rates,
+discriminative fine-tuning (per-layer learning rates), and gradual unfreezing.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.LmFineTuning.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.LmFineTuning.Config</em>, <em class="sig-param">optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#LmFineTuning.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.LmFineTuning.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.LmFineTuning.get_lr">
+<code class="sig-name descname">get_lr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#LmFineTuning.get_lr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.LmFineTuning.get_lr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.LmFineTuning.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><em class="sig-param">metrics=None</em>, <em class="sig-param">epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#LmFineTuning.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.LmFineTuning.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.PolynomialDecayScheduler">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">PolynomialDecayScheduler</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">warmup_steps</em>, <em class="sig-param">total_steps</em>, <em class="sig-param">end_learning_rate</em>, <em class="sig-param">power</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#PolynomialDecayScheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.PolynomialDecayScheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.BatchScheduler" title="pytext.optimizer.scheduler.BatchScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.BatchScheduler</span></code></a></p>
+<p>Applies a polynomial decay with lr warmup to the learning rate.</p>
+<p>It is commonly observed that a monotonically decreasing learning rate, whose
+degree of change is carefully chosen, results in a better performing model.</p>
+<p>This scheduler linearly increase learning rate from 0 to final value at the
+beginning of training, determined by warmup_steps.
+Then it applies a polynomial decay function to an optimizer step, given a
+provided <cite>base_lrs</cite> to reach an <cite>end_learning_rate</cite> after <cite>total_steps</cite>.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.PolynomialDecayScheduler.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.PolynomialDecayScheduler.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#PolynomialDecayScheduler.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.PolynomialDecayScheduler.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.PolynomialDecayScheduler.get_lr">
+<code class="sig-name descname">get_lr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#PolynomialDecayScheduler.get_lr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.PolynomialDecayScheduler.get_lr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.PolynomialDecayScheduler.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">total_epochs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#PolynomialDecayScheduler.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.PolynomialDecayScheduler.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.PolynomialDecayScheduler.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#PolynomialDecayScheduler.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.PolynomialDecayScheduler.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.ReduceLROnPlateau">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">ReduceLROnPlateau</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">mode='min'</em>, <em class="sig-param">factor=0.1</em>, <em class="sig-param">patience=10</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">threshold=0.0001</em>, <em class="sig-param">threshold_mode='rel'</em>, <em class="sig-param">cooldown=0</em>, <em class="sig-param">min_lr=0</em>, <em class="sig-param">eps=1e-08</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#ReduceLROnPlateau"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.ReduceLROnPlateau" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler.ReduceLROnPlateau</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.Scheduler" title="pytext.optimizer.scheduler.Scheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.Scheduler</span></code></a></p>
+<p>Wrapper around <cite>torch.optim.lr_scheduler.ReduceLROnPlateau</cite>
+See the original documentation for more details.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.ReduceLROnPlateau.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.ReduceLROnPlateau.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#ReduceLROnPlateau.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.ReduceLROnPlateau.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.ReduceLROnPlateau.step_epoch">
+<code class="sig-name descname">step_epoch</code><span class="sig-paren">(</span><em class="sig-param">metrics</em>, <em class="sig-param">epoch</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#ReduceLROnPlateau.step_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.ReduceLROnPlateau.step_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.Scheduler">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">Scheduler</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#Scheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.Scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Schedulers help in adjusting the learning rate during training. Scheduler
+is a wrapper class over schedulers which can be available in torch
+library or for custom implementations. There are two kinds of lr scheduling
+that is supported by this class. Per epoch scheduling and per batch scheduling.
+In per epoch scheduling, the learning rate is adjusted at the end of each epoch
+and in per batch scheduling the learning rate is adjusted after the forward and
+backward pass through one batch during the training.</p>
+<p>There are two main methods that needs to be implemented by the Scheduler.
+step_epoch() is called at the end of each epoch and step_batch() is called
+at the end of each batch in the training data.</p>
+<p>prepare() method can be used by BatchSchedulers to initialize any attributes
+they may need.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.Scheduler.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">total_epochs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#Scheduler.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.Scheduler.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.Scheduler.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#Scheduler.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.Scheduler.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.Scheduler.step_epoch">
+<code class="sig-name descname">step_epoch</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#Scheduler.step_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.Scheduler.step_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.SchedulerWithWarmup">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">SchedulerWithWarmup</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">warmup_scheduler</em>, <em class="sig-param">scheduler</em>, <em class="sig-param">switch_steps</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#SchedulerWithWarmup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.SchedulerWithWarmup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.BatchScheduler" title="pytext.optimizer.scheduler.BatchScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.BatchScheduler</span></code></a></p>
+<p>Wraps another scheduler with a warmup phase. After <cite>warmup_steps</cite> defined in
+warmup_scheduler.warmup_steps, the scheduler will switch to use the specified
+scheduler in <cite>scheduler</cite>.</p>
+<p><cite>warmup_scheduler</cite>: is the configuration for the WarmupScheduler, that warms up
+learning rate over <cite>warmup_steps</cite> linearly.</p>
+<p><cite>scheduler</cite>: is the main scheduler that will be applied after the warmup phase
+(once <cite>warmup_steps</cite> have passed)</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.SchedulerWithWarmup.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.SchedulerWithWarmup.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#SchedulerWithWarmup.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.SchedulerWithWarmup.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.SchedulerWithWarmup.get_lr">
+<code class="sig-name descname">get_lr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#SchedulerWithWarmup.get_lr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.SchedulerWithWarmup.get_lr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.SchedulerWithWarmup.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">total_epochs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#SchedulerWithWarmup.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.SchedulerWithWarmup.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.SchedulerWithWarmup.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#SchedulerWithWarmup.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.SchedulerWithWarmup.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.SchedulerWithWarmup.step_epoch">
+<code class="sig-name descname">step_epoch</code><span class="sig-paren">(</span><em class="sig-param">metrics</em>, <em class="sig-param">epoch</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#SchedulerWithWarmup.step_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.SchedulerWithWarmup.step_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.StepLR">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">StepLR</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">step_size</em>, <em class="sig-param">gamma=0.1</em>, <em class="sig-param">last_epoch=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#StepLR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.StepLR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler.StepLR</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.Scheduler" title="pytext.optimizer.scheduler.Scheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.Scheduler</span></code></a></p>
+<p>Wrapper around <cite>torch.optim.lr_scheduler.StepLR</cite>
+See the original documentation for more details.</p>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.StepLR.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.StepLR.Config</em>, <em class="sig-param">optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#StepLR.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.StepLR.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.StepLR.step_epoch">
+<code class="sig-name descname">step_epoch</code><span class="sig-paren">(</span><em class="sig-param">metrics=None</em>, <em class="sig-param">epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#StepLR.step_epoch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.StepLR.step_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.optimizer.scheduler.WarmupScheduler">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.scheduler.</code><code class="sig-name descname">WarmupScheduler</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">warmup_steps</em>, <em class="sig-param">inverse_sqrt_decay</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#WarmupScheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.WarmupScheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code>, <a class="reference internal" href="#pytext.optimizer.scheduler.BatchScheduler" title="pytext.optimizer.scheduler.BatchScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.scheduler.BatchScheduler</span></code></a></p>
+<p>Scheduler to linearly increase the learning rate from 0 to its final value over
+a number of steps:</p>
+<blockquote>
+<div><p>lr = base_lr * current_step / warmup_steps</p>
+</div></blockquote>
+<p>After the warm-up phase, the scheduler has the option of decaying the learning
+rate as the inverse square root of the number of training steps taken:</p>
+<blockquote>
+<div><p>lr = base_lr * sqrt(warmup_steps) / sqrt(current_step)</p>
+</div></blockquote>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.WarmupScheduler.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.scheduler.WarmupScheduler.Config</em>, <em class="sig-param">optimizer: pytext.optimizer.optimizers.Optimizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#WarmupScheduler.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.WarmupScheduler.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.WarmupScheduler.get_lr">
+<code class="sig-name descname">get_lr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#WarmupScheduler.get_lr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.WarmupScheduler.get_lr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.WarmupScheduler.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><em class="sig-param">train_iter</em>, <em class="sig-param">total_epochs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#WarmupScheduler.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.WarmupScheduler.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.scheduler.WarmupScheduler.step_batch">
+<code class="sig-name descname">step_batch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/scheduler.html#WarmupScheduler.step_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.scheduler.WarmupScheduler.step_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer.swa">
+<span id="pytext-optimizer-swa-module"></span><h2>pytext.optimizer.swa module<a class="headerlink" href="#module-pytext.optimizer.swa" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.optimizer.swa.</code><code class="sig-name descname">StochasticWeightAveraging</code><span class="sig-paren">(</span><em class="sig-param">optimizer</em>, <em class="sig-param">swa_start=None</em>, <em class="sig-param">swa_freq=None</em>, <em class="sig-param">swa_lr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.optimizer.optimizers.Optimizer" title="pytext.optimizer.optimizers.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.optimizer.optimizers.Optimizer</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.add_param_group">
+<code class="sig-name descname">add_param_group</code><span class="sig-paren">(</span><em class="sig-param">param_group</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.add_param_group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.add_param_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a param group to the <code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code> s <cite>param_groups</cite>.</p>
+<p>This can be useful when fine tuning a pre-trained network as frozen
+layers can be made trainable and added to the <code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code> as
+training progresses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_group</strong> (<em>dict</em>) – Specifies what Tensors should be optimized along</p></li>
+<li><p><strong>group specific optimization options.</strong> (<em>with</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.bn_update">
+<em class="property">static </em><code class="sig-name descname">bn_update</code><span class="sig-paren">(</span><em class="sig-param">loader</em>, <em class="sig-param">model</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.bn_update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.bn_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates BatchNorm running_mean, running_var buffers in the model.</p>
+<p>It performs one pass over data in <cite>loader</cite> to estimate the activation
+statistics for BatchNorm layers in the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loader</strong> (<em>torch.utils.data.DataLoader</em>) – dataset loader to compute the
+activation statistics on. Each data batch should be either a
+tensor, or a list/tuple whose first element is a tensor
+containing data.</p></li>
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – model for which we seek to update BatchNorm
+statistics.</p></li>
+<li><p><strong>device</strong> (<em>torch.device</em><em>, </em><em>optional</em>) – If set, data will be trasferred to
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">device</span></code> before being passed into <code class="xref py py-attr docutils literal notranslate"><span class="pre">model</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.finalize">
+<code class="sig-name descname">finalize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.finalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.finalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Swaps the values of the optimized variables and swa buffers.</p>
+<p>It’s meant to be called in the end of training to use the collected
+swa running averages. It can also be used to evaluate the running
+averages during training; to continue training <cite>swap_swa_sgd</cite>
+should be called again.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.optimizer.swa.StochasticWeightAveraging.Config</em>, <em class="sig-param">model: torch.nn.modules.module.Module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.load_state_dict">
+<code class="sig-name descname">load_state_dict</code><span class="sig-paren">(</span><em class="sig-param">state_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.load_state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the optimizer state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>state_dict</strong> (<em>dict</em>) – SWA optimizer state. Should be an object returned
+from a call to <cite>state_dict</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.state_dict">
+<code class="sig-name descname">state_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.state_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the state of SWA as a <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>.</p>
+<dl class="simple">
+<dt>It contains three entries:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>opt_state - a dict holding current optimization state of the base</dt><dd><p>optimizer. Its content differs between optimizer classes.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>swa_state - a dict containing current state of SWA. For each</dt><dd><p>optimized variable it contains swa_buffer keeping the running
+average of the variable</p>
+</dd>
+</dl>
+</li>
+<li><p>param_groups - a dict containing all parameter groups</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param">closure=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a single optimization step.</p>
+<p>In automatic mode also updates SWA running averages.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.update_swa">
+<code class="sig-name descname">update_swa</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.update_swa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.update_swa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the SWA running averages of all optimized parameters.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.optimizer.swa.StochasticWeightAveraging.update_swa_group">
+<code class="sig-name descname">update_swa_group</code><span class="sig-paren">(</span><em class="sig-param">group</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/optimizer/swa.html#StochasticWeightAveraging.update_swa_group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.optimizer.swa.StochasticWeightAveraging.update_swa_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the SWA running averages for the given parameter group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>param_group</strong> (<em>dict</em>) – Specifies for what parameter group SWA running
+averages should be updated</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># automatic mode</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">base_opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">([{</span><span class="s1">'params'</span><span class="p">:</span> <span class="p">[</span><span class="n">x</span><span class="p">]},</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">{</span><span class="s1">'params'</span><span class="p">:</span> <span class="p">[</span><span class="n">y</span><span class="p">],</span> <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">}],</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">opt</span> <span class="o">=</span> <span class="n">torchcontrib</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SWA</span><span class="p">(</span><span class="n">base_opt</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="c1"># Update SWA for the second parameter group</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">opt</span><span class="o">.</span><span class="n">update_swa_group</span><span class="p">(</span><span class="n">opt</span><span class="o">.</span><span class="n">param_groups</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">opt</span><span class="o">.</span><span class="n">swap_swa_sgd</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.optimizer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.optimizer" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.models.seq_models.html" title="previous chapter">pytext.models.seq_models package</a></li>
+<li>Next: <a href="pytext.optimizer.sparsifiers.html" title="next chapter">pytext.optimizer.sparsifiers package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

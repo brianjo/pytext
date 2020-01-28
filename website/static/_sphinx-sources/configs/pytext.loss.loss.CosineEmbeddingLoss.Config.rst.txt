@@ -1,0 +1,32 @@
+CosineEmbeddingLoss.Config
+==========================
+
+
+
+**Component:** :class:`CosineEmbeddingLoss  <pytext.loss.loss.CosineEmbeddingLoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: CosineEmbeddingLoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **margin**: float = ``0.0``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "margin": 0.0
+  }

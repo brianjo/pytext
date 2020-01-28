@@ -1,0 +1,68 @@
+RepresentationBase.Config
+=========================
+
+
+
+**Component:** :class:`RepresentationBase  <pytext.models.representations.representation_base.RepresentationBase>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: RepresentationBase.Config
+  :noindex:
+
+  **Bases:** :class:`Module.Config <pytext.models.module.Module.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BiLSTM.Config <pytext.models.representations.bilstm.BiLSTM.Config>`\ 
+  - :class:`BiLSTMDocAttention.Config <pytext.models.representations.bilstm_doc_attention.BiLSTMDocAttention.Config>`\ 
+  - :class:`BiLSTMDocSlotAttention.Config <pytext.models.representations.bilstm_doc_slot_attention.BiLSTMDocSlotAttention.Config>`\ 
+  - :class:`BiLSTMSlotAttention.Config <pytext.models.representations.bilstm_slot_attn.BiLSTMSlotAttention.Config>`\ 
+  - :class:`BSeqCNNRepresentation.Config <pytext.models.representations.biseqcnn.BSeqCNNRepresentation.Config>`\ 
+  - :class:`ContextualIntentSlotRepresentation.Config <pytext.models.representations.contextual_intent_slot_rep.ContextualIntentSlotRepresentation.Config>`\ 
+  - :class:`DeepCNNRepresentation.Config <pytext.models.representations.deepcnn.DeepCNNRepresentation.Config>`\ 
+  - :class:`DocNNRepresentation.Config <pytext.models.representations.docnn.DocNNRepresentation.Config>`\ 
+  - :class:`HuggingFaceBertSentenceEncoder.Config <pytext.models.representations.huggingface_bert_sentence_encoder.HuggingFaceBertSentenceEncoder.Config>`\ 
+  - :class:`JointCNNRepresentation.Config <pytext.models.representations.jointcnn_rep.JointCNNRepresentation.Config>`\ 
+  - :class:`SharedCNNRepresentation.Config <pytext.models.representations.jointcnn_rep.SharedCNNRepresentation.Config>`\ 
+  - :class:`OrderedNeuronLSTM.Config <pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTM.Config>`\ 
+  - :class:`PassThroughRepresentation.Config <pytext.models.representations.pass_through.PassThroughRepresentation.Config>`\ 
+  - :class:`PureDocAttention.Config <pytext.models.representations.pure_doc_attention.PureDocAttention.Config>`\ 
+  - :class:`SeqRepresentation.Config <pytext.models.representations.seq_rep.SeqRepresentation.Config>`\ 
+  - :class:`SparseTransformerSentenceEncoder.Config <pytext.models.representations.sparse_transformer_sentence_encoder.SparseTransformerSentenceEncoder.Config>`\ 
+  - :class:`TransformerSentenceEncoder.Config <pytext.models.representations.transformer_sentence_encoder.TransformerSentenceEncoder.Config>`\ 
+  - :class:`TransformerSentenceEncoderBase.Config <pytext.models.representations.transformer_sentence_encoder_base.TransformerSentenceEncoderBase.Config>`\ 
+  - :class:`RoBERTaEncoder.Config <pytext.models.roberta.RoBERTaEncoder.Config>`\ 
+  - :class:`RoBERTaEncoderBase.Config <pytext.models.roberta.RoBERTaEncoderBase.Config>`\ 
+  - :class:`RoBERTaEncoderJit.Config <pytext.models.roberta.RoBERTaEncoderJit.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null
+  }

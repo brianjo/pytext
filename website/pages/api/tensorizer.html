@@ -1,0 +1,203 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="custom-tensorizer">
+<h1>Custom Tensorizer<a class="headerlink" href="#custom-tensorizer" title="Permalink to this headline">¶</a></h1>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer</span></code> is the class that prepares your data coming out of the data source and transforms it into tensors suitable for processing. Each tensorizer knows how to prepare the input data from specific columns. In order to do that, the tensorizer (after initialization, such as creating or loading the vocabulary for look-ups) executes the following steps:</p>
+<ol class="arabic simple">
+<li><p>Its <code class="docutils literal notranslate"><span class="pre">Config</span></code> defines which column name(s) the tensorizer will look at</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">numberize()</span></code> takes one row and transform the strings into numbers</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tensorize()</span></code> takes a batch of rows and creates the tensors</p></li>
+</ol>
+<p>PyText provides a number of tensorizers for the most common cases. However, if you have your own custom features that don’t have a suitable <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer</span></code>, you will need to write your own class. Fortunately it’s quite easy: you simply need to create a class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer</span></code> (or one of its subclasses), and implement a few functions.</p>
+<p>First a <code class="xref py py-class docutils literal notranslate"><span class="pre">Config</span></code> inner class, from_config class method, and the constructor <cite>__init__</cite>. This is just to declare member variables.</p>
+<p>The tensorizer should declare the schema of your <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer</span></code> by defining a <cite>column_schema</cite> property which returns a list of tuples, one for each field/column read from the data source. Each tuple specifies the name of the column, and the type of the data. By specifying the type of your data, the data source will automatically parse the inputs and pass objects of those types to the tensorizers. You don’t need to parse your own inputs.</p>
+<p>For example, <code class="xref py py-class docutils literal notranslate"><span class="pre">SeqTokenTensorizer</span></code> reads one column from the input data. The data is formatted like a json list of strings: <cite>[“where do you wanna meet?”, “MPK”]</cite>. The schema declaration is like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@property</span>
+<span class="k">def</span> <span class="nf">column_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">column</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])]</span>
+</pre></div>
+</div>
+<p>Another example with <code class="xref py py-class docutils literal notranslate"><span class="pre">GazetteerTensorizer</span></code>: it needs 2 columns, one string for the text itself, and one for the gazetteer features formatted like a complex json object. (The Gazetteer type is registered in the data source to automatically convert the raw strings from the input to this type.) The schema declaration is like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Gazetteer</span> <span class="o">=</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span>
+
+<span class="nd">@property</span>
+<span class="k">def</span> <span class="nf">column_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_column</span><span class="p">,</span> <span class="n">Gazetteer</span><span class="p">)]</span>
+</pre></div>
+</div>
+<div class="section" id="example-implementation">
+<h2>Example Implementation<a class="headerlink" href="#example-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Let’s implement a simple word tensorizer that creates a tensor with the word indexes from a vocabulary.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWordTensorizer</span><span class="p">(</span><span class="n">Tensorizer</span><span class="p">):</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Tensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: The name of the text column to read from the data source.</span>
+        <span class="n">column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"text"</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">column</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column</span> <span class="o">=</span> <span class="n">column</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">column_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">column</span><span class="p">,</span> <span class="nb">str</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Next we need to build the vocabulary by reading the training data and count the words. Since multiple tensorizers might need to read the data, we parallelize the reading part and the tensorizers use the pattern <cite>row = yield</cite> to read their inputs. In this simple example, our “tokenize” function is just going to split on spaces.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+    <span class="n">raw_text</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">column</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">raw_text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">"""Build vocabulary based on training corpus."""</span>
+    <span class="n">vocab_builder</span> <span class="o">=</span> <span class="n">VocabBuilder</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="k">yield</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="n">_tokenize</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">vocab_builder</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab_builder</span><span class="o">.</span><span class="n">make_vocab</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The most important method is numberize, which takes a row and transforms it into list of numbers. The exact meaning of those numbers is arbitrary and depends on the design of the model. In our case, we look up the word indexes in the vocabulary.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">numberize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+    <span class="sd">"""Look up tokens in vocabulary to get their corresponding index"""</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="n">_tokenize</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">lookup_all</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+    <span class="c1"># LSTM representations need the length of the sequence</span>
+    <span class="k">return</span> <span class="n">idx</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Because LSTM-based representations need the length of the sequence to only consider the useful values and ignore the padding, we also return the length of each sequence.</p>
+<p>Finally, the last function will create properly padded torch.Tensors from the batches produced by <cite>numberize</cite>. Numberized results can be cached for performance. We have a separate function to tensorize them because they are shuffled and batched differently (at each epoch), and then they will need different padding (because padding dimensions depend on the batch).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">tensorize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+    <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">()),</span>
+        <span class="n">pad_and_tensorize</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">),</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>LSTM-based representations implemented in Torch also need the batches to be sorted by sequence length descending, so we’re add in a sort function.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">sort_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+    <span class="c1"># LSTM representations need the batches to be sorted by descending seq_len</span>
+    <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The full code is in <cite>demo/examples/tensorizer.py</cite></p>
+</div>
+<div class="section" id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h2>
+<p>We can test our tensorizer with the following code that initializes the vocab, then tries the <cite>numberize</cite> function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"I want some coffee"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Turn it up"</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">tensorizer</span> <span class="o">=</span> <span class="n">MyWordTensorizer</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">"text"</span><span class="p">)</span>
+
+<span class="c1"># Vocabulary starts with 0 and 1 for Unknown and Padding.</span>
+<span class="c1"># The rest of the vocabulary is built by the rows in order.</span>
+<span class="n">init</span> <span class="o">=</span> <span class="n">tensorizer</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+<span class="n">init</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>  <span class="c1"># start the loop</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+    <span class="n">init</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+<span class="n">init</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1"># Verify numberize.</span>
+<span class="n">numberized_rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">tensorizer</span><span class="o">.</span><span class="n">numberize</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">)</span>
+<span class="n">words</span><span class="p">,</span> <span class="n">seq_len</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">numberized_rows</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">words</span> <span class="o">==</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">seq_len</span> <span class="o">==</span> <span class="mi">4</span>  <span class="c1"># "I want some coffee" has 4 words</span>
+<span class="n">words</span><span class="p">,</span> <span class="n">seq_len</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">numberized_rows</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">words</span> <span class="o">==</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">seq_len</span> <span class="o">==</span> <span class="mi">3</span>  <span class="c1"># "Turn it up" has 3 words</span>
+
+<span class="c1"># test again, this time also make the tensors</span>
+<span class="n">numberized_rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">tensorizer</span><span class="o">.</span><span class="n">numberize</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">)</span>
+<span class="n">words_tensors</span><span class="p">,</span> <span class="n">seq_len_tensors</span> <span class="o">=</span> <span class="n">tensorizer</span><span class="o">.</span><span class="n">tensorize</span><span class="p">(</span><span class="n">numberized_rows</span><span class="p">)</span>
+<span class="c1"># Notice the padding (1) of the 2nd tensor to match the dimension</span>
+<span class="k">assert</span> <span class="n">words_tensors</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]))</span>
+<span class="k">assert</span> <span class="n">seq_len_tensors</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="datasource_tutorial.html" title="previous chapter">Custom Data Format</a></li>
+<li>Next: <a href="dense.html" title="next chapter">Using External Dense Features</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

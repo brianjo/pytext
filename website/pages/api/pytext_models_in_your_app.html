@@ -1,0 +1,132 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="use-pytext-models-in-your-app">
+<h1>Use PyText models in your app<a class="headerlink" href="#use-pytext-models-in-your-app" title="Permalink to this headline">¶</a></h1>
+<p>Once you have a PyText model exported to Caffe2, you can host it on a simple web server in the cloud. Then your applications (web/mobile) can make requests to this server and use the returned predictions from the model.</p>
+<p>In this tutorial, we’ll take the intent-slot model trained in <a class="reference internal" href="atis_tutorial.html"><span class="doc">Train Intent-Slot model on ATIS Dataset</span></a>, and host it on a <a class="reference external" href="http://flask.pocoo.org/">Flask</a> server running on an <a class="reference external" href="https://aws.amazon.com/ec2/">Amazon EC2</a> instance. Then we’ll write an iOS app which can identify city names in users’ messages by querying the server.</p>
+<div class="section" id="setup-an-ec2-instance">
+<h2>1. Setup an EC2 instance<a class="headerlink" href="#setup-an-ec2-instance" title="Permalink to this headline">¶</a></h2>
+<p>Amazon EC2 is a service which lets you host servers in the cloud for any arbitrary purpose. Use the official documentation to <a class="reference external" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/get-set-up-for-amazon-ec2.html">sign up, create an IAM profile and a key pair</a>. Sign in into the EC2 Management Console and launch a new instance with the default Amazon Linux 2 AMI. In the <cite>Configure Security Group</cite> step, Add a Rule with type <cite>HTTP</cite> and port <cite>80</cite>.</p>
+<p>Connect to your instance using the steps <a class="reference external" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstances.html">here</a>.
+Once you’re logged in, install the required dependencies -</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> ~
+<span class="gp">$</span> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+<span class="gp">$</span> chmod +x miniconda.sh
+<span class="gp">$</span> ./miniconda.sh -b -p ~/miniconda
+<span class="gp">$</span> rm -f miniconda.sh
+<span class="gp">$</span> <span class="nb">source</span> ~/miniconda/bin/activate
+
+<span class="gp">$</span> conda install -y protobuf
+<span class="gp">$</span> conda install -y boto3 flask future numpy pip
+<span class="gp">$</span> conda install -y pytorch -c pytorch
+
+<span class="gp">$</span> sudo iptables -t nat -A PREROUTING -p tcp --dport <span class="m">80</span> -j REDIRECT --to <span class="m">8080</span>
+</pre></div>
+</div>
+<p>We’ll make the server listen to (randomly selected) port 8080 and redirect requests coming to port 80 (HTTP), since running a server on latter requires administrative privileges.</p>
+</div>
+<div class="section" id="implement-and-test-the-server">
+<h2>2. Implement and test the server<a class="headerlink" href="#implement-and-test-the-server" title="Permalink to this headline">¶</a></h2>
+<p>Upload your trained model (<code class="docutils literal notranslate"><span class="pre">models/atis_joint_model.c2</span></code>) and the server files (<code class="docutils literal notranslate"><span class="pre">demo/flask_server/*</span></code>) to the instance using <cite>scp</cite>.</p>
+<p>The server handles a <cite>GET</cite> request with a <cite>text</cite> field by running it through the model and dumping the output back to a JSON.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@app.route</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">predict</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">atis</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">''</span><span class="p">)))</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The code in <code class="docutils literal notranslate"><span class="pre">demo/flask_server/atis.py</span></code> does the pre-processing (tokenization) and post-processing (extract spans of city names) specific to the ATIS model.</p>
+<p>Run the server using</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> python server.py
+</pre></div>
+</div>
+<p>Test it out by finding your IPv4 Public IP on the EC2 Management Console page and pointing your browser to it. The server will respond with the character spans of the city names e.g.</p>
+<img alt="_images/flask_www.png" src="_images/flask_www.png"/>
+</div>
+<div class="section" id="implement-the-ios-app">
+<h2>3. Implement the iOS app<a class="headerlink" href="#implement-the-ios-app" title="Permalink to this headline">¶</a></h2>
+<p>Install <a class="reference external" href="https://developer.apple.com/xcode/">Xcode</a> and <a class="reference external" href="https://cocoapods.org/">CocoaPods</a> if you haven’t already.</p>
+<p>We use the open-source <a class="reference external" href="https://github.com/MessageKit/MessageKit">MessageKit</a> to bootstrap our iOS app. Clone the app from our <a class="reference external" href="https://github.com/wowitsmrinal/pytext_atis_ios">sister repository</a>, and run -</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pod install
+<span class="gp">$</span> open PyTextATIS.workspace
+</pre></div>
+</div>
+<p>The comments in <code class="docutils literal notranslate"><span class="pre">ViewController.swift</span></code> explain the modifications over the base code. Change the IP address in that file to your instance’s and run the app!</p>
+<a class="reference internal image-reference" href="_images/ios_demo.png"><img alt="PyText ATIS iOS Demo" class="align-center" src="_images/ios_demo.png" style="width: 60%;"/></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="visualize_your_model.html" title="previous chapter">Visualize Model Training with TensorBoard</a></li>
+<li>Next: <a href="serving_models_in_production.html" title="next chapter">Serve Models in Production</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

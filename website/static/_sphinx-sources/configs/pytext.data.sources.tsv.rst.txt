@@ -1,0 +1,10 @@
+tsv
+===
+
+
+.. toctree::
+
+  pytext.data.sources.tsv.BlockShardedTSVDataSource.Config
+  pytext.data.sources.tsv.MultilingualTSVDataSource.Config
+  pytext.data.sources.tsv.SessionTSVDataSource.Config
+  pytext.data.sources.tsv.TSVDataSource.Config

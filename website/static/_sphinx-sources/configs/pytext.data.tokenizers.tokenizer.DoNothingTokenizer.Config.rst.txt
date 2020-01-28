@@ -1,0 +1,32 @@
+DoNothingTokenizer.Config
+=========================
+
+
+
+**Component:** :class:`DoNothingTokenizer  <pytext.data.tokenizers.tokenizer.DoNothingTokenizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tokenizers.tokenizer
+.. py:class:: DoNothingTokenizer.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **do_nothing**: str = ``''``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "do_nothing": ""
+  }

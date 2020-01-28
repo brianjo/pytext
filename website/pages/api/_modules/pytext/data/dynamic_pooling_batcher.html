@@ -1,0 +1,269 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.dynamic_pooling_batcher</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config.module_config</span> <span class="kn">import</span> <span class="n">ModuleConfig</span>
+
+<span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">PoolingBatcher</span>
+<span class="kn">from</span> <span class="nn">.sources</span> <span class="kn">import</span> <span class="n">RawExample</span>
+
+
+<div class="viewcode-block" id="BatcherSchedulerConfig"><a class="viewcode-back" href="../../../configs/pytext.data.dynamic_pooling_batcher.BatcherSchedulerConfig.html#pytext.data.dynamic_pooling_batcher.BatcherSchedulerConfig">[docs]</a><span class="k">class</span> <span class="nc">BatcherSchedulerConfig</span><span class="p">(</span><span class="n">ModuleConfig</span><span class="p">):</span>
+    <span class="c1"># the initial batch size used for training, this is per node</span>
+    <span class="n">start_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+
+    <span class="c1"># the final or max batch size to use, any scheduler should</span>
+    <span class="c1"># not go over this batch size, this is per node</span>
+    <span class="n">end_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span>
+
+    <span class="c1"># the number of epochs to increase the batch size over</span>
+    <span class="n">epoch_period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="c1"># the batch size is kept constant for `step_size` number of epochs</span>
+    <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="ExponentialBatcherSchedulerConfig"><a class="viewcode-back" href="../../../configs/pytext.data.dynamic_pooling_batcher.ExponentialBatcherSchedulerConfig.html#pytext.data.dynamic_pooling_batcher.ExponentialBatcherSchedulerConfig">[docs]</a><span class="k">class</span> <span class="nc">ExponentialBatcherSchedulerConfig</span><span class="p">(</span><span class="n">BatcherSchedulerConfig</span><span class="p">):</span>
+    <span class="c1"># the gamma to increase batch size by</span>
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">5</span></div>
+
+
+<span class="k">class</span> <span class="nc">DynamicPoolingBatcher</span><span class="p">(</span><span class="n">PoolingBatcher</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Allows dynamic batch training, extends pooling batcher with a scheduler</span>
+<span class="sd">    config, which specifies how batch size should increase</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="DynamicPoolingBatcher.Config"><a class="viewcode-back" href="../../../configs/pytext.data.dynamic_pooling_batcher.DynamicPoolingBatcher.Config.html#pytext.data.dynamic_pooling_batcher.DynamicPoolingBatcher.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">PoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">scheduler_config</span><span class="p">:</span> <span class="n">BatcherSchedulerConfig</span> <span class="o">=</span> <span class="n">BatcherSchedulerConfig</span><span class="p">()</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">pool_num_batches</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">num_shuffled_pools</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">scheduler_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span>
+        <span class="n">eval_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">,</span>
+        <span class="n">test_batch_size</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">,</span>
+        <span class="n">pool_num_batches</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">pool_num_batches</span><span class="p">,</span>
+        <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">num_shuffled_pools</span><span class="p">,</span>
+        <span class="n">scheduler_config</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">scheduler_config</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">train_batch_size</span><span class="p">,</span>
+            <span class="n">eval_batch_size</span><span class="p">,</span>
+            <span class="n">test_batch_size</span><span class="p">,</span>
+            <span class="n">pool_num_batches</span><span class="p">,</span>
+            <span class="n">num_shuffled_pools</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span> <span class="o">=</span> <span class="n">scheduler_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_epoch</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">compute_dynamic_batch_size</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">curr_epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">scheduler_config</span><span class="p">:</span> <span class="n">BatcherSchedulerConfig</span><span class="p">,</span> <span class="n">curr_steps</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">step_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">epoch_period</span><span class="p">:</span>
+            <span class="c1"># if past the dynamic period just return</span>
+            <span class="c1"># the batch size</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curr_batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">end_batch_size</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">step_size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">old_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_batch_size</span>
+                <span class="n">new_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_dynamic_batch_size</span><span class="p">(</span>
+                    <span class="n">curr_epoch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span><span class="p">,</span>
+                    <span class="n">scheduler_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="p">,</span>
+                    <span class="n">curr_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"increasing batch size from {old_size} to {new_size}"</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">curr_batch_size</span> <span class="o">=</span> <span class="n">new_size</span>
+
+    <span class="k">def</span> <span class="nf">finished_dynamic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">epoch_period</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">epoch_period</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_batch_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Stage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"using dynamic batch size {self.curr_batch_size}"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_batch_size</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_batch_sizes</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">batchify</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">RawExample</span><span class="p">],</span> <span class="n">sort_key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        From an iterable of dicts, yield dicts of lists:</span>
+
+<span class="sd">        1. Load `num_shuffled_pools` pools of data, and shuffle them.</span>
+<span class="sd">        2. Load a pool (`batch_size * pool_num_batches` examples).</span>
+<span class="sd">        3. Sort rows, if necessary.</span>
+<span class="sd">        4. Shuffle the order in which the batches are returned, if necessary.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">iterable</span><span class="o">=</span><span class="n">iterable</span><span class="p">,</span> <span class="n">sort_key</span><span class="o">=</span><span class="n">sort_key</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">item</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="c1"># only step scheduler when in train</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_epoch</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">LinearDynamicPoolingBatcher</span><span class="p">(</span><span class="n">DynamicPoolingBatcher</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Linear Dynamic Batch Scheduler: scales up batch size linearly</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="nf">compute_dynamic_batch_size</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">curr_epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">scheduler_config</span><span class="p">:</span> <span class="n">BatcherSchedulerConfig</span><span class="p">,</span> <span class="n">curr_steps</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">batch_delta</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">scheduler_config</span><span class="o">.</span><span class="n">end_batch_size</span> <span class="o">-</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">start_batch_size</span>
+        <span class="p">)</span>
+        <span class="n">curr_est</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">batch_delta</span> <span class="o">/</span> <span class="p">(</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">epoch_period</span> <span class="o">/</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="p">)</span> <span class="o">*</span> <span class="n">curr_steps</span> <span class="o">+</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">start_batch_size</span>
+        <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">curr_est</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ExponentialDynamicPoolingBatcher</span><span class="p">(</span><span class="n">DynamicPoolingBatcher</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Exponential Dynamic Batch Scheduler: scales up batch size by a factor of</span>
+<span class="sd">    gamma</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="ExponentialDynamicPoolingBatcher.Config"><a class="viewcode-back" href="../../../configs/pytext.data.dynamic_pooling_batcher.ExponentialDynamicPoolingBatcher.Config.html#pytext.data.dynamic_pooling_batcher.ExponentialDynamicPoolingBatcher.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DynamicPoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">scheduler_config</span><span class="p">:</span> <span class="n">ExponentialBatcherSchedulerConfig</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_max_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span>
+            <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">end_batch_size</span>
+                <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">start_batch_size</span>
+            <span class="p">)</span>
+            <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span>
+
+    <span class="k">def</span> <span class="nf">finished_dynamic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_config</span><span class="o">.</span><span class="n">epoch_period</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_epoch</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_max_steps</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compute_dynamic_batch_size</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">curr_epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">scheduler_config</span><span class="p">:</span> <span class="n">ExponentialBatcherSchedulerConfig</span><span class="p">,</span>
+        <span class="n">curr_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">curr_steps</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_max_steps</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">end_batch_size</span>
+        <span class="n">curr_est</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">start_batch_size</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span>
+            <span class="n">scheduler_config</span><span class="o">.</span><span class="n">gamma</span><span class="p">,</span> <span class="n">curr_steps</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">curr_est</span><span class="p">),</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">end_batch_size</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

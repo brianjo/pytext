@@ -1,0 +1,8 @@
+query_document_pairwise_ranking_model
+=====================================
+
+
+.. toctree::
+
+  pytext.models.query_document_pairwise_ranking_model.ModelInput
+  pytext.models.query_document_pairwise_ranking_model.QueryDocPairwiseRankingModel.Config

@@ -1,0 +1,65 @@
+RoBERTaEncoderBase.Config
+=========================
+
+
+
+**Component:** :class:`RoBERTaEncoderBase  <pytext.models.roberta.RoBERTaEncoderBase>`\ 
+
+
+.. py:currentmodule:: pytext.models.roberta
+.. py:class:: RoBERTaEncoderBase.Config
+  :noindex:
+
+  **Bases:** :class:`TransformerSentenceEncoderBase.Config <pytext.models.representations.transformer_sentence_encoder_base.TransformerSentenceEncoderBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **output_dropout**: float = ``0.4``
+    \ 
+
+  **embedding_dim**: int = ``768``
+    \ 
+
+  **pooling**: PoolingMethod = ``<PoolingMethod.CLS_TOKEN: 'cls_token'>``
+    \ 
+
+  **export**: bool = ``False``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`RoBERTaEncoder.Config <pytext.models.roberta.RoBERTaEncoder.Config>`\ 
+  - :class:`RoBERTaEncoderJit.Config <pytext.models.roberta.RoBERTaEncoderJit.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "output_dropout": 0.4,
+      "embedding_dim": 768,
+      "pooling": "cls_token",
+      "export": false
+  }

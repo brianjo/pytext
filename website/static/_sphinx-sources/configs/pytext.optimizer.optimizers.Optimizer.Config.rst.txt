@@ -1,0 +1,41 @@
+Optimizer.Config
+================
+
+
+
+**Component:** :class:`Optimizer  <pytext.optimizer.optimizers.Optimizer>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.optimizers
+.. py:class:: Optimizer.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`FP16Optimizer.Config <pytext.optimizer.fp16_optimizer.FP16Optimizer.Config>`\ 
+  - :class:`FP16OptimizerApex.Config <pytext.optimizer.fp16_optimizer.FP16OptimizerApex.Config>`\ 
+  - :class:`FP16OptimizerFairseq.Config <pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.Config>`\ 
+  - :class:`MemoryEfficientFP16OptimizerFairseq.Config <pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.Config>`\ 
+  - :class:`Lamb.Config <pytext.optimizer.lamb.Lamb.Config>`\ 
+  - :class:`Adagrad.Config <pytext.optimizer.optimizers.Adagrad.Config>`\ 
+  - :class:`Adam.Config <pytext.optimizer.optimizers.Adam.Config>`\ 
+  - :class:`AdamW.Config <pytext.optimizer.optimizers.AdamW.Config>`\ 
+  - :class:`SGD.Config <pytext.optimizer.optimizers.SGD.Config>`\ 
+  - :class:`RAdam.Config <pytext.optimizer.radam.RAdam.Config>`\ 
+  - :class:`StochasticWeightAveraging.Config <pytext.optimizer.swa.StochasticWeightAveraging.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

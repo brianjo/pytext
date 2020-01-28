@@ -1,0 +1,9 @@
+data
+====
+
+
+.. toctree::
+
+  pytext.data.data.Batcher.Config
+  pytext.data.data.Data.Config
+  pytext.data.data.PoolingBatcher.Config

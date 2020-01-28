@@ -1,0 +1,36 @@
+PandasDataSource.Config
+=======================
+
+
+
+**Component:** :class:`PandasDataSource  <pytext.data.sources.pandas.PandasDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: PandasDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`RootDataSource.Config <pytext.data.sources.data_source.RootDataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`SessionPandasDataSource.Config <pytext.data.sources.pandas.SessionPandasDataSource.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {}
+  }

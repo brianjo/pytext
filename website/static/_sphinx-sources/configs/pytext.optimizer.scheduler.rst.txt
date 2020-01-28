@@ -1,0 +1,17 @@
+scheduler
+=========
+
+
+.. toctree::
+
+  pytext.optimizer.scheduler.BatchScheduler.Config
+  pytext.optimizer.scheduler.CosineAnnealingLR.Config
+  pytext.optimizer.scheduler.CyclicLR.Config
+  pytext.optimizer.scheduler.ExponentialLR.Config
+  pytext.optimizer.scheduler.LmFineTuning.Config
+  pytext.optimizer.scheduler.PolynomialDecayScheduler.Config
+  pytext.optimizer.scheduler.ReduceLROnPlateau.Config
+  pytext.optimizer.scheduler.Scheduler.Config
+  pytext.optimizer.scheduler.SchedulerWithWarmup.Config
+  pytext.optimizer.scheduler.StepLR.Config
+  pytext.optimizer.scheduler.WarmupScheduler.Config

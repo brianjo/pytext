@@ -1,0 +1,719 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-fields-package">
+<h1>pytext.fields package<a class="headerlink" href="#pytext-fields-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.fields.char_field">
+<span id="pytext-fields-char-field-module"></span><h2>pytext.fields.char_field module<a class="headerlink" href="#module-pytext.fields.char_field" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.fields.char_field.CharFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.char_field.</code><code class="sig-name descname">CharFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pad_token='&lt;pad&gt;'</em>, <em class="sig-param">unk_token='&lt;unk&gt;'</em>, <em class="sig-param">batch_first=True</em>, <em class="sig-param">max_word_length=20</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.char_field.CharFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.char_field.CharFeatureField.build_vocab">
+<code class="sig-name descname">build_vocab</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField.build_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.char_field.CharFeatureField.build_vocab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the Vocab object for this field from one or more datasets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arguments</strong> (<em>Positional</em>) – Dataset objects or other iterable data
+sources from which to construct the Vocab object that
+represents the set of possible values for this field. If
+a Dataset object is provided, all columns corresponding
+to this field are used; individual columns can also be
+provided directly.</p></li>
+<li><p><strong>keyword arguments</strong> (<em>Remaining</em>) – Passed to the constructor of Vocab.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.fields.char_field.CharFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = tensor([[[1, 1, 1]],          [[1, 1, 1]]])</em><a class="headerlink" href="#pytext.fields.char_field.CharFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.char_field.CharFeatureField.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">batch</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.char_field.CharFeatureField.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn a batch of examples that use this field into a Variable.</p>
+<p>If the field has include_lengths=True, a tensor of lengths will be
+included in the return value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, or </em><em>tuple of</em><em> (</em><em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>)</em>) – List of tokenized and padded examples, or tuple of List of
+tokenized and padded examples and List of lengths of each
+example if self.include_lengths is True.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em> or </em><em>torch.device</em>) – A string or instance of <cite>torch.device</cite>
+specifying which device the Variables are going to be created on.
+If left as default, the tensors will be created on cpu. Default: None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.char_field.CharFeatureField.pad">
+<code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param">minibatch: List[List[List[str]]]</em><span class="sig-paren">)</span> → List[List[List[str]]]<a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField.pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.char_field.CharFeatureField.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Example of minibatch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[[[</span><span class="s1">'p'</span><span class="p">,</span> <span class="s1">'l'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'y'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'t'</span><span class="p">,</span> <span class="s1">'h'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'t'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'t'</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">,</span> <span class="s1">'k'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'o'</span><span class="p">,</span> <span class="s1">'n'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'r'</span><span class="p">,</span> <span class="s1">'e'</span><span class="p">,</span> <span class="s1">'p'</span><span class="p">,</span> <span class="s1">'e'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'t'</span><span class="p">]</span>
+ <span class="p">],</span> <span class="o">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.fields.contextual_token_embedding_field">
+<span id="pytext-fields-contextual-token-embedding-field-module"></span><h2>pytext.fields.contextual_token_embedding_field module<a class="headerlink" href="#module-pytext.fields.contextual_token_embedding_field" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.fields.contextual_token_embedding_field.ContextualTokenEmbeddingField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.contextual_token_embedding_field.</code><code class="sig-name descname">ContextualTokenEmbeddingField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/contextual_token_embedding_field.html#ContextualTokenEmbeddingField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.contextual_token_embedding_field.ContextualTokenEmbeddingField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.contextual_token_embedding_field.ContextualTokenEmbeddingField.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">batch</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/contextual_token_embedding_field.html#ContextualTokenEmbeddingField.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.contextual_token_embedding_field.ContextualTokenEmbeddingField.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn a batch of examples that use this field into a Variable.</p>
+<p>If the field has include_lengths=True, a tensor of lengths will be
+included in the return value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, or </em><em>tuple of</em><em> (</em><em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>)</em>) – List of tokenized and padded examples, or tuple of List of
+tokenized and padded examples and List of lengths of each
+example if self.include_lengths is True.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em> or </em><em>torch.device</em>) – A string or instance of <cite>torch.device</cite>
+specifying which device the Variables are going to be created on.
+If left as default, the tensors will be created on cpu. Default: None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.contextual_token_embedding_field.ContextualTokenEmbeddingField.pad">
+<code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param">minibatch: List[List[List[float]]]</em><span class="sig-paren">)</span> → List[List[List[float]]]<a class="reference internal" href="../_modules/pytext/fields/contextual_token_embedding_field.html#ContextualTokenEmbeddingField.pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.contextual_token_embedding_field.ContextualTokenEmbeddingField.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Example of padded minibatch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[[[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">3.1</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">,</span> <span class="mf">3.3</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">],</span>
+ <span class="p">],</span>
+ <span class="p">[[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+ <span class="p">],</span>
+ <span class="p">[[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+ <span class="p">],</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.fields.dict_field">
+<span id="pytext-fields-dict-field-module"></span><h2>pytext.fields.dict_field module<a class="headerlink" href="#module-pytext.fields.dict_field" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.fields.dict_field.DictFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.dict_field.</code><code class="sig-name descname">DictFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pad_token='&lt;pad&gt;'</em>, <em class="sig-param">unk_token='&lt;unk&gt;'</em>, <em class="sig-param">batch_first=True</em>, <em class="sig-param">left_pad=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.dict_field.DictFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.dict_field.DictFeatureField.build_vocab">
+<code class="sig-name descname">build_vocab</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField.build_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.dict_field.DictFeatureField.build_vocab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the Vocab object for this field from one or more datasets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arguments</strong> (<em>Positional</em>) – Dataset objects or other iterable data
+sources from which to construct the Vocab object that
+represents the set of possible values for this field. If
+a Dataset object is provided, all columns corresponding
+to this field are used; individual columns can also be
+provided directly.</p></li>
+<li><p><strong>keyword arguments</strong> (<em>Remaining</em>) – Passed to the constructor of Vocab.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.fields.dict_field.DictFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = (tensor([[1],         [1]]), tensor([[1.5000],         [2.5000]]), tensor([[1],         [1]]))</em><a class="headerlink" href="#pytext.fields.dict_field.DictFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.dict_field.DictFeatureField.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.dict_field.DictFeatureField.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn a batch of examples that use this field into a Variable.</p>
+<p>If the field has include_lengths=True, a tensor of lengths will be
+included in the return value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, or </em><em>tuple of</em><em> (</em><em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>)</em>) – List of tokenized and padded examples, or tuple of List of
+tokenized and padded examples and List of lengths of each
+example if self.include_lengths is True.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em> or </em><em>torch.device</em>) – A string or instance of <cite>torch.device</cite>
+specifying which device the Variables are going to be created on.
+If left as default, the tensors will be created on cpu. Default: None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.dict_field.DictFeatureField.pad">
+<code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param">minibatch: List[Tuple[List[int], List[float], List[int]]]</em><span class="sig-paren">)</span> → Tuple[List[List[int]], List[List[float]], List[int]]<a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField.pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.dict_field.DictFeatureField.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pad a batch of examples using this field.</p>
+<p>Pads to self.fix_length if provided, otherwise pads to the length of
+the longest example in the batch. Prepends self.init_token and appends
+self.eos_token if those attributes are not None. Returns a tuple of the
+padded list and a list containing lengths of each example if
+<cite>self.include_lengths</cite> is <cite>True</cite> and <cite>self.sequential</cite> is <cite>True</cite>, else just
+returns the padded list. If <cite>self.sequential</cite> is <cite>False</cite>, no padding is applied.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.fields.field">
+<span id="pytext-fields-field-module"></span><h2>pytext.fields.field module<a class="headerlink" href="#module-pytext.fields.field" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.fields.field.ActionField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">ActionField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#ActionField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.ActionField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.DocLabelField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">DocLabelField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#DocLabelField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.DocLabelField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.Field">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">Field</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.Field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchtext.data.field.Field</span></code></p>
+<dl class="method">
+<dt id="pytext.fields.field.Field.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.Field.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.field.Field.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.fields.field.FieldMeta<a class="reference internal" href="../_modules/pytext/fields/field.html#Field.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.Field.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.field.Field.load_meta">
+<code class="sig-name descname">load_meta</code><span class="sig-paren">(</span><em class="sig-param">metadata: pytext.fields.field.FieldMeta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field.load_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.Field.load_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.field.Field.pad_length">
+<code class="sig-name descname">pad_length</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field.pad_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.Field.pad_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override to make pad_length to be multiple of 8 to support fp16 training</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.FieldMeta">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">FieldMeta</code><a class="reference internal" href="../_modules/pytext/fields/field.html#FieldMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.FieldMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.FloatField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">FloatField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#FloatField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.FloatField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.FloatVectorField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">FloatVectorField</code><span class="sig-paren">(</span><em class="sig-param">dim=0</em>, <em class="sig-param">dim_error_check=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#FloatVectorField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.FloatVectorField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.NestedField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">NestedField</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#NestedField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.NestedField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torchtext.data.field.NestedField</span></code></p>
+<dl class="method">
+<dt id="pytext.fields.field.NestedField.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#NestedField.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.NestedField.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.field.NestedField.load_meta">
+<code class="sig-name descname">load_meta</code><span class="sig-paren">(</span><em class="sig-param">metadata: pytext.fields.field.FieldMeta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#NestedField.load_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.NestedField.load_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.RawField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">RawField</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">is_target=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#RawField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.RawField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchtext.data.field.RawField</span></code></p>
+<dl class="method">
+<dt id="pytext.fields.field.RawField.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.fields.field.FieldMeta<a class="reference internal" href="../_modules/pytext/fields/field.html#RawField.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.RawField.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.SeqFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">SeqFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">postprocessing=None</em>, <em class="sig-param">use_vocab=True</em>, <em class="sig-param">include_lengths=True</em>, <em class="sig-param">pad_token='&lt;pad_seq&gt;'</em>, <em class="sig-param">init_token=None</em>, <em class="sig-param">eos_token=None</em>, <em class="sig-param">tokenize=&lt;function no_tokenize&gt;</em>, <em class="sig-param">nesting_field=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#SeqFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.SeqFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingNestedField" title="pytext.fields.field.VocabUsingNestedField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingNestedField</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.fields.field.SeqFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = tensor([[[1]],          [[1]]])</em><a class="headerlink" href="#pytext.fields.field.SeqFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.TextFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">TextFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">postprocessing=None</em>, <em class="sig-param">use_vocab=True</em>, <em class="sig-param">include_lengths=True</em>, <em class="sig-param">batch_first=True</em>, <em class="sig-param">sequential=True</em>, <em class="sig-param">pad_token='&lt;pad&gt;'</em>, <em class="sig-param">unk_token='&lt;unk&gt;'</em>, <em class="sig-param">init_token=None</em>, <em class="sig-param">eos_token=None</em>, <em class="sig-param">lower=False</em>, <em class="sig-param">tokenize=&lt;function no_tokenize&gt;</em>, <em class="sig-param">fix_length=None</em>, <em class="sig-param">pad_first=None</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#TextFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.TextFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.fields.field.TextFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = tensor([[1],         [1]])</em><a class="headerlink" href="#pytext.fields.field.TextFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.VocabUsingField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">VocabUsingField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#VocabUsingField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.VocabUsingField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+<p>Base class for all fields that need to build a vocabulary.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.VocabUsingNestedField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">VocabUsingNestedField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#VocabUsingNestedField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.VocabUsingNestedField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a>, <a class="reference internal" href="#pytext.fields.field.NestedField" title="pytext.fields.field.NestedField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.NestedField</span></code></a></p>
+<p>Base class for all nested fields that need to build a vocabulary.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.field.WordLabelField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">WordLabelField</code><span class="sig-paren">(</span><em class="sig-param">use_bio_labels</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#WordLabelField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.WordLabelField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.field.WordLabelField.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#WordLabelField.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.WordLabelField.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.fields.field.create_fields">
+<code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">create_fields</code><span class="sig-paren">(</span><em class="sig-param">fields_config</em>, <em class="sig-param">field_cls_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#create_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.create_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.fields.field.create_label_fields">
+<code class="sig-prename descclassname">pytext.fields.field.</code><code class="sig-name descname">create_label_fields</code><span class="sig-paren">(</span><em class="sig-param">label_configs</em>, <em class="sig-param">label_cls_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#create_label_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.field.create_label_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.fields.text_field_with_special_unk">
+<span id="pytext-fields-text-field-with-special-unk-module"></span><h2>pytext.fields.text_field_with_special_unk module<a class="headerlink" href="#module-pytext.fields.text_field_with_special_unk" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.fields.text_field_with_special_unk.TextFeatureFieldWithSpecialUnk">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.text_field_with_special_unk.</code><code class="sig-name descname">TextFeatureFieldWithSpecialUnk</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">unkify_func=&lt;function unkify&gt;</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/text_field_with_special_unk.html#TextFeatureFieldWithSpecialUnk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.text_field_with_special_unk.TextFeatureFieldWithSpecialUnk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.TextFeatureField" title="pytext.fields.field.TextFeatureField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.TextFeatureField</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.text_field_with_special_unk.TextFeatureFieldWithSpecialUnk.build_vocab">
+<code class="sig-name descname">build_vocab</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/text_field_with_special_unk.html#TextFeatureFieldWithSpecialUnk.build_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.text_field_with_special_unk.TextFeatureFieldWithSpecialUnk.build_vocab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Code is exactly same as as torchtext.data.Field.build_vocab() before the
+UNKification logic. The reason super().build_vocab() cannot be called is
+because the Counter object computed in torchtext.data.Field.build_vocab()
+is required for UNKification and, that object cannot be recovered after
+super().build_vocab() call is made.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.text_field_with_special_unk.TextFeatureFieldWithSpecialUnk.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">arr: Union[List[List[str]], Tuple[List[List[str]], List[int]]], device: Union[str, torch.device, None] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/text_field_with_special_unk.html#TextFeatureFieldWithSpecialUnk.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.text_field_with_special_unk.TextFeatureFieldWithSpecialUnk.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Code is exactly same as torchtext.data.Field.numericalize() except the
+call to self._get_idx(x) instead of self.vocab.stoi[x] for getting the
+index of an item from vocab.
+This is needed because torchtext doesn’t allow custom UNKification.
+So, TextFeatureFieldWithSpecialUnk field’s constructor accepts a function
+unkify_func() that can be used to UNKifying instead of assigning all UNKs
+a default value.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.fields">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.fields" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pytext.fields.create_fields">
+<code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">create_fields</code><span class="sig-paren">(</span><em class="sig-param">fields_config</em>, <em class="sig-param">field_cls_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#create_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.create_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.fields.create_label_fields">
+<code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">create_label_fields</code><span class="sig-paren">(</span><em class="sig-param">label_configs</em>, <em class="sig-param">label_cls_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#create_label_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.create_label_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="class">
+<dt id="pytext.fields.ActionField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">ActionField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#ActionField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.ActionField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.CharFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">CharFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pad_token='&lt;pad&gt;'</em>, <em class="sig-param">unk_token='&lt;unk&gt;'</em>, <em class="sig-param">batch_first=True</em>, <em class="sig-param">max_word_length=20</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.CharFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.CharFeatureField.build_vocab">
+<code class="sig-name descname">build_vocab</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField.build_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.CharFeatureField.build_vocab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the Vocab object for this field from one or more datasets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arguments</strong> (<em>Positional</em>) – Dataset objects or other iterable data
+sources from which to construct the Vocab object that
+represents the set of possible values for this field. If
+a Dataset object is provided, all columns corresponding
+to this field are used; individual columns can also be
+provided directly.</p></li>
+<li><p><strong>keyword arguments</strong> (<em>Remaining</em>) – Passed to the constructor of Vocab.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.fields.CharFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = tensor([[[1, 1, 1]],          [[1, 1, 1]]])</em><a class="headerlink" href="#pytext.fields.CharFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.CharFeatureField.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">batch</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.CharFeatureField.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn a batch of examples that use this field into a Variable.</p>
+<p>If the field has include_lengths=True, a tensor of lengths will be
+included in the return value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, or </em><em>tuple of</em><em> (</em><em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>)</em>) – List of tokenized and padded examples, or tuple of List of
+tokenized and padded examples and List of lengths of each
+example if self.include_lengths is True.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em> or </em><em>torch.device</em>) – A string or instance of <cite>torch.device</cite>
+specifying which device the Variables are going to be created on.
+If left as default, the tensors will be created on cpu. Default: None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.CharFeatureField.pad">
+<code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param">minibatch: List[List[List[str]]]</em><span class="sig-paren">)</span> → List[List[List[str]]]<a class="reference internal" href="../_modules/pytext/fields/char_field.html#CharFeatureField.pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.CharFeatureField.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Example of minibatch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[[[</span><span class="s1">'p'</span><span class="p">,</span> <span class="s1">'l'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'y'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'t'</span><span class="p">,</span> <span class="s1">'h'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'t'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'t'</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">,</span> <span class="s1">'k'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'o'</span><span class="p">,</span> <span class="s1">'n'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">,</span> <span class="s1">'&lt;PAD&gt;'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'r'</span><span class="p">,</span> <span class="s1">'e'</span><span class="p">,</span> <span class="s1">'p'</span><span class="p">,</span> <span class="s1">'e'</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'t'</span><span class="p">]</span>
+ <span class="p">],</span> <span class="o">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.ContextualTokenEmbeddingField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">ContextualTokenEmbeddingField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/contextual_token_embedding_field.html#ContextualTokenEmbeddingField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.ContextualTokenEmbeddingField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.ContextualTokenEmbeddingField.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">batch</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/contextual_token_embedding_field.html#ContextualTokenEmbeddingField.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.ContextualTokenEmbeddingField.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn a batch of examples that use this field into a Variable.</p>
+<p>If the field has include_lengths=True, a tensor of lengths will be
+included in the return value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, or </em><em>tuple of</em><em> (</em><em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>)</em>) – List of tokenized and padded examples, or tuple of List of
+tokenized and padded examples and List of lengths of each
+example if self.include_lengths is True.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em> or </em><em>torch.device</em>) – A string or instance of <cite>torch.device</cite>
+specifying which device the Variables are going to be created on.
+If left as default, the tensors will be created on cpu. Default: None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.ContextualTokenEmbeddingField.pad">
+<code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param">minibatch: List[List[List[float]]]</em><span class="sig-paren">)</span> → List[List[List[float]]]<a class="reference internal" href="../_modules/pytext/fields/contextual_token_embedding_field.html#ContextualTokenEmbeddingField.pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.ContextualTokenEmbeddingField.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Example of padded minibatch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[[[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">3.1</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">,</span> <span class="mf">3.3</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">],</span>
+ <span class="p">],</span>
+ <span class="p">[[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+ <span class="p">],</span>
+ <span class="p">[[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+  <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+ <span class="p">],</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.DictFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">DictFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pad_token='&lt;pad&gt;'</em>, <em class="sig-param">unk_token='&lt;unk&gt;'</em>, <em class="sig-param">batch_first=True</em>, <em class="sig-param">left_pad=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.DictFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.DictFeatureField.build_vocab">
+<code class="sig-name descname">build_vocab</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField.build_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.DictFeatureField.build_vocab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the Vocab object for this field from one or more datasets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arguments</strong> (<em>Positional</em>) – Dataset objects or other iterable data
+sources from which to construct the Vocab object that
+represents the set of possible values for this field. If
+a Dataset object is provided, all columns corresponding
+to this field are used; individual columns can also be
+provided directly.</p></li>
+<li><p><strong>keyword arguments</strong> (<em>Remaining</em>) – Passed to the constructor of Vocab.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.fields.DictFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = (tensor([[1],         [1]]), tensor([[1.5000],         [2.5000]]), tensor([[1],         [1]]))</em><a class="headerlink" href="#pytext.fields.DictFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.DictFeatureField.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">device=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.DictFeatureField.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn a batch of examples that use this field into a Variable.</p>
+<p>If the field has include_lengths=True, a tensor of lengths will be
+included in the return value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, or </em><em>tuple of</em><em> (</em><em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>)</em>) – List of tokenized and padded examples, or tuple of List of
+tokenized and padded examples and List of lengths of each
+example if self.include_lengths is True.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em> or </em><em>torch.device</em>) – A string or instance of <cite>torch.device</cite>
+specifying which device the Variables are going to be created on.
+If left as default, the tensors will be created on cpu. Default: None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.DictFeatureField.pad">
+<code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param">minibatch: List[Tuple[List[int], List[float], List[int]]]</em><span class="sig-paren">)</span> → Tuple[List[List[int]], List[List[float]], List[int]]<a class="reference internal" href="../_modules/pytext/fields/dict_field.html#DictFeatureField.pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.DictFeatureField.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pad a batch of examples using this field.</p>
+<p>Pads to self.fix_length if provided, otherwise pads to the length of
+the longest example in the batch. Prepends self.init_token and appends
+self.eos_token if those attributes are not None. Returns a tuple of the
+padded list and a list containing lengths of each example if
+<cite>self.include_lengths</cite> is <cite>True</cite> and <cite>self.sequential</cite> is <cite>True</cite>, else just
+returns the padded list. If <cite>self.sequential</cite> is <cite>False</cite>, no padding is applied.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.DocLabelField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">DocLabelField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#DocLabelField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.DocLabelField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.Field">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">Field</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.Field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchtext.data.field.Field</span></code></p>
+<dl class="method">
+<dt id="pytext.fields.Field.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.Field.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.Field.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.fields.field.FieldMeta<a class="reference internal" href="../_modules/pytext/fields/field.html#Field.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.Field.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.Field.load_meta">
+<code class="sig-name descname">load_meta</code><span class="sig-paren">(</span><em class="sig-param">metadata: pytext.fields.field.FieldMeta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field.load_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.Field.load_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.Field.pad_length">
+<code class="sig-name descname">pad_length</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#Field.pad_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.Field.pad_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override to make pad_length to be multiple of 8 to support fp16 training</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.FieldMeta">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">FieldMeta</code><a class="reference internal" href="../_modules/pytext/fields/field.html#FieldMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.FieldMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.FloatField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">FloatField</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#FloatField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.FloatField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.FloatVectorField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">FloatVectorField</code><span class="sig-paren">(</span><em class="sig-param">dim=0</em>, <em class="sig-param">dim_error_check=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#FloatVectorField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.FloatVectorField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.RawField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">RawField</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">is_target=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#RawField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.RawField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchtext.data.field.RawField</span></code></p>
+<dl class="method">
+<dt id="pytext.fields.RawField.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.fields.field.FieldMeta<a class="reference internal" href="../_modules/pytext/fields/field.html#RawField.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.RawField.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.TextFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">TextFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">postprocessing=None</em>, <em class="sig-param">use_vocab=True</em>, <em class="sig-param">include_lengths=True</em>, <em class="sig-param">batch_first=True</em>, <em class="sig-param">sequential=True</em>, <em class="sig-param">pad_token='&lt;pad&gt;'</em>, <em class="sig-param">unk_token='&lt;unk&gt;'</em>, <em class="sig-param">init_token=None</em>, <em class="sig-param">eos_token=None</em>, <em class="sig-param">lower=False</em>, <em class="sig-param">tokenize=&lt;function no_tokenize&gt;</em>, <em class="sig-param">fix_length=None</em>, <em class="sig-param">pad_first=None</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#TextFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.TextFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.fields.TextFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = tensor([[1],         [1]])</em><a class="headerlink" href="#pytext.fields.TextFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.VocabUsingField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">VocabUsingField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#VocabUsingField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.VocabUsingField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+<p>Base class for all fields that need to build a vocabulary.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.WordLabelField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">WordLabelField</code><span class="sig-paren">(</span><em class="sig-param">use_bio_labels</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#WordLabelField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.WordLabelField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.WordLabelField.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#WordLabelField.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.WordLabelField.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.NestedField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">NestedField</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#NestedField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.NestedField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.Field" title="pytext.fields.field.Field"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.Field</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torchtext.data.field.NestedField</span></code></p>
+<dl class="method">
+<dt id="pytext.fields.NestedField.get_meta">
+<code class="sig-name descname">get_meta</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#NestedField.get_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.NestedField.get_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.fields.NestedField.load_meta">
+<code class="sig-name descname">load_meta</code><span class="sig-paren">(</span><em class="sig-param">metadata: pytext.fields.field.FieldMeta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#NestedField.load_meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.NestedField.load_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.VocabUsingNestedField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">VocabUsingNestedField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#VocabUsingNestedField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.VocabUsingNestedField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingField" title="pytext.fields.field.VocabUsingField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingField</span></code></a>, <a class="reference internal" href="#pytext.fields.field.NestedField" title="pytext.fields.field.NestedField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.NestedField</span></code></a></p>
+<p>Base class for all nested fields that need to build a vocabulary.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.SeqFeatureField">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">SeqFeatureField</code><span class="sig-paren">(</span><em class="sig-param">pretrained_embeddings_path=''</em>, <em class="sig-param">embed_dim=0</em>, <em class="sig-param">embedding_init_strategy=&lt;EmbedInitStrategy.RANDOM: 'random'&gt;</em>, <em class="sig-param">vocab_file=''</em>, <em class="sig-param">vocab_size=''</em>, <em class="sig-param">vocab_from_train_data=True</em>, <em class="sig-param">vocab_from_all_data=False</em>, <em class="sig-param">vocab_from_pretrained_embeddings=False</em>, <em class="sig-param">postprocessing=None</em>, <em class="sig-param">use_vocab=True</em>, <em class="sig-param">include_lengths=True</em>, <em class="sig-param">pad_token='&lt;pad_seq&gt;'</em>, <em class="sig-param">init_token=None</em>, <em class="sig-param">eos_token=None</em>, <em class="sig-param">tokenize=&lt;function no_tokenize&gt;</em>, <em class="sig-param">nesting_field=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/field.html#SeqFeatureField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.SeqFeatureField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.VocabUsingNestedField" title="pytext.fields.field.VocabUsingNestedField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.VocabUsingNestedField</span></code></a></p>
+<dl class="attribute">
+<dt id="pytext.fields.SeqFeatureField.dummy_model_input">
+<code class="sig-name descname">dummy_model_input</code><em class="property"> = tensor([[[1]],          [[1]]])</em><a class="headerlink" href="#pytext.fields.SeqFeatureField.dummy_model_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.fields.TextFeatureFieldWithSpecialUnk">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.fields.</code><code class="sig-name descname">TextFeatureFieldWithSpecialUnk</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">unkify_func=&lt;function unkify&gt;</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/text_field_with_special_unk.html#TextFeatureFieldWithSpecialUnk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.TextFeatureFieldWithSpecialUnk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.fields.field.TextFeatureField" title="pytext.fields.field.TextFeatureField"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.fields.field.TextFeatureField</span></code></a></p>
+<dl class="method">
+<dt id="pytext.fields.TextFeatureFieldWithSpecialUnk.build_vocab">
+<code class="sig-name descname">build_vocab</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">min_freq=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/text_field_with_special_unk.html#TextFeatureFieldWithSpecialUnk.build_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.TextFeatureFieldWithSpecialUnk.build_vocab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Code is exactly same as as torchtext.data.Field.build_vocab() before the
+UNKification logic. The reason super().build_vocab() cannot be called is
+because the Counter object computed in torchtext.data.Field.build_vocab()
+is required for UNKification and, that object cannot be recovered after
+super().build_vocab() call is made.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.fields.TextFeatureFieldWithSpecialUnk.numericalize">
+<code class="sig-name descname">numericalize</code><span class="sig-paren">(</span><em class="sig-param">arr: Union[List[List[str]], Tuple[List[List[str]], List[int]]], device: Union[str, torch.device, None] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/fields/text_field_with_special_unk.html#TextFeatureFieldWithSpecialUnk.numericalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.fields.TextFeatureFieldWithSpecialUnk.numericalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Code is exactly same as torchtext.data.Field.numericalize() except the
+call to self._get_idx(x) instead of self.vocab.stoi[x] for getting the
+index of an item from vocab.
+This is needed because torchtext doesn’t allow custom UNKification.
+So, TextFeatureFieldWithSpecialUnk field’s constructor accepts a function
+unkify_func() that can be used to UNKifying instead of assigning all UNKs
+a default value.</p>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.exporters.html" title="previous chapter">pytext.exporters package</a></li>
+<li>Next: <a href="pytext.loss.html" title="next chapter">pytext.loss package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,155 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="tokentensorizer-config">
+<h1>TokenTensorizer.Config<a class="headerlink" href="#tokentensorizer-config" title="Permalink to this headline">¶</a></h1>
+<p><strong>Component:</strong> <a class="reference internal" href="../modules/pytext.data.html#pytext.data.tensorizers.TokenTensorizer" title="pytext.data.tensorizers.TokenTensorizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code></a></p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="sig-prename descclassname">TokenTensorizer.</code><code class="sig-name descname">Config</code><a class="reference internal" href="../_modules/pytext/data/tensorizers.html#TokenTensorizer.Config"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p><strong>Bases:</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensorizer.Config</span></code></p>
+</dd></dl>
+<p><strong>All Attributes (including base classes)</strong></p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>is_input</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>column</strong>: str = <code class="docutils literal notranslate"><span class="pre">'text'</span></code></dt><dd><p>The name of the text column to parse from the data source.</p>
+</dd>
+<dt><strong>tokenizer</strong>: <a class="reference internal" href="pytext.data.tokenizers.tokenizer.Tokenizer.Config.html"><span class="doc">Tokenizer.Config</span></a> = <a class="reference internal" href="pytext.data.tokenizers.tokenizer.Tokenizer.Config.html"><span class="doc">Tokenizer.Config</span></a>()</dt><dd><p>The tokenizer to use to split input text into tokens.</p>
+</dd>
+<dt><strong>add_bos_token</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>add_eos_token</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>use_eos_token_for_bos</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>max_seq_len</strong>: Optional[int] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>vocab</strong>: <a class="reference internal" href="pytext.data.tensorizers.VocabConfig.html"><span class="doc">VocabConfig</span></a> = <a class="reference internal" href="pytext.data.tensorizers.VocabConfig.html"><span class="doc">VocabConfig</span></a>()</dt><dd><p></p>
+</dd>
+<dt><strong>vocab_file_delimiter</strong>: str = <code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">'</span></code></dt><dd><p></p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="simple">
+<dt><strong>Subclasses</strong></dt><dd><ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SquadTensorizer.Config</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SquadTensorizerForKD.Config</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">CharacterTokenTensorizer.Config</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Default JSON</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">"is_input"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"column"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span>
+    <span class="nt">"tokenizer"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"Tokenizer"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"split_regex"</span><span class="p">:</span> <span class="s2">"\\s+"</span><span class="p">,</span>
+            <span class="nt">"lowercase"</span><span class="p">:</span> <span class="kc">true</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">"add_bos_token"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"add_eos_token"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"use_eos_token_for_bos"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"max_seq_len"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">"vocab"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"build_from_data"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">"size_from_data"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nt">"vocab_files"</span><span class="p">:</span> <span class="p">[]</span>
+    <span class="p">},</span>
+    <span class="nt">"vocab_file_delimiter"</span><span class="p">:</span> <span class="s2">" "</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html">config</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.data.html">data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html">exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html">loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html">metric_reporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html">models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html">task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html">trainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext</a><ul>
+<li><a href="pytext.data.html">data</a><ul>
+<li><a href="pytext.data.tensorizers.html">tensorizers</a><ul>
+<li>Previous: <a href="pytext.data.tensorizers.Tensorizer.Config.html" title="previous chapter">Tensorizer.Config</a></li>
+<li>Next: <a href="pytext.data.tensorizers.UidTensorizer.Config.html" title="next chapter">UidTensorizer.Config</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

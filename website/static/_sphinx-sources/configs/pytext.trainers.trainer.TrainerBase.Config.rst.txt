@@ -1,0 +1,27 @@
+TrainerBase.Config
+==================
+
+
+
+**Component:** :class:`TrainerBase  <pytext.trainers.trainer.TrainerBase>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: TrainerBase.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

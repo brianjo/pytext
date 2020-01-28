@@ -1,0 +1,68 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.qna.dr_qa
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **squad_input**: :doc:`SquadTensorizer.Config <pytext.data.squad_tensorizer.SquadTensorizer.Config>` = :doc:`SquadTensorizer.Config <pytext.data.squad_tensorizer.SquadTensorizer.Config>`\ ()
+    \ 
+
+  **has_answer**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ (column=\ ``'has_answer'``\ )
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "squad_input": {
+          "SquadTensorizer": {
+              "is_input": true,
+              "column": "text",
+              "tokenizer": {
+                  "Tokenizer": {
+                      "split_regex": "\\W+",
+                      "lowercase": true
+                  }
+              },
+              "add_bos_token": false,
+              "add_eos_token": false,
+              "use_eos_token_for_bos": false,
+              "max_seq_len": null,
+              "vocab": {
+                  "build_from_data": true,
+                  "size_from_data": 0,
+                  "vocab_files": []
+              },
+              "vocab_file_delimiter": " ",
+              "doc_column": "doc",
+              "ques_column": "question",
+              "answers_column": "answers",
+              "answer_starts_column": "answer_starts",
+              "max_ques_seq_len": 64,
+              "max_doc_seq_len": 256
+          }
+      },
+      "has_answer": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "has_answer",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      }
+  }

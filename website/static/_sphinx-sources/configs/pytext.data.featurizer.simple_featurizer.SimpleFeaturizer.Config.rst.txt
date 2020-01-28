@@ -1,0 +1,44 @@
+SimpleFeaturizer.Config
+=======================
+
+
+
+**Component:** :class:`SimpleFeaturizer  <pytext.data.featurizer.simple_featurizer.SimpleFeaturizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.featurizer.simple_featurizer
+.. py:class:: SimpleFeaturizer.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **sentence_markers**: Optional[tuple[str, str]] = ``None``
+    \ 
+
+  **lowercase_tokens**: bool = ``True``
+    \ 
+
+  **split_regex**: str = ``'\\s+'``
+    \ 
+
+  **convert_to_bytes**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "sentence_markers": null,
+      "lowercase_tokens": true,
+      "split_regex": "\\s+",
+      "convert_to_bytes": false
+  }

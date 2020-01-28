@@ -1,0 +1,47 @@
+RootDataSource.Config
+=====================
+
+
+
+**Component:** :class:`RootDataSource  <pytext.data.sources.data_source.RootDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.data.sources.data_source
+.. py:class:: RootDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    An optional column mapping, allowing the columns in the raw data source
+    to not map directly to the column names in the schema. This mapping will
+    remap names from the raw data source to names in the schema.
+    
+
+
+
+**Subclasses**
+  - :class:`CoNLLUNERDataSource.Config <pytext.data.sources.conllu.CoNLLUNERDataSource.Config>`\ 
+  - :class:`CoNLLUPOSDataSource.Config <pytext.data.sources.conllu.CoNLLUPOSDataSource.Config>`\ 
+  - :class:`PandasDataSource.Config <pytext.data.sources.pandas.PandasDataSource.Config>`\ 
+  - :class:`SessionPandasDataSource.Config <pytext.data.sources.pandas.SessionPandasDataSource.Config>`\ 
+  - :class:`SessionDataSource.Config <pytext.data.sources.session.SessionDataSource.Config>`\ 
+  - :class:`BlockShardedTSVDataSource.Config <pytext.data.sources.tsv.BlockShardedTSVDataSource.Config>`\ 
+  - :class:`MultilingualTSVDataSource.Config <pytext.data.sources.tsv.MultilingualTSVDataSource.Config>`\ 
+  - :class:`SessionTSVDataSource.Config <pytext.data.sources.tsv.SessionTSVDataSource.Config>`\ 
+  - :class:`TSVDataSource.Config <pytext.data.sources.tsv.TSVDataSource.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {}
+  }

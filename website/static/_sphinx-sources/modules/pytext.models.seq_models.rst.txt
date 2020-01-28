@@ -1,0 +1,30 @@
+pytext.models.seq\_models package
+=================================
+
+Submodules
+----------
+
+pytext.models.seq\_models.contextual\_intent\_slot module
+---------------------------------------------------------
+
+.. automodule:: pytext.models.seq_models.contextual_intent_slot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.seq\_models.seqnn module
+--------------------------------------
+
+.. automodule:: pytext.models.seq_models.seqnn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.seq_models
+   :members:
+   :undoc-members:
+   :show-inheritance:

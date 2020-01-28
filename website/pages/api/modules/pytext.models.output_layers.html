@@ -1,0 +1,1426 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-models-output-layers-package">
+<h1>pytext.models.output_layers package<a class="headerlink" href="#pytext-models-output-layers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.models.output_layers.distance_output_layer">
+<span id="pytext-models-output-layers-distance-output-layer-module"></span><h2>pytext.models.output_layers.distance_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.distance_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.distance_output_layer.OutputScore">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.distance_output_layer.</code><code class="sig-name descname">OutputScore</code><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#OutputScore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.OutputScore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.IntEnum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.distance_output_layer.OutputScore.norm_cosine">
+<code class="sig-name descname">norm_cosine</code><em class="property"> = 2</em><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.OutputScore.norm_cosine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.distance_output_layer.OutputScore.raw_cosine">
+<code class="sig-name descname">raw_cosine</code><em class="property"> = 1</em><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.OutputScore.raw_cosine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.distance_output_layer.OutputScore.sigmoid_cosine">
+<code class="sig-name descname">sigmoid_cosine</code><em class="property"> = 3</em><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.OutputScore.sigmoid_cosine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.distance_output_layer.</code><code class="sig-name descname">PairwiseCosineDistanceOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Union[pytext.loss.loss.BinaryCrossEntropyLoss</em>, <em class="sig-param">pytext.loss.loss.CosineEmbeddingLoss</em>, <em class="sig-param">pytext.loss.loss.MAELoss</em>, <em class="sig-param">pytext.loss.loss.MSELoss</em>, <em class="sig-param">pytext.loss.loss.NLLLoss] = None</em>, <em class="sig-param">score_threshold: bool = 0.9</em>, <em class="sig-param">score_type: pytext.models.output_layers.distance_output_layer.OutputScore = &lt;OutputScore.norm_cosine: 2&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor</em>, <em class="sig-param">targets: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return the loss given logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor</em>, <em class="sig-param">targets: torch.Tensor</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="function">
+<dt id="pytext.models.output_layers.distance_output_layer.get_norm_cosine_scores">
+<code class="sig-prename descclassname">pytext.models.output_layers.distance_output_layer.</code><code class="sig-name descname">get_norm_cosine_scores</code><span class="sig-paren">(</span><em class="sig-param">cosine_sim_scores</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#get_norm_cosine_scores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.get_norm_cosine_scores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="pytext.models.output_layers.distance_output_layer.get_sigmoid_scores">
+<code class="sig-prename descclassname">pytext.models.output_layers.distance_output_layer.</code><code class="sig-name descname">get_sigmoid_scores</code><span class="sig-paren">(</span><em class="sig-param">cosine_sim_scores</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#get_sigmoid_scores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.distance_output_layer.get_sigmoid_scores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.doc_classification_output_layer">
+<span id="pytext-models-output-layers-doc-classification-output-layer-module"></span><h2>pytext.models.output_layers.doc_classification_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.doc_classification_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.doc_classification_output_layer.</code><code class="sig-name descname">BinaryClassificationOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#BinaryClassificationOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer" title="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#BinaryClassificationOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <cite>OutputLayerBase.export_to_caffe2()</cite>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#BinaryClassificationOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <cite>OutputLayerBase.get_pred()</cite>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#BinaryClassificationOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.doc_classification_output_layer.</code><code class="sig-name descname">ClassificationOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for document classification models.
+It supports <cite>CrossEntropyLoss</cite> and <cite>BinaryCrossEntropyLoss</cite> per document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>Union</em><em>[</em><em>CrossEntropyLoss</em><em>, </em><em>BinaryCrossEntropyLoss</em><em>]</em>) – The loss function to use for computing loss. Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>The loss function to use for computing loss.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<p>Prediction is computed using argmax over the document label/target space.</p>
+<p>Scores are sigmoid or softmax scores over the model logits depending on
+the loss component being used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned
+<a class="reference internal" href="pytext.models.html#pytext.models.doc_model.DocModel" title="pytext.models.doc_model.DocModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DocModel</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.ClassificationScores">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.doc_classification_output_layer.</code><code class="sig-name descname">ClassificationScores</code><span class="sig-paren">(</span><em class="sig-param">classes</em>, <em class="sig-param">score_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationScores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationScores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.doc_classification_output_layer.</code><code class="sig-name descname">MultiLabelOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MultiLabelOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer" title="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MultiLabelOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <cite>OutputLayerBase.export_to_caffe2()</cite>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MultiLabelOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <cite>OutputLayerBase.get_pred()</cite>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MultiLabelOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.doc_classification_output_layer.</code><code class="sig-name descname">MulticlassOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MulticlassOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer" title="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MulticlassOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <cite>OutputLayerBase.export_to_caffe2()</cite>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MulticlassOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <cite>OutputLayerBase.get_pred()</cite>.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#MulticlassOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.doc_regression_output_layer">
+<span id="pytext-models-output-layers-doc-regression-output-layer-module"></span><h2>pytext.models.output_layers.doc_regression_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.doc_regression_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.doc_regression_output_layer.</code><code class="sig-name descname">RegressionOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">loss_fn: pytext.loss.loss.MSELoss</em>, <em class="sig-param">squash_to_unit_range: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for doc regression models. Currently only supports Mean Squared Error
+loss.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loss</strong> (<em>MSELoss</em>) – config for MSE loss</p></li>
+<li><p><strong>squash_to_unit_range</strong> (<em>bool</em>) – whether to clamp the output to the range [0, 1],
+via a sigmoid.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">target: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute regression loss from logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute predictions and scores from the model (unlike in classification, where
+prediction = “most likely class” and scores = “log probs”, here these are the
+same values). If <cite>squash_to_unit_range</cite> is True, fit prediction to [0, 1] via
+a sigmoid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned from the model.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.intent_slot_output_layer">
+<span id="pytext-models-output-layers-intent-slot-output-layer-module"></span><h2>pytext.models.output_layers.intent_slot_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.intent_slot_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.intent_slot_output_layer.</code><code class="sig-name descname">IntentSlotOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">doc_output: pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer</em>, <em class="sig-param">word_output: pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for joint intent classification and slot-filling models.
+Intent classification is a document classification problem and slot filling
+is a word tagging problem. Thus terms these can be used interchangeably in the
+documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>doc_output</strong> (<em>ClassificationOutputLayer</em>) – Output layer for intent
+classification task. See
+<a class="reference internal" href="#pytext.models.output_layers.ClassificationOutputLayer" title="pytext.models.output_layers.ClassificationOutputLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassificationOutputLayer</span></code></a> for
+details.</p></li>
+<li><p><strong>word_output</strong> (<em>WordTaggingOutputLayer</em>) – Output layer for slot filling task.
+See <a class="reference internal" href="#pytext.models.output_layers.WordTaggingOutputLayer" title="pytext.models.output_layers.WordTaggingOutputLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingOutputLayer</span></code></a> for
+details.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.doc_output">
+<code class="sig-name descname">doc_output</code><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.doc_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output layer for intent classification task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.word_output">
+<code class="sig-name descname">word_output</code><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.word_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output layer for slot filling task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;, init_net: caffe2.python.core.Net, predict_net: caffe2.python.core.Net, model_out: List[torch.Tensor], doc_out_name: str, word_out_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the intent slot output layer to Caffe2.
+See <cite>OutputLayerBase.export_to_caffe2()</cite> for details.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.Config</em>, <em class="sig-param">doc_labels: pytext.data.utils.Vocabulary</em>, <em class="sig-param">word_labels: pytext.data.utils.Vocabulary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logits: Tuple[torch.Tensor, torch.Tensor], targets: Tuple[torch.Tensor, torch.Tensor], context: Dict[str, Any] = None, *args, **kwargs</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return the averaged intent and slot-filling loss.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>Tuple</em><em>[</em><em>torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>]</em>) – Logits returned by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">JointModel</span></code>. It is a tuple
+containing logits for intent classification and slot filling.</p></li>
+<li><p><strong>targets</strong> (<em>Tuple</em><em>[</em><em>torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>]</em>) – Tuple of target Tensors
+containing true document label/target and true word labels/targets.</p></li>
+<li><p><strong>context</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Averaged intent and slot loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logits: Tuple[torch.Tensor, torch.Tensor], targets: Optional[torch.Tensor] = None, context: Optional[Dict[str, Any]] = None</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>Tuple</em><em>[</em><em>torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>]</em>) – Logits returned by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">JointModel</span></code>. It’s tuple
+containing logits for intent classification and slot filling.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – Not applicable. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotScores">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.intent_slot_output_layer.</code><code class="sig-name descname">IntentSlotScores</code><span class="sig-paren">(</span><em class="sig-param">doc_scores: torch.jit.ScriptModule</em>, <em class="sig-param">word_scores: torch.jit.ScriptModule</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotScores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotScores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.intent_slot_output_layer.IntentSlotScores.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">logits: Tuple[torch.Tensor, torch.Tensor], context: Dict[str, torch.Tensor]</em><span class="sig-paren">)</span> → Tuple[List[Dict[str, float]], List[List[Dict[str, float]]]]<a class="reference internal" href="../_modules/pytext/models/output_layers/intent_slot_output_layer.html#IntentSlotScores.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.intent_slot_output_layer.IntentSlotScores.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.lm_output_layer">
+<span id="pytext-models-output-layers-lm-output-layer-module"></span><h2>pytext.models.output_layers.lm_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.lm_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.lm_output_layer.LMOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.lm_output_layer.</code><code class="sig-name descname">LMOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: List[str], loss_fn: pytext.loss.loss.Loss = None, config=None, pad_token_idx=-100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/lm_output_layer.html#LMOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.lm_output_layer.LMOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for language models. It supports <cite>CrossEntropyLoss</cite> per word.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>CrossEntropyLoss</em>) – Cross-entropy loss component. Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.lm_output_layer.LMOutputLayer.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.lm_output_layer.LMOutputLayer.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-entropy loss component for computing loss.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.lm_output_layer.LMOutputLayer.calculate_perplexity">
+<em class="property">static </em><code class="sig-name descname">calculate_perplexity</code><span class="sig-paren">(</span><em class="sig-param">sequence_loss: torch.Tensor</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/lm_output_layer.html#LMOutputLayer.calculate_perplexity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.lm_output_layer.LMOutputLayer.calculate_perplexity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.lm_output_layer.LMOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.lm_output_layer.LMOutputLayer.Config</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/lm_output_layer.html#LMOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.lm_output_layer.LMOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.lm_output_layer.LMOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor, target: torch.Tensor, context: Dict[str, Any], reduce=True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/lm_output_layer.html#LMOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.lm_output_layer.LMOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute word prediction loss by comparing prediction of each word in the
+sentence with the true word.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logit returned by
+<a class="reference internal" href="pytext.models.language_models.html#pytext.models.language_models.lmlstm.LMLSTM" title="pytext.models.language_models.lmlstm.LMLSTM"><code class="xref py py-class docutils literal notranslate"><span class="pre">LMLSTM</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>torch.Tensor</em>) – Not applicable for language models.</p></li>
+<li><p><strong>context</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Not applicable. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Word prediction loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.lm_output_layer.LMOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/output_layers/lm_output_layer.html#LMOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.lm_output_layer.LMOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.
+Prediction is computed using argmax over the word label/target space.
+Scores are softmax scores over the model logits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logits</strong> (<em>torch.Tensor</em>) – Logits returned
+<a class="reference internal" href="pytext.models.language_models.html#pytext.models.language_models.lmlstm.LMLSTM" title="pytext.models.language_models.lmlstm.LMLSTM"><code class="xref py py-class docutils literal notranslate"><span class="pre">LMLSTM</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>torch.Tensor</em>) – True words.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.output_layer_base">
+<span id="pytext-models-output-layers-output-layer-base-module"></span><h2>pytext.models.output_layers.output_layer_base module<a class="headerlink" href="#module-pytext.models.output_layers.output_layer_base" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.output_layer_base.OutputLayerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.output_layer_base.</code><code class="sig-name descname">OutputLayerBase</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.module.Module" title="pytext.models.module.Module"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.module.Module</span></code></a></p>
+<p>Base class for all output layers in PyText. The responsibilities of this layer are</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Implement how loss is computed from logits and targets.</p></li>
+<li><p>Implement how to get predictions from logits.</p></li>
+<li><dl class="simple">
+<dt>Implement the Caffe2 operator for performing the above tasks. This is</dt><dd><p>used when PyText exports PyTorch model to Caffe2.</p>
+</dd>
+</dl>
+</li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>type</em>) – The loss function object to use for computing loss.
+Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.output_layer_base.OutputLayerBase.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>The loss function object to use for computing loss.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.output_layer_base.OutputLayerBase.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the output layer to Caffe2 by manually adding the necessary operators
+to the init_net and predict_net and, returns the list of external output
+blobs to be added to the model. By default this does nothing, so any
+sub-class must override this method (if necessary).</p>
+<p>To learn about Caffe2 computation graphs and why we need two networks,
+<cite>init_net</cite> and <cite>predict_net</cite>/<cite>exec_net</cite> read
+<a class="reference external" href="https://caffe2.ai/docs/intro-tutorial#null__nets-and-operators">https://caffe2.ai/docs/intro-tutorial#null__nets-and-operators</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace</strong> (<em>core.workspace</em>) – Caffe2 <cite>workspace</cite> to use for adding the
+operator. See <a class="reference external" href="https://caffe2.ai/docs/workspace.html">https://caffe2.ai/docs/workspace.html</a> to learn about
+Caffe2 workspace.</p></li>
+<li><p><strong>init_net</strong> (<em>core.Net</em>) – Caffe2 <cite>init_net</cite> to add the operator to.</p></li>
+<li><p><strong>predict_net</strong> (<em>core.Net</em>) – Caffe2 <cite>predict_net</cite> to add the operator to.</p></li>
+<li><p><strong>model_out</strong> (<em>torch.Tensor</em>) – Output logit Tensor from the model to .</p></li>
+<li><p><strong>output_name</strong> (<em>str</em>) – Name of <cite>model_out</cite> to use in Caffe2 net.</p></li>
+<li><p><strong>label_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – List of names of the targets/labels to
+expose from the Caffe2 net.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>List of output blobs that the <cite>output_layer</cite></dt><dd><p>generates.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[core.BlobReference]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.output_layer_base.OutputLayerBase.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">target: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return the loss given logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.output_layer_base.OutputLayerBase.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">targets: Optional[torch.Tensor] = None</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.pairwise_ranking_output_layer">
+<span id="pytext-models-output-layers-pairwise-ranking-output-layer-module"></span><h2>pytext.models.output_layers.pairwise_ranking_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.pairwise_ranking_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.pairwise_ranking_output_layer.</code><code class="sig-name descname">PairwiseRankingOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/pairwise_ranking_output_layer.html#PairwiseRankingOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/pairwise_ranking_output_layer.html#PairwiseRankingOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">targets</em>, <em class="sig-param">context</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/pairwise_ranking_output_layer.html#PairwiseRankingOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.squad_output_layer">
+<span id="pytext-models-output-layers-squad-output-layer-module"></span><h2>pytext.models.output_layers.squad_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.squad_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.squad_output_layer.SquadOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.squad_output_layer.</code><code class="sig-name descname">SquadOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">loss_fn: pytext.loss.loss.Loss</em>, <em class="sig-param">ignore_impossible: bool = True</em>, <em class="sig-param">pos_loss_weight: float = 0.5</em>, <em class="sig-param">has_answer_loss_weight: float = 0.5</em>, <em class="sig-param">has_answer_labels: Iterable[str] = ('False'</em>, <em class="sig-param">'True')</em>, <em class="sig-param">false_label: str = 'False'</em>, <em class="sig-param">max_answer_len: int = 30</em>, <em class="sig-param">hard_weight: float = 0.0</em>, <em class="sig-param">is_kd: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/squad_output_layer.html#SquadOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.squad_output_layer.SquadOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.squad_output_layer.SquadOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[Iterable[str]] = None</em>, <em class="sig-param">is_kd: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/squad_output_layer.html#SquadOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.squad_output_layer.SquadOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.squad_output_layer.SquadOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logits: Tuple[torch.Tensor, ...], targets: Tuple[torch.Tensor, ...], contexts: Optional[Dict[str, Any]] = None, *args, **kwargs</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/squad_output_layer.html#SquadOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.squad_output_layer.SquadOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return the loss given logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.=</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.squad_output_layer.SquadOutputLayer.get_position_preds">
+<code class="sig-name descname">get_position_preds</code><span class="sig-paren">(</span><em class="sig-param">start_pos_logits: torch.Tensor</em>, <em class="sig-param">end_pos_logits: torch.Tensor</em>, <em class="sig-param">max_span_length: int</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/squad_output_layer.html#SquadOutputLayer.get_position_preds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.squad_output_layer.SquadOutputLayer.get_position_preds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.squad_output_layer.SquadOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor, targets: torch.Tensor, contexts: Dict[str, List[Any]]</em><span class="sig-paren">)</span> → Tuple[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]<a class="reference internal" href="../_modules/pytext/models/output_layers/squad_output_layer.html#SquadOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.squad_output_layer.SquadOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.utils">
+<span id="pytext-models-output-layers-utils-module"></span><h2>pytext.models.output_layers.utils module<a class="headerlink" href="#module-pytext.models.output_layers.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.utils.OutputLayerUtils">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.utils.</code><code class="sig-name descname">OutputLayerUtils</code><a class="reference internal" href="../_modules/pytext/models/output_layers/utils.html#OutputLayerUtils"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.utils.OutputLayerUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.utils.OutputLayerUtils.gen_additional_blobs">
+<em class="property">static </em><code class="sig-name descname">gen_additional_blobs</code><span class="sig-paren">(</span><em class="sig-param">predict_net: caffe2.python.core.Net, probability_out, model_out: torch.Tensor, output_name: str, label_names: List[str]</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/utils.html#OutputLayerUtils.gen_additional_blobs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.utils.OutputLayerUtils.gen_additional_blobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility method to generate additional blobs for human readable result for
+models that use explicit labels.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers.word_tagging_output_layer">
+<span id="pytext-models-output-layers-word-tagging-output-layer-module"></span><h2>pytext.models.output_layers.word_tagging_output_layer module<a class="headerlink" href="#module-pytext.models.output_layers.word_tagging_output_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.word_tagging_output_layer.</code><code class="sig-name descname">CRFOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">num_tags</em>, <em class="sig-param">labels: pytext.data.utils.Vocabulary</em>, <em class="sig-param">*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for word tagging models that use Conditional Random Field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>num_tags</strong> (<em>int</em>) – Total number of possible word tags.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.num_tags">
+<code class="sig-name descname">num_tags</code><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.num_tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total number of possible word tags.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the CRF output layer to Caffe2.
+See <cite>OutputLayerBase.export_to_caffe2()</cite> for details.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.component.ComponentMeta.__new__.&lt;locals&gt;.Config</em>, <em class="sig-param">labels: pytext.data.utils.Vocabulary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor, target: torch.Tensor, context: Dict[str, Any], reduce=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute word tagging loss by using CRF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logit returned by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code>.</p></li>
+<li><p><strong>targets</strong> (<em>torch.Tensor</em>) – True document label/target.</p></li>
+<li><p><strong>context</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">target: Optional[torch.Tensor] = None</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<p>Prediction is computed using CRF decoding.</p>
+<p>Scores are softmax scores over the model logits where the logits are
+computed by rearranging the word logits such that decoded word tag has
+the highest valued logits. This is done because with CRF, the highest valued
+word tag for a given may not be part of the overall set of word tags. In
+order for argmax to work, we rearrange the logit values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned
+<code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – Not applicable. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFWordTaggingScores">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.word_tagging_output_layer.</code><code class="sig-name descname">CRFWordTaggingScores</code><span class="sig-paren">(</span><em class="sig-param">classes: List[str], crf</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFWordTaggingScores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFWordTaggingScores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores" title="pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.CRFWordTaggingScores.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor, context: Dict[str, torch.Tensor]</em><span class="sig-paren">)</span> → List[List[Dict[str, float]]]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFWordTaggingScores.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.CRFWordTaggingScores.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.word_tagging_output_layer.</code><code class="sig-name descname">WordTaggingOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for word tagging models. It supports <cite>CrossEntropyLoss</cite> per word.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>CrossEntropyLoss</em>) – Cross-entropy loss component. Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-entropy loss component.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the word tagging output layer to Caffe2.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config</em>, <em class="sig-param">labels: pytext.data.utils.Vocabulary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor, target: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], context: Dict[str, Any], reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute word tagging loss by comparing prediction of each word in the
+sentence with its true label/target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logit returned by
+<a class="reference internal" href="pytext.models.html#pytext.models.word_model.WordTaggingModel" title="pytext.models.word_model.WordTaggingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>torch.Tensor</em>) – True document label/target.</p></li>
+<li><p><strong>context</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Word tagging loss for all words in the sentence.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.
+Prediction is computed using argmax over the word label/target space.
+Scores are softmax scores over the model logits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned
+<a class="reference internal" href="pytext.models.html#pytext.models.word_model.WordTaggingModel" title="pytext.models.word_model.WordTaggingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.word_tagging_output_layer.</code><code class="sig-name descname">WordTaggingScores</code><span class="sig-paren">(</span><em class="sig-param">classes</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingScores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">torch.Tensor]] = None</em><span class="sig-paren">)</span> → List[List[Dict[str, float]]]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingScores.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.word_tagging_output_layer.WordTaggingScores.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.output_layers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.models.output_layers" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.output_layers.OutputLayerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">OutputLayerBase</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.OutputLayerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.module.Module" title="pytext.models.module.Module"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.module.Module</span></code></a></p>
+<p>Base class for all output layers in PyText. The responsibilities of this layer are</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Implement how loss is computed from logits and targets.</p></li>
+<li><p>Implement how to get predictions from logits.</p></li>
+<li><dl class="simple">
+<dt>Implement the Caffe2 operator for performing the above tasks. This is</dt><dd><p>used when PyText exports PyTorch model to Caffe2.</p>
+</dd>
+</dl>
+</li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>type</em>) – The loss function object to use for computing loss.
+Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.OutputLayerBase.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.OutputLayerBase.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>The loss function object to use for computing loss.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.OutputLayerBase.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.OutputLayerBase.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the output layer to Caffe2 by manually adding the necessary operators
+to the init_net and predict_net and, returns the list of external output
+blobs to be added to the model. By default this does nothing, so any
+sub-class must override this method (if necessary).</p>
+<p>To learn about Caffe2 computation graphs and why we need two networks,
+<cite>init_net</cite> and <cite>predict_net</cite>/<cite>exec_net</cite> read
+<a class="reference external" href="https://caffe2.ai/docs/intro-tutorial#null__nets-and-operators">https://caffe2.ai/docs/intro-tutorial#null__nets-and-operators</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace</strong> (<em>core.workspace</em>) – Caffe2 <cite>workspace</cite> to use for adding the
+operator. See <a class="reference external" href="https://caffe2.ai/docs/workspace.html">https://caffe2.ai/docs/workspace.html</a> to learn about
+Caffe2 workspace.</p></li>
+<li><p><strong>init_net</strong> (<em>core.Net</em>) – Caffe2 <cite>init_net</cite> to add the operator to.</p></li>
+<li><p><strong>predict_net</strong> (<em>core.Net</em>) – Caffe2 <cite>predict_net</cite> to add the operator to.</p></li>
+<li><p><strong>model_out</strong> (<em>torch.Tensor</em>) – Output logit Tensor from the model to .</p></li>
+<li><p><strong>output_name</strong> (<em>str</em>) – Name of <cite>model_out</cite> to use in Caffe2 net.</p></li>
+<li><p><strong>label_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – List of names of the targets/labels to
+expose from the Caffe2 net.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>List of output blobs that the <cite>output_layer</cite></dt><dd><p>generates.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[core.BlobReference]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.OutputLayerBase.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">target: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.OutputLayerBase.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return the loss given logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.OutputLayerBase.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">targets: Optional[torch.Tensor] = None</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/output_layers/output_layer_base.html#OutputLayerBase.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.OutputLayerBase.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.CRFOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">CRFOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">num_tags</em>, <em class="sig-param">labels: pytext.data.utils.Vocabulary</em>, <em class="sig-param">*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for word tagging models that use Conditional Random Field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>num_tags</strong> (<em>int</em>) – Total number of possible word tags.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.CRFOutputLayer.num_tags">
+<code class="sig-name descname">num_tags</code><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer.num_tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total number of possible word tags.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.CRFOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the CRF output layer to Caffe2.
+See <cite>OutputLayerBase.export_to_caffe2()</cite> for details.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.CRFOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.config.component.ComponentMeta.__new__.&lt;locals&gt;.Config</em>, <em class="sig-param">labels: pytext.data.utils.Vocabulary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.CRFOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor, target: torch.Tensor, context: Dict[str, Any], reduce=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute word tagging loss by using CRF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logit returned by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code>.</p></li>
+<li><p><strong>targets</strong> (<em>torch.Tensor</em>) – True document label/target.</p></li>
+<li><p><strong>context</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.CRFOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">target: Optional[torch.Tensor] = None</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<p>Prediction is computed using CRF decoding.</p>
+<p>Scores are softmax scores over the model logits where the logits are
+computed by rearranging the word logits such that decoded word tag has
+the highest valued logits. This is done because with CRF, the highest valued
+word tag for a given may not be part of the overall set of word tags. In
+order for argmax to work, we rearrange the logit values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned
+<code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – Not applicable. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.CRFOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#CRFOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.CRFOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.ClassificationOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">ClassificationOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.ClassificationOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for document classification models.
+It supports <cite>CrossEntropyLoss</cite> and <cite>BinaryCrossEntropyLoss</cite> per document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>Union</em><em>[</em><em>CrossEntropyLoss</em><em>, </em><em>BinaryCrossEntropyLoss</em><em>]</em>) – The loss function to use for computing loss. Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.ClassificationOutputLayer.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.ClassificationOutputLayer.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>The loss function to use for computing loss.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.ClassificationOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.ClassificationOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.ClassificationOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_classification_output_layer.html#ClassificationOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.ClassificationOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<p>Prediction is computed using argmax over the document label/target space.</p>
+<p>Scores are sigmoid or softmax scores over the model logits depending on
+the loss component being used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned
+<a class="reference internal" href="pytext.models.html#pytext.models.doc_model.DocModel" title="pytext.models.doc_model.DocModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DocModel</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.RegressionOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">RegressionOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">loss_fn: pytext.loss.loss.MSELoss</em>, <em class="sig-param">squash_to_unit_range: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.RegressionOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for doc regression models. Currently only supports Mean Squared Error
+loss.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loss</strong> (<em>MSELoss</em>) – config for MSE loss</p></li>
+<li><p><strong>squash_to_unit_range</strong> (<em>bool</em>) – whether to clamp the output to the range [0, 1],
+via a sigmoid.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.RegressionOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.RegressionOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.RegressionOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">target: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.RegressionOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute regression loss from logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.RegressionOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/doc_regression_output_layer.html#RegressionOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.RegressionOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute predictions and scores from the model (unlike in classification, where
+prediction = “most likely class” and scores = “log probs”, here these are the
+same values). If <cite>squash_to_unit_range</cite> is True, fit prediction to [0, 1] via
+a sigmoid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned from the model.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">WordTaggingOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<p>Output layer for word tagging models. It supports <cite>CrossEntropyLoss</cite> per word.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loss_fn</strong> (<em>CrossEntropyLoss</em>) – Cross-entropy loss component. Defaults to None.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer.loss_fn">
+<code class="sig-name descname">loss_fn</code><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer.loss_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-entropy loss component.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer.export_to_caffe2">
+<code class="sig-name descname">export_to_caffe2</code><span class="sig-paren">(</span><em class="sig-param">workspace: &lt;module 'caffe2.python.workspace' from '/Users/brianjo/anaconda3/lib/python3.7/site-packages/torch-1.3.1-py3.7-macosx-10.9-x86_64.egg/caffe2/python/workspace.py'&gt;</em>, <em class="sig-param">init_net: caffe2.python.core.Net</em>, <em class="sig-param">predict_net: caffe2.python.core.Net</em>, <em class="sig-param">model_out: torch.Tensor</em>, <em class="sig-param">output_name: str</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.export_to_caffe2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer.export_to_caffe2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports the word tagging output layer to Caffe2.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config</em>, <em class="sig-param">labels: pytext.data.utils.Vocabulary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor, target: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], context: Dict[str, Any], reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute word tagging loss by comparing prediction of each word in the
+sentence with its true label/target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logit returned by
+<a class="reference internal" href="pytext.models.html#pytext.models.word_model.WordTaggingModel" title="pytext.models.word_model.WordTaggingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>torch.Tensor</em>) – True document label/target.</p></li>
+<li><p><strong>context</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Word tagging loss for all words in the sentence.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit: torch.Tensor</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → Tuple[torch.Tensor, torch.Tensor]<a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.
+Prediction is computed using argmax over the word label/target space.
+Scores are softmax scores over the model logits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned
+<a class="reference internal" href="pytext.models.html#pytext.models.word_model.WordTaggingModel" title="pytext.models.word_model.WordTaggingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">WordTaggingModel</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.WordTaggingOutputLayer.torchscript_predictions">
+<code class="sig-name descname">torchscript_predictions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/word_tagging_output_layer.html#WordTaggingOutputLayer.torchscript_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.WordTaggingOutputLayer.torchscript_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.PairwiseRankingOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">PairwiseRankingOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Optional[pytext.loss.loss.Loss] = None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/pairwise_ranking_output_layer.html#PairwiseRankingOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseRankingOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.PairwiseRankingOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/pairwise_ranking_output_layer.html#PairwiseRankingOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseRankingOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.PairwiseRankingOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logit</em>, <em class="sig-param">targets</em>, <em class="sig-param">context</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/pairwise_ranking_output_layer.html#PairwiseRankingOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseRankingOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.PairwiseCosineDistanceOutputLayer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">PairwiseCosineDistanceOutputLayer</code><span class="sig-paren">(</span><em class="sig-param">target_names: Optional[List[str]] = None</em>, <em class="sig-param">loss_fn: Union[pytext.loss.loss.BinaryCrossEntropyLoss</em>, <em class="sig-param">pytext.loss.loss.CosineEmbeddingLoss</em>, <em class="sig-param">pytext.loss.loss.MAELoss</em>, <em class="sig-param">pytext.loss.loss.MSELoss</em>, <em class="sig-param">pytext.loss.loss.NLLLoss] = None</em>, <em class="sig-param">score_threshold: bool = 0.9</em>, <em class="sig-param">score_type: pytext.models.output_layers.distance_output_layer.OutputScore = &lt;OutputScore.norm_cosine: 2&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseCosineDistanceOutputLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.output_layers.output_layer_base.OutputLayerBase" title="pytext.models.output_layers.output_layer_base.OutputLayerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.output_layers.output_layer_base.OutputLayerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.PairwiseCosineDistanceOutputLayer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">metadata: Optional[pytext.fields.field.FieldMeta] = None</em>, <em class="sig-param">labels: Optional[pytext.data.utils.Vocabulary] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseCosineDistanceOutputLayer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.PairwiseCosineDistanceOutputLayer.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor</em>, <em class="sig-param">targets: torch.Tensor</em>, <em class="sig-param">context: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em>, <em class="sig-param">reduce: bool = True</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseCosineDistanceOutputLayer.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return the loss given logits and targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – True label/target to compute loss against.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+<li><p><strong>reduce</strong> (<em>bool</em>) – Whether to reduce loss over the batch. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model loss.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.output_layers.PairwiseCosineDistanceOutputLayer.get_pred">
+<code class="sig-name descname">get_pred</code><span class="sig-paren">(</span><em class="sig-param">logits: torch.Tensor</em>, <em class="sig-param">targets: torch.Tensor</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/output_layers/distance_output_layer.html#PairwiseCosineDistanceOutputLayer.get_pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.PairwiseCosineDistanceOutputLayer.get_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and return prediction and scores from the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logit</strong> (<em>torch.Tensor</em>) – Logits returned <a class="reference internal" href="pytext.models.html#pytext.models.Model" title="pytext.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p></li>
+<li><p><strong>targets</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – True label/target. Only used by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LMOutputLayer</span></code>. Defaults to None.</p></li>
+<li><p><strong>context</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Context is a dictionary of items
+that’s passed as additional metadata by the
+<a class="reference internal" href="pytext.data.html#pytext.data.DataHandler" title="pytext.data.DataHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataHandler</span></code></a>. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Model prediction and scores.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.output_layers.OutputLayerUtils">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.output_layers.</code><code class="sig-name descname">OutputLayerUtils</code><a class="reference internal" href="../_modules/pytext/models/output_layers/utils.html#OutputLayerUtils"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.OutputLayerUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="pytext.models.output_layers.OutputLayerUtils.gen_additional_blobs">
+<em class="property">static </em><code class="sig-name descname">gen_additional_blobs</code><span class="sig-paren">(</span><em class="sig-param">predict_net: caffe2.python.core.Net, probability_out, model_out: torch.Tensor, output_name: str, label_names: List[str]</em><span class="sig-paren">)</span> → List[caffe2.python.core.BlobReference]<a class="reference internal" href="../_modules/pytext/models/output_layers/utils.html#OutputLayerUtils.gen_additional_blobs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.output_layers.OutputLayerUtils.gen_additional_blobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility method to generate additional blobs for human readable result for
+models that use explicit labels.</p>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.models.html">pytext.models package</a><ul>
+<li>Previous: <a href="pytext.models.language_models.html" title="previous chapter">pytext.models.language_models package</a></li>
+<li>Next: <a href="pytext.models.qna.html" title="next chapter">pytext.models.qna package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

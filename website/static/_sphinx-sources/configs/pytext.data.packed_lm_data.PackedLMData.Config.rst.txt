@@ -1,0 +1,67 @@
+PackedLMData.Config
+===================
+
+
+
+**Component:** :class:`PackedLMData  <pytext.data.packed_lm_data.PackedLMData>`\ 
+
+
+.. py:currentmodule:: pytext.data.packed_lm_data
+.. py:class:: PackedLMData.Config
+  :noindex:
+
+  **Bases:** :class:`Data.Config <pytext.data.data.Data.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **source**: :doc:`DataSource.Config <pytext.data.sources.data_source.DataSource.Config>` = :doc:`TSVDataSource.Config <pytext.data.sources.tsv.TSVDataSource.Config>`\ ()
+    \ 
+
+  **batcher**: :doc:`Batcher.Config <pytext.data.data.Batcher.Config>` = :doc:`PoolingBatcher.Config <pytext.data.data.PoolingBatcher.Config>`\ ()
+    \ 
+
+  **sort_key**: Optional[str] = ``None``
+    \ 
+
+  **in_memory**: Optional[bool] = ``True``
+    \ 
+
+  **max_seq_len**: int = ``128``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "source": {
+          "TSVDataSource": {
+              "column_mapping": {},
+              "train_filename": null,
+              "test_filename": null,
+              "eval_filename": null,
+              "field_names": null,
+              "delimiter": "\t",
+              "quoted": false,
+              "drop_incomplete_rows": false
+          }
+      },
+      "batcher": {
+          "PoolingBatcher": {
+              "train_batch_size": 16,
+              "eval_batch_size": 16,
+              "test_batch_size": 16,
+              "pool_num_batches": 10000,
+              "num_shuffled_pools": 1
+          }
+      },
+      "sort_key": null,
+      "in_memory": true,
+      "max_seq_len": 128
+  }

@@ -1,0 +1,36 @@
+BERTInitialTokenizer.Config
+===========================
+
+
+
+**Component:** :class:`BERTInitialTokenizer  <pytext.data.tokenizers.tokenizer.BERTInitialTokenizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tokenizers.tokenizer
+.. py:class:: BERTInitialTokenizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`\ 
+
+  Config for this class.
+
+**All Attributes (including base classes)**
+
+  **split_regex**: str = ``'\\s+'``
+    \ 
+
+  **lowercase**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "split_regex": "\\s+",
+      "lowercase": true
+  }

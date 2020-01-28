@@ -1,0 +1,7 @@
+disjoint_multitask_data
+=======================
+
+
+.. toctree::
+
+  pytext.data.disjoint_multitask_data.DisjointMultitaskData.Config

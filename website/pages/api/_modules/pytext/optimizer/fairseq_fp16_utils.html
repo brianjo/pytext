@@ -1,0 +1,314 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.optimizer.fairseq_fp16_utils</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">fairseq</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">fairseq.optim.fp16_optimizer</span> <span class="kn">import</span> <span class="n">DynamicLossScaler</span> <span class="k">as</span> <span class="n">Fairseq_DynamicLossScaler</span>
+
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin">[docs]</a><span class="k">class</span> <span class="nc">Fairseq_FP16OptimizerMixin</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># forward __init__ call to the next class in mro(method resolution order)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.build_fp32_params"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.build_fp32_params">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">build_fp32_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="c1"># create FP32 copy of parameters and grads</span>
+        <span class="n">total_param_size</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">fp32_params</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">total_param_size</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+            <span class="n">numel</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+            <span class="n">fp32_params</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">numel</span><span class="p">]</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">numel</span>
+        <span class="n">fp32_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">fp32_params</span><span class="p">)</span>
+        <span class="n">fp32_params</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="n">fp32_params</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">total_param_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fp32_params</span></div>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.state_dict"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Return the optimizer's state dict."""</span>
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp32_optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+        <span class="n">state_dict</span><span class="p">[</span><span class="s2">"loss_scale"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span>
+        <span class="k">return</span> <span class="n">state_dict</span></div>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.load_state_dict"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.load_state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">optimizer_overrides</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""Load an optimizer state dict.</span>
+
+<span class="sd">        In general we should prefer the configuration of the existing optimizer</span>
+<span class="sd">        instance (e.g., learning rate) over that found in the state_dict. This</span>
+<span class="sd">        allows us to resume training from a checkpoint using a new set of</span>
+<span class="sd">        optimizer args.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="s2">"loss_scale"</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span> <span class="o">=</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"loss_scale"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fp32_optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">optimizer_overrides</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.backward"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.backward">[docs]</a>    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+        <span class="sd">"""Computes the sum of gradients of the given tensor w.r.t. graph leaves.</span>
+
+<span class="sd">        Compared to :func:`fairseq.optim.FairseqOptimizer.backward`, this</span>
+<span class="sd">        function additionally dynamically scales the loss to avoid gradient</span>
+<span class="sd">        underflow.</span>
+<span class="sd">        """</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_needs_sync</span> <span class="o">=</span> <span class="bp">True</span></div>
+
+    <span class="k">def</span> <span class="nf">_sync_fp16_grads_to_fp32</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">multiply_grads</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_needs_sync</span><span class="p">:</span>
+            <span class="c1"># copy FP16 grads to FP32</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp16_params</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">grad_data</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span>
+                    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+                    <span class="k">else</span> <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">numel</span> <span class="o">=</span> <span class="n">grad_data</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fp32_params</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">numel</span><span class="p">]</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span>
+                    <span class="n">grad_data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">offset</span> <span class="o">+=</span> <span class="n">numel</span>
+
+            <span class="c1"># correct for dynamic loss scaler</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fp32_params</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">multiply_grads</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_needs_sync</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.multiply_grads"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.multiply_grads">[docs]</a>    <span class="k">def</span> <span class="nf">multiply_grads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">"""Multiplies grads by a constant ``c``."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_needs_sync</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync_fp16_grads_to_fp32</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fp32_params</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">c</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.clip_grad_norm"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.clip_grad_norm">[docs]</a>    <span class="k">def</span> <span class="nf">clip_grad_norm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_norm</span><span class="p">):</span>
+        <span class="sd">"""Clips gradient norm and updates dynamic loss scaler."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_fp16_grads_to_fp32</span><span class="p">()</span>
+        <span class="n">grad_norm</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">clip_grad_norm_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fp32_params</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">max_norm</span><span class="p">)</span>
+
+        <span class="c1"># detect overflow and adjust loss scale</span>
+        <span class="n">overflow</span> <span class="o">=</span> <span class="n">Fairseq_DynamicLossScaler</span><span class="o">.</span><span class="n">has_overflow</span><span class="p">(</span><span class="n">grad_norm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">update_scale</span><span class="p">(</span><span class="n">overflow</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">overflow</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_loss_scale</span><span class="p">:</span>
+                <span class="c1"># Use FloatingPointError as an uncommon error that parent</span>
+                <span class="c1"># functions can safely catch to stop training.</span>
+                <span class="k">raise</span> <span class="ne">FloatingPointError</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="s2">"Minimum loss scale reached ({}). Your loss is probably exploding. "</span>
+                        <span class="s2">"Try lowering the learning rate, using gradient clipping or "</span>
+                        <span class="s2">"increasing the batch size."</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_loss_scale</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">OverflowError</span><span class="p">(</span><span class="s2">"setting loss scale to: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">grad_norm</span></div>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.step"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closure</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""Performs a single optimization step."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_fp16_grads_to_fp32</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fp32_optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">closure</span><span class="p">)</span>
+
+        <span class="c1"># copy FP32 params back into FP16 model</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp16_params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">numel</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fp32_params</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">numel</span><span class="p">]</span><span class="o">.</span><span class="n">view_as</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">numel</span></div>
+
+<div class="viewcode-block" id="Fairseq_FP16OptimizerMixin.zero_grad"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_FP16OptimizerMixin.zero_grad">[docs]</a>    <span class="k">def</span> <span class="nf">zero_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Clears the gradients of all optimized parameters."""</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp16_params</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_needs_sync</span> <span class="o">=</span> <span class="bp">False</span></div></div>
+
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin">[docs]</a><span class="k">class</span> <span class="nc">Fairseq_MemoryEfficientFP16OptimizerMixin</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># forward __init__ call to the next class in mro(method resolution order)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.state_dict"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Return the optimizer's state dict."""</span>
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+        <span class="n">state_dict</span><span class="p">[</span><span class="s2">"loss_scale"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span>
+        <span class="k">return</span> <span class="n">state_dict</span></div>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.load_state_dict"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.load_state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">optimizer_overrides</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""Load an optimizer state dict.</span>
+
+<span class="sd">        In general we should prefer the configuration of the existing optimizer</span>
+<span class="sd">        instance (e.g., learning rate) over that found in the state_dict. This</span>
+<span class="sd">        allows us to resume training from a checkpoint using a new set of</span>
+<span class="sd">        optimizer args.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="s2">"loss_scale"</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span> <span class="o">=</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"loss_scale"</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">optimizer_overrides</span><span class="p">)</span>
+
+        <span class="c1"># Hack: PyTorch automatically casts the optimizer state to match the</span>
+        <span class="c1"># type of the current parameters. But with --memory-efficient-fp16 the</span>
+        <span class="c1"># params are FP16 while the optimizer state is FP32 and we don't want</span>
+        <span class="c1"># to cast. A workaround is to manually copy back the original state</span>
+        <span class="c1"># after the optimizer has been loaded.</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span>
+        <span class="n">saved_groups</span> <span class="o">=</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"param_groups"</span><span class="p">]</span>
+        <span class="n">id_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">old_id</span><span class="p">:</span> <span class="n">p</span>
+            <span class="k">for</span> <span class="n">old_id</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">saved_groups</span><span class="p">)),</span>
+                <span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">)),</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">[</span><span class="s2">"state"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">id_map</span><span class="p">:</span>
+                <span class="n">param</span> <span class="o">=</span> <span class="n">id_map</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span></div>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.backward"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.backward">[docs]</a>    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+        <span class="sd">"""Computes the sum of gradients of the given tensor w.r.t. graph leaves.</span>
+
+<span class="sd">        Compared to :func:`fairseq.optim.FairseqOptimizer.backward`, this</span>
+<span class="sd">        function additionally dynamically scales the loss to avoid gradient</span>
+<span class="sd">        underflow.</span>
+<span class="sd">        """</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_grads_are_scaled</span> <span class="o">=</span> <span class="bp">True</span></div>
+
+    <span class="k">def</span> <span class="nf">_unscale_grads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">multiply_grads</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_grads_are_scaled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_grads_are_scaled</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="c1"># correct for dynamic loss scaler</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">multiply_grads</span><span class="p">(</span>
+                <span class="n">multiply_grads</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">multiply_grads</span> <span class="o">==</span> <span class="mf">1.0</span>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.multiply_grads"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.multiply_grads">[docs]</a>    <span class="k">def</span> <span class="nf">multiply_grads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">"""Multiplies grads by a constant *c*."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_grads_are_scaled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_unscale_grads</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">multiply_grads</span><span class="p">(</span><span class="n">c</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.clip_grad_norm"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.clip_grad_norm">[docs]</a>    <span class="k">def</span> <span class="nf">clip_grad_norm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_norm</span><span class="p">):</span>
+        <span class="sd">"""Clips gradient norm and updates dynamic loss scaler."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unscale_grads</span><span class="p">()</span>
+        <span class="n">grad_norm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">clip_grad_norm</span><span class="p">(</span><span class="n">max_norm</span><span class="p">)</span>
+
+        <span class="c1"># detect overflow and adjust loss scale</span>
+        <span class="n">overflow</span> <span class="o">=</span> <span class="n">Fairseq_DynamicLossScaler</span><span class="o">.</span><span class="n">has_overflow</span><span class="p">(</span><span class="n">grad_norm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">update_scale</span><span class="p">(</span><span class="n">overflow</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">overflow</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">min_loss_scale</span><span class="p">:</span>
+                <span class="c1"># Use FloatingPointError as an uncommon error that parent</span>
+                <span class="c1"># functions can safely catch to stop training.</span>
+                <span class="k">raise</span> <span class="ne">FloatingPointError</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="s2">"Minimum loss scale reached ({}). Your loss is probably exploding. "</span>
+                        <span class="s2">"Try lowering the learning rate, using gradient clipping or "</span>
+                        <span class="s2">"increasing the batch size."</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">min_loss_scale</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">OverflowError</span><span class="p">(</span><span class="s2">"setting loss scale to: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">loss_scale</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">grad_norm</span></div>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.step"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closure</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""Performs a single optimization step."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unscale_grads</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">closure</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fairseq_MemoryEfficientFP16OptimizerMixin.zero_grad"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.fairseq_fp16_utils.Fairseq_MemoryEfficientFP16OptimizerMixin.zero_grad">[docs]</a>    <span class="k">def</span> <span class="nf">zero_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Clears the gradients of all optimized parameters."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wrapped_optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_grads_are_scaled</span> <span class="o">=</span> <span class="bp">False</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

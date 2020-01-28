@@ -1,0 +1,94 @@
+NewDisjointMultitask.Config
+===========================
+
+
+
+**Component:** :class:`NewDisjointMultitask  <pytext.task.disjoint_multitask.NewDisjointMultitask>`\ 
+
+
+.. py:currentmodule:: pytext.task.disjoint_multitask
+.. py:class:: NewDisjointMultitask.Config
+  :noindex:
+
+  **Bases:** :class:`_NewTask.Config <pytext.task.new_task._NewTask.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`DisjointMultitaskData.Config <pytext.data.disjoint_multitask_data.DisjointMultitaskData.Config>` = :doc:`DisjointMultitaskData.Config <pytext.data.disjoint_multitask_data.DisjointMultitaskData.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>` = :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ ()
+    \ 
+
+  **tasks**: dict[str, :doc:`NewTask.Config <pytext.task.new_task.NewTask.Config>`] = ``{}``
+    \ 
+
+  **task_weights**: dict[str, float] = ``{}``
+    \ 
+
+  **target_task_name**: Optional[str] = ``None``
+    \ 
+
+  **metric_reporter**: :doc:`DisjointMultitaskMetricReporter.Config <pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config>` = :doc:`DisjointMultitaskMetricReporter.Config <pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "data": {
+          "sampler": {
+              "RoundRobinBatchSampler": {
+                  "iter_to_set_epoch": ""
+              }
+          },
+          "test_key": null
+      },
+      "trainer": {
+          "TaskTrainer": {
+              "epochs": 10,
+              "early_stop_after": 0,
+              "max_clip_norm": null,
+              "report_train_metrics": true,
+              "target_time_limit_seconds": null,
+              "do_eval": true,
+              "load_best_model_after_train": true,
+              "num_samples_to_log_progress": 1000,
+              "num_accumulated_batches": 1,
+              "num_batches_per_epoch": null,
+              "optimizer": {
+                  "Adam": {
+                      "lr": 0.001,
+                      "weight_decay": 1e-05,
+                      "eps": 1e-08
+                  }
+              },
+              "scheduler": null,
+              "sparsifier": null,
+              "fp16_args": {
+                  "FP16OptimizerFairseq": {
+                      "init_loss_scale": 128,
+                      "scale_window": null,
+                      "scale_tolerance": 0.0,
+                      "threshold_loss_scale": null,
+                      "min_loss_scale": 0.0001
+                  }
+              }
+          }
+      },
+      "tasks": {},
+      "task_weights": {},
+      "target_task_name": null,
+      "metric_reporter": {
+          "output_path": "/tmp/test_out.txt",
+          "pep_format": false,
+          "use_subtask_select_metric": false
+      }
+  }

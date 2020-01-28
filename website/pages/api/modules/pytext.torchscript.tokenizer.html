@@ -1,0 +1,303 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-torchscript-tokenizer-package">
+<h1>pytext.torchscript.tokenizer package<a class="headerlink" href="#pytext-torchscript-tokenizer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.torchscript.tokenizer.bpe">
+<span id="pytext-torchscript-tokenizer-bpe-module"></span><h2>pytext.torchscript.tokenizer.bpe module<a class="headerlink" href="#module-pytext.torchscript.tokenizer.bpe" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.bpe.ScriptBPE">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.bpe.</code><code class="sig-name descname">ScriptBPE</code><span class="sig-paren">(</span><em class="sig-param">vocab: Dict[str, int], eow: str = '_EOW'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.bpe.ScriptBPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+<p>Byte-pair encoding implementation in TorchScript.</p>
+<p>vocab_file should be a file-like object separated by newlines, where each line
+consists of a word and a count separated by whitespace. Words in the vocab
+therefore can’t contain space (according to python regex s). The vocab file
+should be sorted according to the importance of each token, and they will be
+merged in this priority; the actual score values are irrelevant.</p>
+<p>eow_token should be a string that is appended to the last character and token,
+and that token is used at each step in the process and returned at the end.
+You should set this to be consistent with the EOW signature used however you
+generated your ScriptBPE vocab file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">io</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vocab_file</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="s1">'''</span>
+<span class="go">hello_EOW 20</span>
+<span class="go">world_EOW 18</span>
+<span class="go">th  17</span>
+<span class="go">is_EOW 16</span>
+<span class="go">bpe_EOW 15</span>
+<span class="go">! 14</span>
+<span class="go">h 13</span>
+<span class="go">t 6</span>
+<span class="go">s_EOW 2</span>
+<span class="go">i -1</span>
+<span class="go">ii -2</span>
+<span class="go">''')</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bpe</span> <span class="o">=</span> <span class="n">ScriptBPE</span><span class="o">.</span><span class="n">from_vocab_file</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bpe</span><span class="o">.</span><span class="n">tokenize</span><span class="p">([</span><span class="s2">"hello"</span><span class="p">,</span> <span class="s2">"world"</span><span class="p">,</span> <span class="s2">"this"</span><span class="p">,</span> <span class="s2">"is"</span><span class="p">,</span> <span class="s2">"bpe"</span><span class="p">])</span>
+<span class="go">["hello_EOW", "world_EOW", "th", "is_EOW", "is_EOW", "bpe_EOW"]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bpe</span><span class="o">.</span><span class="n">tokenize</span><span class="p">([</span><span class="s2">"iiiis"</span><span class="p">])</span>
+<span class="go">["ii", "i", "is_EOW"]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.bpe.ScriptBPE.from_vocab_file">
+<em class="property">classmethod </em><code class="sig-name descname">from_vocab_file</code><span class="sig-paren">(</span><em class="sig-param">vocab_file: io.IOBase</em><span class="sig-paren">)</span> → pytext.torchscript.tokenizer.bpe.ScriptBPE<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE.from_vocab_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.bpe.ScriptBPE.from_vocab_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.bpe.ScriptBPE.from_vocab_filename">
+<em class="property">classmethod </em><code class="sig-name descname">from_vocab_filename</code><span class="sig-paren">(</span><em class="sig-param">vocab_filename: str</em><span class="sig-paren">)</span> → pytext.torchscript.tokenizer.bpe.ScriptBPE<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE.from_vocab_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.bpe.ScriptBPE.from_vocab_filename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.bpe.ScriptBPE.load_vocab">
+<em class="property">static </em><code class="sig-name descname">load_vocab</code><span class="sig-paren">(</span><em class="sig-param">file: io.IOBase</em><span class="sig-paren">)</span> → Dict[str, int]<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE.load_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.bpe.ScriptBPE.load_vocab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tokenizer.tokenizer">
+<span id="pytext-torchscript-tokenizer-tokenizer-module"></span><h2>pytext.torchscript.tokenizer.tokenizer module<a class="headerlink" href="#module-pytext.torchscript.tokenizer.tokenizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptBPETokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.tokenizer.</code><code class="sig-name descname">ScriptBPETokenizer</code><span class="sig-paren">(</span><em class="sig-param">bpe: pytext.torchscript.tokenizer.bpe.ScriptBPE</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptBPETokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptBPETokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptDoNothingTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.tokenizer.</code><code class="sig-name descname">ScriptDoNothingTokenizer</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptDoNothingTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptDoNothingTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptTextTokenizerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.tokenizer.</code><code class="sig-name descname">ScriptTextTokenizerBase</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTextTokenizerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTextTokenizerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptTextTokenizerBase.input_type">
+<code class="sig-name descname">input_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.torchscript.utils.ScriptInputType<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTextTokenizerBase.input_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTextTokenizerBase.input_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine TorchScript module input type, currently it have four types
+1) text: batch with a single text in each row, List[str]
+2) tokens: batch with a list of tokens from single text
+in each row, List[List[str]]
+3) multi_text: batch with multiple texts in each row,
+List[List[str]]
+4) multi_tokens: batch with multiple lists of tokens from
+multiple texts in each row, List[List[List[str]]]</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.tokenizer.</code><code class="sig-name descname">ScriptTokenTokenizerBase</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTokenTokenizerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase.input_type">
+<code class="sig-name descname">input_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.torchscript.utils.ScriptInputType<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTokenTokenizerBase.input_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase.input_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine TorchScript module input type, currently it have four types
+1) text: batch with a single text in each row, List[str]
+2) tokens: batch with a list of tokens from single text
+in each row, List[List[str]]
+3) multi_text: batch with multiple texts in each row,
+List[List[str]]
+4) multi_tokens: batch with multiple lists of tokens from
+multiple texts in each row, List[List[List[str]]]</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.tokenizer.</code><code class="sig-name descname">ScriptTokenizerBase</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTokenizerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase.input_type">
+<code class="sig-name descname">input_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.torchscript.utils.ScriptInputType<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTokenizerBase.input_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase.input_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine TorchScript module input type, currently it have four types
+1) text: batch with a single text in each row, List[str]
+2) tokens: batch with a list of tokens from single text
+in each row, List[List[str]]
+3) multi_text: batch with multiple texts in each row,
+List[List[str]]
+4) multi_tokens: batch with multiple lists of tokens from
+multiple texts in each row, List[List[List[str]]]</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.torchscript.tokenizer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.torchscript.tokenizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.ScriptBPE">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.</code><code class="sig-name descname">ScriptBPE</code><span class="sig-paren">(</span><em class="sig-param">vocab: Dict[str, int], eow: str = '_EOW'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptBPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.jit.ScriptModule</span></code></p>
+<p>Byte-pair encoding implementation in TorchScript.</p>
+<p>vocab_file should be a file-like object separated by newlines, where each line
+consists of a word and a count separated by whitespace. Words in the vocab
+therefore can’t contain space (according to python regex s). The vocab file
+should be sorted according to the importance of each token, and they will be
+merged in this priority; the actual score values are irrelevant.</p>
+<p>eow_token should be a string that is appended to the last character and token,
+and that token is used at each step in the process and returned at the end.
+You should set this to be consistent with the EOW signature used however you
+generated your ScriptBPE vocab file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">io</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vocab_file</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="s1">'''</span>
+<span class="go">hello_EOW 20</span>
+<span class="go">world_EOW 18</span>
+<span class="go">th  17</span>
+<span class="go">is_EOW 16</span>
+<span class="go">bpe_EOW 15</span>
+<span class="go">! 14</span>
+<span class="go">h 13</span>
+<span class="go">t 6</span>
+<span class="go">s_EOW 2</span>
+<span class="go">i -1</span>
+<span class="go">ii -2</span>
+<span class="go">''')</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bpe</span> <span class="o">=</span> <span class="n">ScriptBPE</span><span class="o">.</span><span class="n">from_vocab_file</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bpe</span><span class="o">.</span><span class="n">tokenize</span><span class="p">([</span><span class="s2">"hello"</span><span class="p">,</span> <span class="s2">"world"</span><span class="p">,</span> <span class="s2">"this"</span><span class="p">,</span> <span class="s2">"is"</span><span class="p">,</span> <span class="s2">"bpe"</span><span class="p">])</span>
+<span class="go">["hello_EOW", "world_EOW", "th", "is_EOW", "is_EOW", "bpe_EOW"]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bpe</span><span class="o">.</span><span class="n">tokenize</span><span class="p">([</span><span class="s2">"iiiis"</span><span class="p">])</span>
+<span class="go">["ii", "i", "is_EOW"]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.ScriptBPE.from_vocab_file">
+<em class="property">classmethod </em><code class="sig-name descname">from_vocab_file</code><span class="sig-paren">(</span><em class="sig-param">vocab_file: io.IOBase</em><span class="sig-paren">)</span> → pytext.torchscript.tokenizer.bpe.ScriptBPE<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE.from_vocab_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptBPE.from_vocab_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.ScriptBPE.from_vocab_filename">
+<em class="property">classmethod </em><code class="sig-name descname">from_vocab_filename</code><span class="sig-paren">(</span><em class="sig-param">vocab_filename: str</em><span class="sig-paren">)</span> → pytext.torchscript.tokenizer.bpe.ScriptBPE<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE.from_vocab_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptBPE.from_vocab_filename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.ScriptBPE.load_vocab">
+<em class="property">static </em><code class="sig-name descname">load_vocab</code><span class="sig-paren">(</span><em class="sig-param">file: io.IOBase</em><span class="sig-paren">)</span> → Dict[str, int]<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/bpe.html#ScriptBPE.load_vocab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptBPE.load_vocab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.ScriptBPETokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.</code><code class="sig-name descname">ScriptBPETokenizer</code><span class="sig-paren">(</span><em class="sig-param">bpe: pytext.torchscript.tokenizer.bpe.ScriptBPE</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptBPETokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptBPETokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.ScriptDoNothingTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.</code><code class="sig-name descname">ScriptDoNothingTokenizer</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptDoNothingTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptDoNothingTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenTokenizerBase</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.ScriptTextTokenizerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.</code><code class="sig-name descname">ScriptTextTokenizerBase</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTextTokenizerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptTextTokenizerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.ScriptTextTokenizerBase.input_type">
+<code class="sig-name descname">input_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.torchscript.utils.ScriptInputType<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTextTokenizerBase.input_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptTextTokenizerBase.input_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine TorchScript module input type, currently it have four types
+1) text: batch with a single text in each row, List[str]
+2) tokens: batch with a list of tokens from single text
+in each row, List[List[str]]
+3) multi_text: batch with multiple texts in each row,
+List[List[str]]
+4) multi_tokens: batch with multiple lists of tokens from
+multiple texts in each row, List[List[List[str]]]</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.torchscript.tokenizer.ScriptTokenTokenizerBase">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.torchscript.tokenizer.</code><code class="sig-name descname">ScriptTokenTokenizerBase</code><span class="sig-paren">(</span><em class="sig-param">optimize=None</em>, <em class="sig-param">_qualified_name=None</em>, <em class="sig-param">_compilation_unit=None</em>, <em class="sig-param">_cpp_module=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTokenTokenizerBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptTokenTokenizerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase" title="pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.torchscript.tokenizer.tokenizer.ScriptTokenizerBase</span></code></a></p>
+<dl class="method">
+<dt id="pytext.torchscript.tokenizer.ScriptTokenTokenizerBase.input_type">
+<code class="sig-name descname">input_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → pytext.torchscript.utils.ScriptInputType<a class="reference internal" href="../_modules/pytext/torchscript/tokenizer/tokenizer.html#ScriptTokenTokenizerBase.input_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.torchscript.tokenizer.ScriptTokenTokenizerBase.input_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine TorchScript module input type, currently it have four types
+1) text: batch with a single text in each row, List[str]
+2) tokens: batch with a list of tokens from single text
+in each row, List[List[str]]
+3) multi_text: batch with multiple texts in each row,
+List[List[str]]
+4) multi_tokens: batch with multiple lists of tokens from
+multiple texts in each row, List[List[List[str]]]</p>
+</dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.torchscript.html">pytext.torchscript package</a><ul>
+<li>Previous: <a href="pytext.torchscript.tensorizer.html" title="previous chapter">pytext.torchscript.tensorizer package</a></li>
+<li>Next: <a href="pytext.trainers.html" title="next chapter">pytext.trainers package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,8 @@
+squad_tensorizer
+================
+
+
+.. toctree::
+
+  pytext.data.squad_tensorizer.SquadTensorizer.Config
+  pytext.data.squad_tensorizer.SquadTensorizerForKD.Config

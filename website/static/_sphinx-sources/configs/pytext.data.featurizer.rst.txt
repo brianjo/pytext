@@ -1,0 +1,8 @@
+featurizer
+==========
+
+
+.. toctree::
+
+  pytext.data.featurizer.featurizer
+  pytext.data.featurizer.simple_featurizer

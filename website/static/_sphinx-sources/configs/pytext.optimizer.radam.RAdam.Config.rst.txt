@@ -1,0 +1,40 @@
+RAdam.Config
+============
+
+
+
+**Component:** :class:`RAdam  <pytext.optimizer.radam.RAdam>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.radam
+.. py:class:: RAdam.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **lr**: float = ``0.001``
+    \ 
+
+  **weight_decay**: float = ``1e-05``
+    \ 
+
+  **eps**: float = ``1e-08``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "lr": 0.001,
+      "weight_decay": 1e-05,
+      "eps": 1e-08
+  }

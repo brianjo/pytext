@@ -1,0 +1,83 @@
+ByteModelInput
+==============
+
+
+
+.. py:currentmodule:: pytext.models.doc_model
+.. py:class:: ByteModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.doc_model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ ()
+    \ 
+
+  **dense**: Optional[:doc:`FloatListTensorizer.Config <pytext.data.tensorizers.FloatListTensorizer.Config>`] = ``None``
+    \ 
+
+  **labels**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ ()
+    \ 
+
+  **token_bytes**: :doc:`ByteTokenTensorizer.Config <pytext.data.tensorizers.ByteTokenTensorizer.Config>` = :doc:`ByteTokenTensorizer.Config <pytext.data.tensorizers.ByteTokenTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      },
+      "dense": null,
+      "labels": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "label",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      },
+      "token_bytes": {
+          "is_input": true,
+          "column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "max_seq_len": null,
+          "max_byte_len": 15,
+          "offset_for_non_padding": 0,
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false
+      }
+  }

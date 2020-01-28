@@ -1,0 +1,386 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.pair_classification_model</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">LabelTensorizer</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">,</span> <span class="n">TokenTensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders</span> <span class="kn">import</span> <span class="n">DecoderBase</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders.mlp_decoder</span> <span class="kn">import</span> <span class="n">MLPDecoder</span>
+<span class="kn">from</span> <span class="nn">pytext.models.embeddings</span> <span class="kn">import</span> <span class="n">EmbeddingBase</span><span class="p">,</span> <span class="n">EmbeddingList</span><span class="p">,</span> <span class="n">WordEmbedding</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ClassificationOutputLayer</span><span class="p">,</span>
+    <span class="n">OutputLayerBase</span><span class="p">,</span>
+    <span class="n">PairwiseCosineDistanceOutputLayer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.bilstm_doc_attention</span> <span class="kn">import</span> <span class="n">BiLSTMDocAttention</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.docnn</span> <span class="kn">import</span> <span class="n">DocNNRepresentation</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.representation_base</span> <span class="kn">import</span> <span class="n">RepresentationBase</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">comb</span>
+
+
+<div class="viewcode-block" id="BasePairwiseModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.BasePairwiseModel">[docs]</a><span class="k">class</span> <span class="nc">BasePairwiseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    A base classification model that scores a pair of texts.</span>
+
+<span class="sd">    Subclasses need to implement the from_config, forward and save_modules.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">ClassificationOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">PairwiseCosineDistanceOutputLayer</span><span class="o">.</span><span class="n">Config</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">ClassificationOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">encode_relations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">DecoderBase</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">OutputLayerBase</span><span class="p">,</span>
+        <span class="n">encode_relations</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encode_relations</span> <span class="o">=</span> <span class="n">encode_relations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_cosine_sim</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">output_layer</span><span class="p">,</span> <span class="n">PairwiseCosineDistanceOutputLayer</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="BasePairwiseModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.BasePairwiseModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="BasePairwiseModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.BasePairwiseModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input1</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">input2</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="BasePairwiseModel.save_modules"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.BasePairwiseModel.save_modules">[docs]</a>    <span class="k">def</span> <span class="nf">save_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_create_decoder</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="n">representations</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">:</span>
+            <span class="n">num_reps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">representations</span><span class="p">)</span>
+            <span class="n">rep_dim</span> <span class="o">=</span> <span class="n">representations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">representation_dim</span>
+            <span class="n">decoder_in_dim</span> <span class="o">=</span> <span class="n">num_reps</span> <span class="o">*</span> <span class="n">rep_dim</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">encode_relations</span><span class="p">:</span>
+                <span class="n">decoder_in_dim</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">comb</span><span class="p">(</span><span class="n">num_reps</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">rep_dim</span>
+
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span>
+                <span class="n">in_dim</span><span class="o">=</span><span class="n">decoder_in_dim</span><span class="p">,</span>
+                <span class="n">out_dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">decoder</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_encode_relations</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">encodings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">rep_l</span><span class="p">,</span> <span class="n">rep_r</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">encodings</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">encodings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">rep_l</span> <span class="o">-</span> <span class="n">rep_r</span><span class="p">))</span>
+            <span class="n">encodings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rep_l</span> <span class="o">*</span> <span class="n">rep_r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">encodings</span>
+
+    <span class="k">def</span> <span class="nf">_save_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">modules</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save_modules</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+        <span class="c1"># Special case to also save the multi-representations separately, if needed.</span>
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">modules</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">"save_path"</span><span class="p">,</span> <span class="bp">None</span><span class="p">):</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save_path</span> <span class="o">+</span> <span class="n">suffix</span>
+                <span class="k">if</span> <span class="n">base_path</span><span class="p">:</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"Saving state of module {type(module).__name__} "</span> <span class="n">f</span><span class="s2">"to {path} ..."</span>
+                <span class="p">)</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PairwiseModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.PairwiseModel">[docs]</a><span class="k">class</span> <span class="nc">PairwiseModel</span><span class="p">(</span><span class="n">BasePairwiseModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    A classification model that scores a pair of texts, for example, a model for</span>
+<span class="sd">    natural language inference.</span>
+
+<span class="sd">    The model shares embedding space (so it doesn't support</span>
+<span class="sd">    pairs of texts where left and right are in different languages). It uses</span>
+<span class="sd">    bidirectional LSTM or CNN to represent the two documents, and concatenates</span>
+<span class="sd">    them along with their absolute difference and elementwise product. This</span>
+<span class="sd">    concatenated pair representation is passed to a multi-layer perceptron to</span>
+<span class="sd">    decode to label/target space.</span>
+
+<span class="sd">    See https://arxiv.org/pdf/1705.02364.pdf for more details.</span>
+
+<span class="sd">    It can be instantiated just like any other :class:`~Model`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">EMBEDDINGS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"embedding"</span><span class="p">]</span>
+    <span class="n">INPUTS_PAIR</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"tokens1"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"tokens2"</span><span class="p">]]</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePairwiseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            encode_relations (bool): if `false`, return the concatenation of the two</span>
+<span class="sd">                representations; if `true`, also concatenate their pairwise absolute</span>
+<span class="sd">                difference and pairwise elementwise product (à la arXiv:1705.02364).</span>
+<span class="sd">                Default: `true`.</span>
+<span class="sd">            tied_representation: whether to use the same representation, with</span>
+<span class="sd">              tied weights, for all the input subrepresentations. Default: `true`.</span>
+<span class="sd">        """</span>
+
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">BasePairwiseModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens1</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">"text1"</span><span class="p">)</span>
+            <span class="n">tokens2</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">"text2"</span><span class="p">)</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">representation</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">BiLSTMDocAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">DocNNRepresentation</span><span class="o">.</span><span class="n">Config</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">BiLSTMDocAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">shared_representations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embeddings</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span>
+        <span class="n">representations</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">ClassificationOutputLayer</span><span class="p">,</span>
+        <span class="n">encode_relations</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">encode_relations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">representations</span> <span class="o">=</span> <span class="n">representations</span>
+
+    <span class="c1"># from_config and helper function</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_create_embedding</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingBase</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">tensorizer</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_create_embeddings</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">:</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">inputs</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INPUTS_PAIR</span><span class="p">:</span>
+            <span class="n">embedding_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">emb</span><span class="p">,</span> <span class="nb">input</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">EMBEDDINGS</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">emb</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">input</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="p">:</span>
+                    <span class="n">embedding_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="bp">cls</span><span class="o">.</span><span class="n">_create_embedding</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">emb</span><span class="p">),</span> <span class="n">tensorizers</span><span class="p">[</span><span class="nb">input</span><span class="p">])</span>
+                    <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">embedding_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">embeddings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">embedding_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">embeddings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">EmbeddingList</span><span class="p">(</span><span class="n">embeddings</span><span class="o">=</span><span class="n">embedding_list</span><span class="p">,</span> <span class="n">concat</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_create_representations</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">shared_representations</span><span class="p">:</span>
+            <span class="c1"># create representation once and used for all embeddings</span>
+            <span class="n">embedding_dim</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding_dim</span>
+            <span class="n">representations</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+                    <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">),</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">embeddings</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">representations</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">create_module</span><span class="p">(</span>
+                        <span class="n">config</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embedding</span><span class="o">.</span><span class="n">embedding_dim</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">embedding</span> <span class="ow">in</span> <span class="n">embeddings</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">representations</span>
+
+<div class="viewcode-block" id="PairwiseModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.PairwiseModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_embeddings</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">representations</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_representations</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_decoder</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">representations</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">embeddings</span><span class="p">,</span> <span class="n">representations</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">encode_relations</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PairwiseModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.PairwiseModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens1"</span><span class="p">][:</span><span class="mi">2</span><span class="p">],</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens2"</span><span class="p">][:</span><span class="mi">2</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="PairwiseModel.arrange_targets"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.PairwiseModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span></div>
+
+    <span class="c1"># _encode and helper functions</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_represent_helper</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">RepresentationBase</span><span class="p">,</span> <span class="n">embs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">lens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="n">rep</span><span class="p">(</span><span class="n">embs</span><span class="p">,</span> <span class="n">lens</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">representation</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">representation</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">representation</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_represent_sort</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">embeddings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+        <span class="n">lengths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+        <span class="n">represention_modules</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Apply the representations computations in `self.representations` to the</span>
+<span class="sd">        sentence representations in `embeddings`.</span>
+<span class="sd">        Internally, it sorts the sentences in `embeddings` by the number</span>
+<span class="sd">        of tokens for packing efficiency, where the number of tokens is in `lengths`,</span>
+<span class="sd">        and undoes the sort after applying the representations to preserve the</span>
+<span class="sd">        original ordering of sentences. Assumes that the leftmost sentences are</span>
+<span class="sd">        already sorted by number of tokens.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">represention_modules</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">BiLSTMDocAttention</span><span class="p">):</span>
+            <span class="c1"># The leftmost inputs already come sorted by length. The others need to</span>
+            <span class="c1"># be sorted as well, for packing. We do it manually.</span>
+            <span class="n">sorted_inputs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">embeddings</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lengths</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+            <span class="n">sorted_indices</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">embs</span><span class="p">,</span> <span class="n">lens</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">embeddings</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">lengths</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+                <span class="n">lens_sorted</span><span class="p">,</span> <span class="n">sorted_idx</span> <span class="o">=</span> <span class="n">lens</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">descending</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">embs_sorted</span> <span class="o">=</span> <span class="n">embs</span><span class="p">[</span><span class="n">sorted_idx</span><span class="p">]</span>
+                <span class="n">sorted_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">embs_sorted</span><span class="p">,</span> <span class="n">lens_sorted</span><span class="p">))</span>
+                <span class="n">sorted_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sorted_idx</span><span class="p">)</span>
+
+            <span class="n">representations</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_represent_helper</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">embs</span><span class="p">,</span> <span class="n">lens</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">rep</span><span class="p">,</span> <span class="p">(</span><span class="n">embs</span><span class="p">,</span> <span class="n">lens</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">represention_modules</span><span class="p">,</span> <span class="n">sorted_inputs</span><span class="p">)</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Put the inputs back in the original order, so they still match up to</span>
+            <span class="c1"># each other as well as the targets.</span>
+            <span class="n">unsorted_representations</span> <span class="o">=</span> <span class="p">[</span><span class="n">representations</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">sorted_idx</span><span class="p">,</span> <span class="n">rep</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sorted_indices</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">representations</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">unsorted_idx</span> <span class="o">=</span> <span class="n">sorted_idx</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+                <span class="n">unsorted_representations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rep</span><span class="p">[</span><span class="n">unsorted_idx</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">unsorted_representations</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_represent_helper</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">embs</span><span class="p">,</span> <span class="n">lens</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">rep</span><span class="p">,</span> <span class="p">(</span><span class="n">embs</span><span class="p">,</span> <span class="n">lens</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">represention_modules</span><span class="p">,</span> <span class="nb">zip</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_represent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">seq_lens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]):</span>
+        <span class="n">representations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_represent_sort</span><span class="p">(</span>
+            <span class="n">embeddings</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">representations</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode_relations</span><span class="p">:</span>
+            <span class="n">representations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode_relations</span><span class="p">(</span><span class="n">representations</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">representations</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PairwiseModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.PairwiseModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input1</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">input2</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">token_tups</span><span class="p">,</span> <span class="n">seq_lens</span> <span class="o">=</span> <span class="p">(</span><span class="n">input1</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">input2</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="p">(</span><span class="n">input1</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">input2</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">emb</span><span class="p">(</span><span class="o">*</span><span class="n">token_tup</span><span class="p">)</span> <span class="k">for</span> <span class="n">emb</span><span class="p">,</span> <span class="n">token_tup</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">token_tups</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_represent</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">representation</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PairwiseModel.save_modules"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.pair_classification_model.PairwiseModel.save_modules">[docs]</a>    <span class="k">def</span> <span class="nf">save_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_modules</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">representations</span><span class="p">,</span> <span class="n">base_path</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

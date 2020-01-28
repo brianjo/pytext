@@ -1,0 +1,319 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.task.disjoint_multitask</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">config_to_json</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ComponentType</span><span class="p">,</span>
+    <span class="n">create_component</span><span class="p">,</span>
+    <span class="n">create_data_handler</span><span class="p">,</span>
+    <span class="n">create_exporter</span><span class="p">,</span>
+    <span class="n">create_featurizer</span><span class="p">,</span>
+    <span class="n">create_metric_reporter</span><span class="p">,</span>
+    <span class="n">create_model</span><span class="p">,</span>
+    <span class="n">create_optimizer</span><span class="p">,</span>
+    <span class="n">create_trainer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">DisjointMultitaskData</span><span class="p">,</span> <span class="n">DisjointMultitaskDataHandler</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters.disjoint_multitask_metric_reporter</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DisjointMultitaskMetricReporter</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.disjoint_multitask_model</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DisjointMultitaskModel</span><span class="p">,</span>
+    <span class="n">NewDisjointMultitaskModel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer.scheduler</span> <span class="kn">import</span> <span class="n">Scheduler</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">NewTask</span><span class="p">,</span> <span class="n">Task_Deprecated</span><span class="p">,</span> <span class="n">TaskBase</span><span class="p">,</span> <span class="n">_NewTask</span>
+
+
+<div class="viewcode-block" id="DisjointMultitask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.DisjointMultitask">[docs]</a><span class="k">class</span> <span class="nc">DisjointMultitask</span><span class="p">(</span><span class="n">TaskBase</span><span class="p">):</span>
+    <span class="sd">"""Modules which have the same shared_module_key and type share parameters.</span>
+<span class="sd">       Only the first instance of such module should be configured in tasks list.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">TaskBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">tasks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Task_Deprecated</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span>
+        <span class="n">task_weights</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">target_task_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># for selecting best epoch</span>
+        <span class="n">data_handler</span><span class="p">:</span> <span class="n">DisjointMultitaskDataHandler</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">DisjointMultitaskDataHandler</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">DisjointMultitaskMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">DisjointMultitaskMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DisjointMultitask.from_config"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.DisjointMultitask.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">task_config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">model_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"Task parameters:</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">pprint</span><span class="p">(</span><span class="n">config_to_json</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">task_config</span><span class="p">),</span> <span class="n">task_config</span><span class="p">))</span>
+
+        <span class="n">data_handlers</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">exporters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">featurizer</span> <span class="o">=</span> <span class="n">create_featurizer</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">featurizer</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">data_handlers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">create_data_handler</span><span class="p">(</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">data_handler</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">features</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="n">featurizer</span><span class="o">=</span><span class="n">featurizer</span>
+            <span class="p">)</span>
+        <span class="n">data_handler</span> <span class="o">=</span> <span class="n">DisjointMultitaskDataHandler</span><span class="p">(</span>
+            <span class="n">task_config</span><span class="o">.</span><span class="n">data_handler</span><span class="p">,</span>
+            <span class="n">data_handlers</span><span class="p">,</span>
+            <span class="n">target_task_name</span><span class="o">=</span><span class="n">task_config</span><span class="o">.</span><span class="n">target_task_name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Loading data..."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">metadata</span><span class="p">:</span>
+            <span class="n">data_handler</span><span class="o">.</span><span class="n">load_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_handler</span><span class="o">.</span><span class="n">init_metadata</span><span class="p">()</span>
+
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">data_handler</span><span class="o">.</span><span class="n">metadata</span>
+        <span class="n">exporters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">create_exporter</span><span class="p">(</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">exporter</span><span class="p">,</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+                    <span class="n">data_handler</span><span class="o">.</span><span class="n">data_handlers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">exporter</span>
+                <span class="k">else</span> <span class="bp">None</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">task_weights</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">task_name</span><span class="p">:</span> <span class="n">task_config</span><span class="o">.</span><span class="n">task_weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">task_name</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">metric_reporter</span> <span class="o">=</span> <span class="n">DisjointMultitaskMetricReporter</span><span class="p">(</span>
+            <span class="n">OrderedDict</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">create_metric_reporter</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span> <span class="n">metadata</span><span class="p">[</span><span class="n">name</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">),</span>
+            <span class="n">loss_weights</span><span class="o">=</span><span class="n">task_weights</span><span class="p">,</span>
+            <span class="n">target_task_name</span><span class="o">=</span><span class="n">task_config</span><span class="o">.</span><span class="n">target_task_name</span><span class="p">,</span>
+            <span class="n">use_subtask_select_metric</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="o">.</span><span class="n">use_subtask_select_metric</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">DisjointMultitaskModel</span><span class="p">(</span>
+            <span class="n">OrderedDict</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">create_model</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">features</span><span class="p">,</span> <span class="n">metadata</span><span class="p">[</span><span class="n">name</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">),</span>
+            <span class="n">loss_weights</span><span class="o">=</span><span class="n">task_weights</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_state</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_state</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">target_task_name</span><span class="o">=</span><span class="n">task_config</span><span class="o">.</span><span class="n">target_task_name</span><span class="p">,</span>
+            <span class="n">exporters</span><span class="o">=</span><span class="n">exporters</span><span class="p">,</span>
+            <span class="n">trainer</span><span class="o">=</span><span class="n">create_trainer</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+            <span class="n">data_handler</span><span class="o">=</span><span class="n">data_handler</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">metric_reporter</span><span class="o">=</span><span class="n">metric_reporter</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_task_name</span><span class="p">,</span> <span class="n">exporters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">exporter</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exporters</span> <span class="o">=</span> <span class="n">exporters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_task_name</span> <span class="o">=</span> <span class="n">target_task_name</span>
+
+<div class="viewcode-block" id="DisjointMultitask.export"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.DisjointMultitask.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">multitask_model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">metric_channels</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Wrapper method to export PyTorch model to Caffe2 model using :class:`~Exporter`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            export_path (str): file path of exported caffe2 model</span>
+<span class="sd">            metric_channels: output the PyTorch model's execution graph to</span>
+<span class="sd">            export_onnx_path (str):file path of exported onnx model</span>
+<span class="sd">        """</span>
+        <span class="c1"># Make sure to put the model on CPU and disable CUDA before exporting to</span>
+        <span class="c1"># ONNX to disable any data_parallel pieces</span>
+        <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">multitask_model</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exporters</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exporters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">export_to_metrics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">metric_channels</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_task_name</span><span class="p">:</span>
+                    <span class="n">model_export_path</span> <span class="o">=</span> <span class="n">export_path</span>
+                    <span class="n">model_export_onnx_path</span> <span class="o">=</span> <span class="n">export_onnx_path</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">model_export_path</span> <span class="o">=</span> <span class="n">f</span><span class="s2">"{export_path}-{name}"</span>
+                    <span class="n">model_export_onnx_path</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">f</span><span class="s2">"{export_onnx_path}-{name}"</span> <span class="k">if</span> <span class="n">export_onnx_path</span> <span class="k">else</span> <span class="bp">None</span>
+                    <span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">"Saving caffe2 model to: "</span> <span class="o">+</span> <span class="n">model_export_path</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exporters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">export_to_caffe2</span><span class="p">(</span>
+                    <span class="n">model</span><span class="p">,</span> <span class="n">model_export_path</span><span class="p">,</span> <span class="n">model_export_onnx_path</span>
+                <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="NewDisjointMultitask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.NewDisjointMultitask">[docs]</a><span class="k">class</span> <span class="nc">NewDisjointMultitask</span><span class="p">(</span><span class="n">_NewTask</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Multitask training based on underlying subtasks. To share parameters between modules</span>
+<span class="sd">    from different tasks, specify the same shared_module_key. Only the first instance of</span>
+<span class="sd">    each shared module should be configured in tasks list. Only the multitask trainer</span>
+<span class="sd">    (not the per-task trainers) is used.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">_NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">tasks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">task_weights</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">target_task_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># for selecting best epoch</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">DisjointMultitaskData</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">DisjointMultitaskData</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">DisjointMultitaskMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">DisjointMultitaskMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="NewDisjointMultitask.from_config"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.NewDisjointMultitask.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">task_config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span>
+        <span class="n">unused_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">model_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">metric_reporters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">tensorizers_dict</span> <span class="o">=</span> <span class="n">tensorizers</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="c1"># We can't really re-use the tensorizers, and the tensorizers saved for disjoint</span>
+        <span class="c1"># multitask are an empty dict right now anyway. Really we should serialize</span>
+        <span class="c1"># all of the subtasks individually.</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">tensorizers</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_init_tensorizers</span><span class="p">(</span>
+                <span class="n">task</span><span class="p">,</span> <span class="n">tensorizers_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span>
+            <span class="p">)</span>
+            <span class="n">data_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">models</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">NewTask</span><span class="o">.</span><span class="n">_init_model</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+            <span class="n">metric_reporters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+                <span class="n">ComponentType</span><span class="o">.</span><span class="n">METRIC_REPORTER</span><span class="p">,</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+                <span class="n">tensorizers</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">task_weights</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">task_name</span><span class="p">:</span> <span class="n">task_config</span><span class="o">.</span><span class="n">task_weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">task_name</span> <span class="ow">in</span> <span class="n">task_config</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">DisjointMultitaskData</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span>
+            <span class="n">task_config</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">data_dict</span><span class="o">=</span><span class="n">data_dict</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span>
+        <span class="p">)</span>
+        <span class="c1"># for serialization</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">tensorizers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">tensorizers</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_dict</span>
+        <span class="p">}</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">NewDisjointMultitaskModel</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">loss_weights</span><span class="o">=</span><span class="n">task_weights</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_state</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_state</span><span class="p">)</span>
+        <span class="n">metric_reporter</span> <span class="o">=</span> <span class="n">DisjointMultitaskMetricReporter</span><span class="p">(</span>
+            <span class="n">metric_reporters</span><span class="p">,</span>
+            <span class="n">loss_weights</span><span class="o">=</span><span class="n">task_weights</span><span class="p">,</span>
+            <span class="n">target_task_name</span><span class="o">=</span><span class="n">task_config</span><span class="o">.</span><span class="n">target_task_name</span><span class="p">,</span>
+            <span class="n">use_subtask_select_metric</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">task_config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="o">.</span><span class="n">use_subtask_select_metric</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">trainer</span> <span class="o">=</span> <span class="n">create_trainer</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">,</span> <span class="n">trainer</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NewDisjointMultitask.export"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.NewDisjointMultitask.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">metric_channels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="NewDisjointMultitask.torchscript_export"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.disjoint_multitask.NewDisjointMultitask.torchscript_export">[docs]</a>    <span class="k">def</span> <span class="nf">torchscript_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">quantize</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

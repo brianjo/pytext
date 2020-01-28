@@ -1,0 +1,779 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext">
+<h1>pytext<a class="headerlink" href="#pytext" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytext.config.html">config</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.field_config.html">field_config</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.config.field_config.FeatureConfig.html">FeatureConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.config.field_config.FloatVectorConfig.html">FloatVectorConfig</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.module_config.html">module_config</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.config.module_config.CNNParams.html">CNNParams</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.pytext_config.html">pytext_config</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.config.pytext_config.PyTextConfig.html">PyTextConfig</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.data.html">data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.batch_sampler.html">batch_sampler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.batch_sampler.AlternatingRandomizedBatchSampler.Config.html">AlternatingRandomizedBatchSampler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.batch_sampler.BaseBatchSampler.Config.html">BaseBatchSampler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.batch_sampler.EvalBatchSampler.Config.html">EvalBatchSampler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.batch_sampler.RandomizedBatchSampler.Config.html">RandomizedBatchSampler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.batch_sampler.RoundRobinBatchSampler.Config.html">RoundRobinBatchSampler.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.bert_tensorizer.html">bert_tensorizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.bert_tensorizer.BERTTensorizer.Config.html">BERTTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.bert_tensorizer.BERTTensorizerBase.Config.html">BERTTensorizerBase.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.data.html">data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.data.Batcher.Config.html">Batcher.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.data.Data.Config.html">Data.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.data.PoolingBatcher.Config.html">PoolingBatcher.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.data_handler.html">data_handler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.data_handler.DataHandler.Config.html">DataHandler.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.disjoint_multitask_data.html">disjoint_multitask_data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.disjoint_multitask_data.DisjointMultitaskData.Config.html">DisjointMultitaskData.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.disjoint_multitask_data_handler.html">disjoint_multitask_data_handler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.disjoint_multitask_data_handler.DisjointMultitaskDataHandler.Config.html">DisjointMultitaskDataHandler.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.dynamic_pooling_batcher.html">dynamic_pooling_batcher</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.dynamic_pooling_batcher.BatcherSchedulerConfig.html">BatcherSchedulerConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.dynamic_pooling_batcher.DynamicPoolingBatcher.Config.html">DynamicPoolingBatcher.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.dynamic_pooling_batcher.ExponentialBatcherSchedulerConfig.html">ExponentialBatcherSchedulerConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.dynamic_pooling_batcher.ExponentialDynamicPoolingBatcher.Config.html">ExponentialDynamicPoolingBatcher.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.dynamic_pooling_batcher.LinearDynamicPoolingBatcher.Config.html">LinearDynamicPoolingBatcher.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.featurizer.html">featurizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.featurizer.featurizer.html">featurizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.featurizer.featurizer.Featurizer.Config.html">Featurizer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.featurizer.simple_featurizer.html">simple_featurizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.Config.html">SimpleFeaturizer.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.packed_lm_data.html">packed_lm_data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.packed_lm_data.PackedLMData.Config.html">PackedLMData.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.roberta_tensorizer.html">roberta_tensorizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config.html">RoBERTaTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config.html">RoBERTaTokenLevelTensorizer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.sources.html">sources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.conllu.html">conllu</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.conllu.CoNLLUNERDataSource.Config.html">CoNLLUNERDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.conllu.CoNLLUPOSDataSource.Config.html">CoNLLUPOSDataSource.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.data_source.html">data_source</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.data_source.DataSource.Config.html">DataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.data_source.RootDataSource.Config.html">RootDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.data_source.RowShardedDataSource.Config.html">RowShardedDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.data_source.ShardedDataSource.Config.html">ShardedDataSource.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.pandas.html">pandas</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.pandas.PandasDataSource.Config.html">PandasDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.pandas.SessionPandasDataSource.Config.html">SessionPandasDataSource.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.session.html">session</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.session.SessionDataSource.Config.html">SessionDataSource.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.squad.html">squad</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.squad.SquadDataSource.Config.html">SquadDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.squad.SquadDataSourceForKD.Config.html">SquadDataSourceForKD.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.sources.tsv.html">tsv</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.tsv.BlockShardedTSVDataSource.Config.html">BlockShardedTSVDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.tsv.MultilingualTSVDataSource.Config.html">MultilingualTSVDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.tsv.SessionTSVDataSource.Config.html">SessionTSVDataSource.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.sources.tsv.TSVDataSource.Config.html">TSVDataSource.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.squad_for_bert_tensorizer.html">squad_for_bert_tensorizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config.html">SquadForBERTTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizerForKD.Config.html">SquadForBERTTensorizerForKD.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.squad_for_bert_tensorizer.SquadForRoBERTaTensorizer.Config.html">SquadForRoBERTaTensorizer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.squad_tensorizer.html">squad_tensorizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.squad_tensorizer.SquadTensorizer.Config.html">SquadTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.squad_tensorizer.SquadTensorizerForKD.Config.html">SquadTensorizerForKD.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.tensorizers.html">tensorizers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.AnnotationNumberizer.Config.html">AnnotationNumberizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.ByteTensorizer.Config.html">ByteTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.ByteTokenTensorizer.Config.html">ByteTokenTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.CharacterTokenTensorizer.Config.html">CharacterTokenTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.FloatListTensorizer.Config.html">FloatListTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.FloatTensorizer.Config.html">FloatTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.GazetteerTensorizer.Config.html">GazetteerTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.LabelListTensorizer.Config.html">LabelListTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.LabelTensorizer.Config.html">LabelTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.MetricTensorizer.Config.html">MetricTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.NtokensTensorizer.Config.html">NtokensTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.NumericLabelTensorizer.Config.html">NumericLabelTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.SeqTokenTensorizer.Config.html">SeqTokenTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.SlotLabelTensorizer.Config.html">SlotLabelTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.SlotLabelTensorizerExpansible.Config.html">SlotLabelTensorizerExpansible.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.SoftLabelTensorizer.Config.html">SoftLabelTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.Tensorizer.Config.html">Tensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.TokenTensorizer.Config.html">TokenTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.UidTensorizer.Config.html">UidTensorizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.VocabConfig.html">VocabConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tensorizers.VocabFileConfig.html">VocabFileConfig</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.tokenizers.html">tokenizers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.html">tokenizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.Config.html">BERTInitialTokenizer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.DoNothingTokenizer.Config.html">DoNothingTokenizer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.Config.html">GPT2BPETokenizer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.Config.html">SentencePieceTokenizer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.Tokenizer.Config.html">Tokenizer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.data.tokenizers.tokenizer.WordPieceTokenizer.Config.html">WordPieceTokenizer.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.exporters.html">exporters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.custom_exporters.html">custom_exporters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.exporters.custom_exporters.DenseFeatureExporter.Config.html">DenseFeatureExporter.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.exporters.custom_exporters.InitPredictNetExporter.Config.html">InitPredictNetExporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.exporter.html">exporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.exporters.exporter.ModelExporter.Config.html">ModelExporter.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.loss.html">loss</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.loss.html">loss</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.AUCPRHingeLoss.Config.html">AUCPRHingeLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.BinaryCrossEntropyLoss.Config.html">BinaryCrossEntropyLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.CosineEmbeddingLoss.Config.html">CosineEmbeddingLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.CrossEntropyLoss.Config.html">CrossEntropyLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.KLDivergenceBCELoss.Config.html">KLDivergenceBCELoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.KLDivergenceCELoss.Config.html">KLDivergenceCELoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.LabelSmoothedCrossEntropyLoss.Config.html">LabelSmoothedCrossEntropyLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.Loss.Config.html">Loss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.MAELoss.Config.html">MAELoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.MSELoss.Config.html">MSELoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.MultiLabelSoftMarginLoss.Config.html">MultiLabelSoftMarginLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.NLLLoss.Config.html">NLLLoss.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.loss.loss.PairwiseRankingLoss.Config.html">PairwiseRankingLoss.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.metric_reporters.html">metric_reporters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.classification_metric_reporter.html">classification_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config.html">ClassificationMetricReporter.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.Config.html">MultiLabelClassificationMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.compositional_metric_reporter.html">compositional_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.Config.html">CompositionalMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.disjoint_multitask_metric_reporter.html">disjoint_multitask_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config.html">DisjointMultitaskMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.intent_slot_detection_metric_reporter.html">intent_slot_detection_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.Config.html">IntentSlotMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.language_model_metric_reporter.html">language_model_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.language_model_metric_reporter.LanguageModelMetricReporter.Config.html">LanguageModelMetricReporter.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.language_model_metric_reporter.MaskedLMMetricReporter.Config.html">MaskedLMMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.metric_reporter.html">metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.metric_reporter.MetricReporter.Config.html">MetricReporter.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.metric_reporter.PureLossMetricReporter.Config.html">PureLossMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.pairwise_ranking_metric_reporter.html">pairwise_ranking_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.pairwise_ranking_metric_reporter.PairwiseRankingMetricReporter.Config.html">PairwiseRankingMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.regression_metric_reporter.html">regression_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.regression_metric_reporter.RegressionMetricReporter.Config.html">RegressionMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.squad_metric_reporter.html">squad_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.Config.html">SquadMetricReporter.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.word_tagging_metric_reporter.html">word_tagging_metric_reporter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.word_tagging_metric_reporter.NERMetricReporter.Config.html">NERMetricReporter.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.word_tagging_metric_reporter.SequenceTaggingMetricReporter.Config.html">SequenceTaggingMetricReporter.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.metric_reporters.word_tagging_metric_reporter.WordTaggingMetricReporter.Config.html">WordTaggingMetricReporter.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.models.html">models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.bert_classification_models.html">bert_classification_models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.bert_classification_models.BertModelInput.html">BertModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.bert_classification_models.BertPairwiseModel.Config.html">BertPairwiseModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.bert_classification_models.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.bert_classification_models.NewBertModel.Config.html">NewBertModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.bert_regression_model.html">bert_regression_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.bert_regression_model.InputConfig.html">InputConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.bert_regression_model.NewBertRegressionModel.Config.html">NewBertRegressionModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.decoders.html">decoders</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.decoders.decoder_base.html">decoder_base</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.decoder_base.DecoderBase.Config.html">DecoderBase.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.decoders.intent_slot_model_decoder.html">intent_slot_model_decoder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.Config.html">IntentSlotModelDecoder.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.decoders.mlp_decoder.html">mlp_decoder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.mlp_decoder.MLPDecoder.Config.html">MLPDecoder.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.decoders.mlp_decoder_query_response.html">mlp_decoder_query_response</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.decoders.mlp_decoder_query_response.MLPDecoderQueryResponse.Config.html">MLPDecoderQueryResponse.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.disjoint_multitask_model.html">disjoint_multitask_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.disjoint_multitask_model.DisjointMultitaskModel.Config.html">DisjointMultitaskModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.disjoint_multitask_model.NewDisjointMultitaskModel.Config.html">NewDisjointMultitaskModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.doc_model.html">doc_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.ByteModelInput.html">ByteModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.ByteTokensDocumentModel.Config.html">ByteTokensDocumentModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.DocModel.Config.html">DocModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.DocRegressionModel.Config.html">DocRegressionModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.PersonalizedDocModel.Config.html">PersonalizedDocModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.PersonalizedModelInput.html">PersonalizedModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.doc_model.RegressionModelInput.html">RegressionModelInput</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.embeddings.html">embeddings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.char_embedding.html">char_embedding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.char_embedding.CharacterEmbedding.Config.html">CharacterEmbedding.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.contextual_token_embedding.html">contextual_token_embedding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.Config.html">ContextualTokenEmbedding.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.dict_embedding.html">dict_embedding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.dict_embedding.DictEmbedding.Config.html">DictEmbedding.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.embedding_base.html">embedding_base</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.embedding_base.EmbeddingBase.Config.html">EmbeddingBase.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.embedding_list.html">embedding_list</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.embedding_list.EmbeddingList.Config.html">EmbeddingList.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.embeddings.word_embedding.html">word_embedding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.embeddings.word_embedding.WordEmbedding.Config.html">WordEmbedding.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.ensembles.html">ensembles</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.ensembles.bagging_doc_ensemble.html">bagging_doc_ensemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel.Config.html">BaggingDocEnsembleModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.ensembles.bagging_intent_slot_ensemble.html">bagging_intent_slot_ensemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.Config.html">BaggingIntentSlotEnsembleModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.ensembles.ensemble.html">ensemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.ensembles.ensemble.EnsembleModel.Config.html">EnsembleModel.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.joint_model.html">joint_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.joint_model.IntentSlotModel.Config.html">IntentSlotModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.joint_model.ModelInput.html">ModelInput</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.language_models.html">language_models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.language_models.lmlstm.html">lmlstm</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.language_models.lmlstm.LMLSTM.Config.html">LMLSTM.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.language_models.lmlstm.ModelInput.html">ModelInput</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.masked_lm.html">masked_lm</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.masked_lm.InputConfig.html">InputConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.masked_lm.MaskedLanguageModel.Config.html">MaskedLanguageModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.model.html">model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.model.BaseModel.Config.html">BaseModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.model.Model.Config.html">Model.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.model.ModelInput.html">ModelInput</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.module.html">module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.module.Module.Config.html">Module.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.output_layers.html">output_layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.distance_output_layer.html">distance_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.Config.html">PairwiseCosineDistanceOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.html">doc_classification_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.BinaryClassificationOutputLayer.Config.html">BinaryClassificationOutputLayer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config.html">ClassificationOutputLayer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.MultiLabelOutputLayer.Config.html">MultiLabelOutputLayer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.MulticlassOutputLayer.Config.html">MulticlassOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.doc_regression_output_layer.html">doc_regression_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.doc_regression_output_layer.RegressionOutputLayer.Config.html">RegressionOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.intent_slot_output_layer.html">intent_slot_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.Config.html">IntentSlotOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.lm_output_layer.html">lm_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.lm_output_layer.LMOutputLayer.Config.html">LMOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.output_layer_base.html">output_layer_base</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.output_layer_base.OutputLayerBase.Config.html">OutputLayerBase.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.pairwise_ranking_output_layer.html">pairwise_ranking_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.pairwise_ranking_output_layer.PairwiseRankingOutputLayer.Config.html">PairwiseRankingOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.squad_output_layer.html">squad_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.squad_output_layer.SquadOutputLayer.Config.html">SquadOutputLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.output_layers.word_tagging_output_layer.html">word_tagging_output_layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.word_tagging_output_layer.CRFOutputLayer.Config.html">CRFOutputLayer.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.output_layers.word_tagging_output_layer.WordTaggingOutputLayer.Config.html">WordTaggingOutputLayer.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.pair_classification_model.html">pair_classification_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.pair_classification_model.BasePairwiseModel.Config.html">BasePairwiseModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.pair_classification_model.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.pair_classification_model.PairwiseModel.Config.html">PairwiseModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.qna.html">qna</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.qna.bert_squad_qa.html">bert_squad_qa</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.bert_squad_qa.BertSquadQAModel.Config.html">BertSquadQAModel.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.bert_squad_qa.ModelInput.html">ModelInput</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.qna.dr_qa.html">dr_qa</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.dr_qa.DrQAModel.Config.html">DrQAModel.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.qna.dr_qa.ModelInput.html">ModelInput</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.query_document_pairwise_ranking_model.html">query_document_pairwise_ranking_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.query_document_pairwise_ranking_model.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.query_document_pairwise_ranking_model.QueryDocPairwiseRankingModel.Config.html">QueryDocPairwiseRankingModel.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.representations.html">representations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.attention.html">attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.attention.DotProductSelfAttention.Config.html">DotProductSelfAttention.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.attention.MultiplicativeAttention.Config.html">MultiplicativeAttention.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.attention.SequenceAlignedAttention.Config.html">SequenceAlignedAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.bilstm.html">bilstm</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.bilstm.BiLSTM.Config.html">BiLSTM.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.bilstm_doc_attention.html">bilstm_doc_attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.bilstm_doc_attention.BiLSTMDocAttention.Config.html">BiLSTMDocAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.bilstm_doc_slot_attention.html">bilstm_doc_slot_attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.bilstm_doc_slot_attention.BiLSTMDocSlotAttention.Config.html">BiLSTMDocSlotAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.bilstm_slot_attn.html">bilstm_slot_attn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.bilstm_slot_attn.BiLSTMSlotAttention.Config.html">BiLSTMSlotAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.biseqcnn.html">biseqcnn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.biseqcnn.BSeqCNNRepresentation.Config.html">BSeqCNNRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.contextual_intent_slot_rep.html">contextual_intent_slot_rep</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.contextual_intent_slot_rep.ContextualIntentSlotRepresentation.Config.html">ContextualIntentSlotRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.deepcnn.html">deepcnn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.deepcnn.DeepCNNRepresentation.Config.html">DeepCNNRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.docnn.html">docnn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.docnn.DocNNRepresentation.Config.html">DocNNRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.huggingface_bert_sentence_encoder.html">huggingface_bert_sentence_encoder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.huggingface_bert_sentence_encoder.HuggingFaceBertSentenceEncoder.Config.html">HuggingFaceBertSentenceEncoder.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.jointcnn_rep.html">jointcnn_rep</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.jointcnn_rep.JointCNNRepresentation.Config.html">JointCNNRepresentation.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.jointcnn_rep.SharedCNNRepresentation.Config.html">SharedCNNRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.ordered_neuron_lstm.html">ordered_neuron_lstm</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTM.Config.html">OrderedNeuronLSTM.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTMLayer.Config.html">OrderedNeuronLSTMLayer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.pass_through.html">pass_through</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pass_through.PassThroughRepresentation.Config.html">PassThroughRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.pooling.html">pooling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pooling.BoundaryPool.Config.html">BoundaryPool.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pooling.LastTimestepPool.Config.html">LastTimestepPool.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pooling.MaxPool.Config.html">MaxPool.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pooling.MeanPool.Config.html">MeanPool.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pooling.NoPool.Config.html">NoPool.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pooling.SelfAttention.Config.html">SelfAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.pure_doc_attention.html">pure_doc_attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.pure_doc_attention.PureDocAttention.Config.html">PureDocAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.representation_base.html">representation_base</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.representation_base.RepresentationBase.Config.html">RepresentationBase.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.seq_rep.html">seq_rep</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.seq_rep.SeqRepresentation.Config.html">SeqRepresentation.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.slot_attention.html">slot_attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.slot_attention.SlotAttention.Config.html">SlotAttention.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.sparse_transformer_sentence_encoder.html">sparse_transformer_sentence_encoder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.sparse_transformer_sentence_encoder.SparseTransformerSentenceEncoder.Config.html">SparseTransformerSentenceEncoder.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.stacked_bidirectional_rnn.html">stacked_bidirectional_rnn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.stacked_bidirectional_rnn.StackedBidirectionalRNN.Config.html">StackedBidirectionalRNN.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.transformer_sentence_encoder.html">transformer_sentence_encoder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.transformer_sentence_encoder.TransformerSentenceEncoder.Config.html">TransformerSentenceEncoder.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.representations.transformer_sentence_encoder_base.html">transformer_sentence_encoder_base</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.representations.transformer_sentence_encoder_base.TransformerSentenceEncoderBase.Config.html">TransformerSentenceEncoderBase.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.roberta.html">roberta</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.InputConfig.html">InputConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.RoBERTa.Config.html">RoBERTa.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.RoBERTaEncoder.Config.html">RoBERTaEncoder.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.RoBERTaEncoderBase.Config.html">RoBERTaEncoderBase.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.RoBERTaEncoderJit.Config.html">RoBERTaEncoderJit.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.RoBERTaWordTaggingModel.Config.html">RoBERTaWordTaggingModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.roberta.WordTaggingInputConfig.html">WordTaggingInputConfig</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.semantic_parsers.html">semantic_parsers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.html">rnng</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.rnng_parser.html">rnng_parser</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.rnng_parser.AblationParams.html">AblationParams</a></li>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.rnng_parser.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.rnng_parser.RNNGConstraints.html">RNNGConstraints</a></li>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParser.Config.html">RNNGParser.Config</a></li>
+<li class="toctree-l5"><a class="reference internal" href="pytext.models.semantic_parsers.rnng.rnng_parser.RNNGParserBase.Config.html">RNNGParserBase.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.seq_models.html">seq_models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.seq_models.contextual_intent_slot.html">contextual_intent_slot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.Config.html">ContextualIntentSlotModel.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.contextual_intent_slot.ModelInput.html">ModelInput</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.seq_models.seqnn.html">seqnn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.seqnn.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.seqnn.SeqNNModel.Config.html">SeqNNModel.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.models.seq_models.seqnn.SeqNNModel_Deprecated.Config.html">SeqNNModel_Deprecated.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.word_model.html">word_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.word_model.ByteModelInput.html">ByteModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.word_model.ModelInput.html">ModelInput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.word_model.WordTaggingLiteModel.Config.html">WordTaggingLiteModel.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.models.word_model.WordTaggingModel.Config.html">WordTaggingModel.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.optimizer.html">optimizer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.fp16_optimizer.html">fp16_optimizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.fp16_optimizer.FP16Optimizer.Config.html">FP16Optimizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.fp16_optimizer.FP16OptimizerApex.Config.html">FP16OptimizerApex.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.Config.html">FP16OptimizerFairseq.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.Config.html">MemoryEfficientFP16OptimizerFairseq.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.lamb.html">lamb</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.lamb.Lamb.Config.html">Lamb.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.optimizers.html">optimizers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.optimizers.Adagrad.Config.html">Adagrad.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.optimizers.Adam.Config.html">Adam.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.optimizers.AdamW.Config.html">AdamW.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.optimizers.Optimizer.Config.html">Optimizer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.optimizers.SGD.Config.html">SGD.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.radam.html">radam</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.radam.RAdam.Config.html">RAdam.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.scheduler.html">scheduler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.BatchScheduler.Config.html">BatchScheduler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.CosineAnnealingLR.Config.html">CosineAnnealingLR.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.CyclicLR.Config.html">CyclicLR.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.ExponentialLR.Config.html">ExponentialLR.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.LmFineTuning.Config.html">LmFineTuning.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.PolynomialDecayScheduler.Config.html">PolynomialDecayScheduler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.ReduceLROnPlateau.Config.html">ReduceLROnPlateau.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.Scheduler.Config.html">Scheduler.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.SchedulerWithWarmup.Config.html">SchedulerWithWarmup.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.StepLR.Config.html">StepLR.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.scheduler.WarmupScheduler.Config.html">WarmupScheduler.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.sparsifiers.html">sparsifiers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.sparsifiers.blockwise_sparsifier.html">blockwise_sparsifier</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.Config.html">BlockwiseMagnitudeSparsifier.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.sparsifiers.sparsifier.html">sparsifier</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.Config.html">CRF_L1_SoftThresholding.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.Config.html">CRF_MagnitudeThresholding.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.Config.html">CRF_SparsifierBase.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.Config.html">L0_projection_sparsifier.Config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytext.optimizer.sparsifiers.sparsifier.Sparsifier.Config.html">Sparsifier.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.swa.html">swa</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.optimizer.swa.StochasticWeightAveraging.Config.html">StochasticWeightAveraging.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.task.html">task</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.disjoint_multitask.html">disjoint_multitask</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.disjoint_multitask.DisjointMultitask.Config.html">DisjointMultitask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.disjoint_multitask.NewDisjointMultitask.Config.html">NewDisjointMultitask.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.new_task.html">new_task</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.new_task.NewTask.Config.html">NewTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.new_task._NewTask.Config.html">_NewTask.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.task.html">task</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.task.TaskBase.Config.html">TaskBase.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.task.Task_Deprecated.Config.html">Task_Deprecated.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.tasks.html">tasks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.BertPairRegressionTask.Config.html">BertPairRegressionTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.DocumentClassificationTask.Config.html">DocumentClassificationTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.DocumentRegressionTask.Config.html">DocumentRegressionTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.EnsembleTask.Config.html">EnsembleTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.IntentSlotTask.Config.html">IntentSlotTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.LMTask.Config.html">LMTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.MaskedLMTask.Config.html">MaskedLMTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.NewBertClassificationTask.Config.html">NewBertClassificationTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.NewBertPairClassificationTask.Config.html">NewBertPairClassificationTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.PairwiseClassificationTask.Config.html">PairwiseClassificationTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.QueryDocumentPairwiseRankingTask.Config.html">QueryDocumentPairwiseRankingTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.RoBERTaNERTask.Config.html">RoBERTaNERTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.SemanticParsingTask.Config.html">SemanticParsingTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.SeqNNTask.Config.html">SeqNNTask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.SquadQATask.Config.html">SquadQATask.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.task.tasks.WordTaggingTask.Config.html">WordTaggingTask.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytext.trainers.html">trainers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.ensemble_trainer.html">ensemble_trainer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.trainers.ensemble_trainer.EnsembleTrainer.Config.html">EnsembleTrainer.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.hogwild_trainer.html">hogwild_trainer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.trainers.hogwild_trainer.HogwildTrainer.Config.html">HogwildTrainer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.trainers.hogwild_trainer.HogwildTrainer_Deprecated.Config.html">HogwildTrainer_Deprecated.Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.trainer.html">trainer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytext.trainers.trainer.TaskTrainer.Config.html">TaskTrainer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.trainers.trainer.Trainer.Config.html">Trainer.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytext.trainers.trainer.TrainerBase.Config.html">TrainerBase.Config</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pytext</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html">config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html">data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html">exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html">loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html">metric_reporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.models.html">models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html">task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html">trainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li>Previous: <a href="../hacking_pytext.html" title="previous chapter">Hacking PyText</a></li>
+<li>Next: <a href="pytext.config.html" title="next chapter">config</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

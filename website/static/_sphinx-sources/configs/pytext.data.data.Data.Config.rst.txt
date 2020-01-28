@@ -1,0 +1,71 @@
+Data.Config
+===========
+
+
+
+**Component:** :class:`Data  <pytext.data.data.Data>`\ 
+
+
+.. py:currentmodule:: pytext.data.data
+.. py:class:: Data.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **source**: :doc:`DataSource.Config <pytext.data.sources.data_source.DataSource.Config>` = :doc:`TSVDataSource.Config <pytext.data.sources.tsv.TSVDataSource.Config>`\ ()
+    Specify where training/test/eval data come from. The default value
+    will not provide any data.
+    
+
+  **batcher**: :doc:`Batcher.Config <pytext.data.data.Batcher.Config>` = :doc:`PoolingBatcher.Config <pytext.data.data.PoolingBatcher.Config>`\ ()
+    How training examples are split into batches for the optimizer.
+    
+
+  **sort_key**: Optional[str] = ``None``
+    \ 
+
+  **in_memory**: Optional[bool] = ``True``
+    cache numberized result in memory, turn off when CPU memory bound.
+    
+
+
+
+**Subclasses**
+  - :class:`PackedLMData.Config <pytext.data.packed_lm_data.PackedLMData.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "source": {
+          "TSVDataSource": {
+              "column_mapping": {},
+              "train_filename": null,
+              "test_filename": null,
+              "eval_filename": null,
+              "field_names": null,
+              "delimiter": "\t",
+              "quoted": false,
+              "drop_incomplete_rows": false
+          }
+      },
+      "batcher": {
+          "PoolingBatcher": {
+              "train_batch_size": 16,
+              "eval_batch_size": 16,
+              "test_batch_size": 16,
+              "pool_num_batches": 10000,
+              "num_shuffled_pools": 1
+          }
+      },
+      "sort_key": null,
+      "in_memory": true
+  }

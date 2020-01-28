@@ -1,0 +1,32 @@
+SentencePieceTokenizer.Config
+=============================
+
+
+
+**Component:** :class:`SentencePieceTokenizer  <pytext.data.tokenizers.tokenizer.SentencePieceTokenizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tokenizers.tokenizer
+.. py:class:: SentencePieceTokenizer.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **sp_model_path**: str = ``''``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "sp_model_path": ""
+  }

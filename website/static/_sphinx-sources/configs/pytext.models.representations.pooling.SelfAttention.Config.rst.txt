@@ -1,0 +1,36 @@
+SelfAttention.Config
+====================
+
+
+
+**Component:** :class:`SelfAttention  <pytext.models.representations.pooling.SelfAttention>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.pooling
+.. py:class:: SelfAttention.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **attn_dimension**: int = ``64``
+    \ 
+
+  **dropout**: float = ``0.4``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "attn_dimension": 64,
+      "dropout": 0.4
+  }

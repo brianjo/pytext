@@ -1,0 +1,266 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.test.dynamic_pooling_batcher_test</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">pytext.data.dynamic_pooling_batcher</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BatcherSchedulerConfig</span><span class="p">,</span>
+    <span class="n">DynamicPoolingBatcher</span><span class="p">,</span>
+    <span class="n">ExponentialBatcherSchedulerConfig</span><span class="p">,</span>
+    <span class="n">ExponentialDynamicPoolingBatcher</span><span class="p">,</span>
+    <span class="n">LinearDynamicPoolingBatcher</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.data.sources</span> <span class="kn">import</span> <span class="n">RawExample</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.test</span> <span class="kn">import</span> <span class="n">import_tests_module</span>
+
+
+<span class="n">tests_module</span> <span class="o">=</span> <span class="n">import_tests_module</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="DynamicPoolingBatcherTest"><a class="viewcode-back" href="../../../../modules/pytext.data.test.html#pytext.data.test.dynamic_pooling_batcher_test.DynamicPoolingBatcherTest">[docs]</a><span class="k">class</span> <span class="nc">DynamicPoolingBatcherTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_get_dataset</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dataset_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RawExample</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[([],</span> <span class="p">{})]</span> <span class="o">*</span> <span class="n">dataset_size</span>
+
+<div class="viewcode-block" id="DynamicPoolingBatcherTest.test_linear_scheduler"><a class="viewcode-back" href="../../../../modules/pytext.data.test.html#pytext.data.test.dynamic_pooling_batcher_test.DynamicPoolingBatcherTest.test_linear_scheduler">[docs]</a>    <span class="k">def</span> <span class="nf">test_linear_scheduler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">DynamicPoolingBatcherTest</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">dataset_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+        <span class="n">batch_scheduler_config</span> <span class="o">=</span> <span class="n">BatcherSchedulerConfig</span><span class="p">(</span>
+            <span class="n">start_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">end_batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">epoch_period</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher_config</span> <span class="o">=</span> <span class="n">DynamicPoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">train_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">eval_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">test_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">pool_num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">scheduler_config</span><span class="o">=</span><span class="n">batch_scheduler_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher</span> <span class="o">=</span> <span class="n">LinearDynamicPoolingBatcher</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">batcher_config</span><span class="p">)</span>
+
+        <span class="c1"># epoch 1</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">32</span><span class="p">)</span>
+
+        <span class="c1"># epoch 2</span>
+        <span class="c1"># new size ()(256-32) / 5) + 32 = 76.8 ~ 77</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">77</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DynamicPoolingBatcherTest.test_exponential_scheduler"><a class="viewcode-back" href="../../../../modules/pytext.data.test.html#pytext.data.test.dynamic_pooling_batcher_test.DynamicPoolingBatcherTest.test_exponential_scheduler">[docs]</a>    <span class="k">def</span> <span class="nf">test_exponential_scheduler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">DynamicPoolingBatcherTest</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">dataset_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+        <span class="n">batch_scheduler_config</span> <span class="o">=</span> <span class="n">ExponentialBatcherSchedulerConfig</span><span class="p">(</span>
+            <span class="n">start_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">end_batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+            <span class="n">epoch_period</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">gamma</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher_config</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">train_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">eval_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">test_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">pool_num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">scheduler_config</span><span class="o">=</span><span class="n">batch_scheduler_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">batcher_config</span><span class="p">)</span>
+
+        <span class="c1"># epoch 1</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">32</span><span class="p">)</span>
+
+        <span class="c1"># epoch 2</span>
+        <span class="c1"># new size 32 * 2^1 = 64</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">64</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DynamicPoolingBatcherTest.test_batch_size_greater_than_data"><a class="viewcode-back" href="../../../../modules/pytext.data.test.html#pytext.data.test.dynamic_pooling_batcher_test.DynamicPoolingBatcherTest.test_batch_size_greater_than_data">[docs]</a>    <span class="k">def</span> <span class="nf">test_batch_size_greater_than_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">DynamicPoolingBatcherTest</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">dataset_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+        <span class="n">batch_scheduler_config</span> <span class="o">=</span> <span class="n">ExponentialBatcherSchedulerConfig</span><span class="p">(</span>
+            <span class="n">start_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">end_batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+            <span class="n">epoch_period</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">gamma</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher_config</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">train_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">eval_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">test_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">pool_num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">scheduler_config</span><span class="o">=</span><span class="n">batch_scheduler_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">batcher_config</span><span class="p">)</span>
+
+        <span class="c1"># epoch 1</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">32</span><span class="p">)</span>
+
+        <span class="c1"># epoch 2</span>
+        <span class="c1"># new size 32 * 2^1 = 64 / 8 = 8</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">50</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DynamicPoolingBatcherTest.end_of_scheduler"><a class="viewcode-back" href="../../../../modules/pytext.data.test.html#pytext.data.test.dynamic_pooling_batcher_test.DynamicPoolingBatcherTest.end_of_scheduler">[docs]</a>    <span class="k">def</span> <span class="nf">end_of_scheduler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">DynamicPoolingBatcherTest</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">dataset_size</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
+        <span class="n">batch_scheduler_config</span> <span class="o">=</span> <span class="n">ExponentialBatcherSchedulerConfig</span><span class="p">(</span>
+            <span class="n">start_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">end_batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+            <span class="n">epoch_period</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="n">gamma</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher_config</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">train_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">eval_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">test_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">pool_num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">scheduler_config</span><span class="o">=</span><span class="n">batch_scheduler_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">batcher_config</span><span class="p">)</span>
+
+        <span class="c1"># epoch 1</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">32</span><span class="p">)</span>
+
+        <span class="c1"># pass N epochs</span>
+        <span class="n">no_op_epochs</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="p">[[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">no_op_epochs</span><span class="p">)]</span>
+
+        <span class="c1"># after period is passed, batch size should be max batch size</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">256</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DynamicPoolingBatcherTest.test_step_size"><a class="viewcode-back" href="../../../../modules/pytext.data.test.html#pytext.data.test.dynamic_pooling_batcher_test.DynamicPoolingBatcherTest.test_step_size">[docs]</a>    <span class="k">def</span> <span class="nf">test_step_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">DynamicPoolingBatcherTest</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">dataset_size</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+
+        <span class="n">batch_scheduler_config</span> <span class="o">=</span> <span class="n">ExponentialBatcherSchedulerConfig</span><span class="p">(</span>
+            <span class="n">start_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">end_batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+            <span class="n">epoch_period</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">gamma</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher_config</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">train_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">eval_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">test_batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">pool_num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">num_shuffled_pools</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">scheduler_config</span><span class="o">=</span><span class="n">batch_scheduler_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batcher</span> <span class="o">=</span> <span class="n">ExponentialDynamicPoolingBatcher</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">batcher_config</span><span class="p">)</span>
+
+        <span class="c1"># epoch 1</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">32</span><span class="p">)</span>
+
+        <span class="c1"># epoch 2</span>
+        <span class="c1"># no op on batch size</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">32</span><span class="p">)</span>
+
+        <span class="c1"># epoch 3</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">64</span><span class="p">)</span>
+
+        <span class="c1"># epoch 4</span>
+        <span class="c1"># no op on batch size</span>
+        <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">64</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,36 @@
+IntentSlotMetricReporter.Config
+===============================
+
+
+
+**Component:** :class:`IntentSlotMetricReporter  <pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.intent_slot_detection_metric_reporter
+.. py:class:: IntentSlotMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false
+  }

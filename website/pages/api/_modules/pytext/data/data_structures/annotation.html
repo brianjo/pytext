@@ -1,0 +1,739 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.data_structures.annotation</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+
+<span class="n">OPEN</span> <span class="o">=</span> <span class="s2">"["</span>
+<span class="n">CLOSE</span> <span class="o">=</span> <span class="s2">"]"</span>
+<span class="n">ESCAPE</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span>
+<span class="n">INTENT_PREFIX</span> <span class="o">=</span> <span class="s2">"IN:"</span>
+<span class="n">SLOT_PREFIX</span> <span class="o">=</span> <span class="s2">"SL:"</span>
+<span class="n">COMBINATION_INTENT_LABEL</span> <span class="o">=</span> <span class="n">INTENT_PREFIX</span> <span class="o">+</span> <span class="s2">"COMBINE"</span>
+<span class="n">COMBINATION_SLOT_LABEL</span> <span class="o">=</span> <span class="n">SLOT_PREFIX</span> <span class="o">+</span> <span class="s2">"COMBINE"</span>
+<span class="n">SHIFT</span> <span class="o">=</span> <span class="s2">"SHIFT"</span>
+<span class="n">REDUCE</span> <span class="o">=</span> <span class="s2">"REDUCE"</span>
+
+<span class="n">INVALID_TREE_STR</span> <span class="o">=</span> <span class="s2">"[IN:INVALID_TREE placeholder]"</span>
+<span class="n">SEQLOGICAL_LOTV_TOKEN</span> <span class="o">=</span> <span class="s2">"0"</span>
+
+
+<div class="viewcode-block" id="is_valid_nonterminal"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.is_valid_nonterminal">[docs]</a><span class="k">def</span> <span class="nf">is_valid_nonterminal</span><span class="p">(</span><span class="n">node_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">node_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">INTENT_PREFIX</span><span class="p">)</span> <span class="ow">or</span> <span class="n">node_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">SLOT_PREFIX</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_intent_nonterminal"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.is_intent_nonterminal">[docs]</a><span class="k">def</span> <span class="nf">is_intent_nonterminal</span><span class="p">(</span><span class="n">node_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">node_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">INTENT_PREFIX</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_slot_nonterminal"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.is_slot_nonterminal">[docs]</a><span class="k">def</span> <span class="nf">is_slot_nonterminal</span><span class="p">(</span><span class="n">node_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">node_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">SLOT_PREFIX</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_unsupported"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.is_unsupported">[docs]</a><span class="k">def</span> <span class="nf">is_unsupported</span><span class="p">(</span><span class="n">node_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">is_intent_nonterminal</span><span class="p">(</span><span class="n">node_label</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">node_label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"unsupported"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="escape_brackets"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.escape_brackets">[docs]</a><span class="k">def</span> <span class="nf">escape_brackets</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">rf</span><span class="s2">"([\{OPEN}\{CLOSE}\{ESCAPE}])"</span><span class="p">,</span> <span class="n">rf</span><span class="s2">"\{ESCAPE}</span><span class="se">\1</span><span class="s2">"</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span></div>
+
+
+<span class="sd">"""</span>
+<span class="sd">A data structure for an Intents and Slots annotation:</span>
+<span class="sd">Each Node has type (Root, Intent, or Token), a pointer to its parent, and</span>
+<span class="sd">a list of its children. Token's children == None</span>
+
+<span class="sd">Annotation.validate_tree() will check for valid nesting.</span>
+
+<span class="sd">However, this class is intended not for validation but for annotator agreement</span>
+<span class="sd">calculations.</span>
+<span class="sd">"""</span>
+
+
+<div class="viewcode-block" id="Annotation"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Annotation">[docs]</a><span class="k">class</span> <span class="nc">Annotation</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">annotation_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">utterance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="n">brackets</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">OPEN</span> <span class="o">+</span> <span class="n">CLOSE</span><span class="p">,</span>
+        <span class="n">combination_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">add_dict_feat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+        <span class="n">accept_flat_intents_slots</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Annotation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">OPEN</span> <span class="o">=</span> <span class="n">brackets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CLOSE</span> <span class="o">=</span> <span class="n">brackets</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combination_labels</span> <span class="o">=</span> <span class="n">combination_labels</span>
+
+        <span class="c1"># Expected annotation_string (tab-separated):</span>
+        <span class="c1"># intent, slots, utterance, sparse_feat, seqlogical</span>
+        <span class="c1"># OR only seqlogical</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">annotation_string</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">utterance</span><span class="p">,</span> <span class="n">sparse_feat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seqlogical</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">seqlogical</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot parse annotation_string"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">build_tree</span><span class="p">(</span><span class="n">accept_flat_intents_slots</span><span class="p">),</span> <span class="n">combination_labels</span><span class="p">,</span> <span class="n">utterance</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">:</span> <span class="n">Root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span>
+
+<div class="viewcode-block" id="Annotation.build_tree"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Annotation.build_tree">[docs]</a>    <span class="k">def</span> <span class="nf">build_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accept_flat_intents_slots</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">Root</span><span class="p">()</span>
+        <span class="n">node_stack</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">root</span><span class="p">]</span>
+        <span class="n">curr_chars</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">token_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">expecting_label</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seqlogical</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">char</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">char</span><span class="o">.</span><span class="n">isspace</span><span class="p">()</span> <span class="ow">or</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="n">OPEN</span><span class="p">,</span> <span class="n">CLOSE</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">curr_chars</span><span class="p">:</span>
+                    <span class="n">word</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">curr_chars</span><span class="p">)</span>
+                    <span class="n">curr_chars</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">parent</span> <span class="o">=</span> <span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">expecting_label</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">INTENT_PREFIX</span><span class="p">):</span>
+                            <span class="n">node</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Intent</span><span class="p">,</span> <span class="n">Slot</span><span class="p">,</span> <span class="n">Token</span><span class="p">]</span> <span class="o">=</span> <span class="n">Intent</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">word</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">SLOT_PREFIX</span><span class="p">):</span>
+                            <span class="n">node</span> <span class="o">=</span> <span class="n">Slot</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">accept_flat_intents_slots</span><span class="p">:</span>
+                            <span class="c1"># Temporary, for compatibility with flat annotations that</span>
+                            <span class="c1"># does not contain IN:, SL: prefixes. This assumes any child</span>
+                            <span class="c1"># of ROOT or SLOT must be INTENT, and any child of INTENT</span>
+                            <span class="c1"># must be SLOT.</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">Root</span><span class="p">,</span> <span class="n">Slot</span><span class="p">)):</span>
+                                <span class="n">node</span> <span class="o">=</span> <span class="n">Intent</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">Intent</span><span class="p">):</span>
+                                <span class="n">node</span> <span class="o">=</span> <span class="n">Slot</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                    <span class="s2">"The previous node in node_stack is not of type "</span>
+                                    <span class="s2">"Root, Intent or Slot."</span>
+                                <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s2">"Label {word} must start with IN: or SL:"</span><span class="p">)</span>
+                        <span class="n">node_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                        <span class="n">expecting_label</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">Root</span><span class="p">):</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Root cannot have a Token as child."</span><span class="p">)</span>
+                        <span class="n">node</span> <span class="o">=</span> <span class="n">Token</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">token_count</span><span class="p">)</span>
+                        <span class="n">token_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+                <span class="k">if</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="n">OPEN</span><span class="p">,</span> <span class="n">CLOSE</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">expecting_label</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid tree. No label found after '['."</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="n">OPEN</span><span class="p">:</span>
+                        <span class="n">expecting_label</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">node_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="n">ESCAPE</span><span class="p">:</span>
+                    <span class="n">char</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">char</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">OPEN</span><span class="p">,</span> <span class="n">CLOSE</span><span class="p">,</span> <span class="n">ESCAPE</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="n">f</span><span class="s2">"Escape '{ESCAPE}' followed by none of '{OPEN}', "</span>
+                            <span class="n">f</span><span class="s2">"'{CLOSE}', or '{ESCAPE}'."</span>
+                        <span class="p">)</span>
+                <span class="n">curr_chars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_stack</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid tree."</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">combination_labels</span><span class="p">:</span>
+            <span class="n">comb_intent</span> <span class="o">=</span> <span class="n">Intent</span><span class="p">(</span><span class="n">COMBINATION_INTENT_LABEL</span><span class="p">)</span>
+            <span class="n">node_stack</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">comb_intent</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span><span class="p">:</span>
+                    <span class="n">comb_slot</span> <span class="o">=</span> <span class="n">Slot</span><span class="p">(</span><span class="n">COMBINATION_SLOT_LABEL</span><span class="p">)</span>
+                    <span class="n">comb_slot</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">comb_intent</span>
+                    <span class="n">comb_slot</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                    <span class="n">comb_intent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comb_slot</span><span class="p">)</span>
+                    <span class="n">child</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">comb_slot</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">child</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">comb_intent</span>
+                    <span class="n">comb_intent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+            <span class="n">comb_intent</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">root</span>
+            <span class="n">root</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">comb_intent</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">root</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        A tab-indented version of the tree.</span>
+<span class="sd">        strip() removes an extra final newline added during recursion</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">tree</span></div>
+
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>  <span class="c1"># The name of the intent, slot, or token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># the children of this node (Intent, Slot, or Token)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="Node.list_ancestors"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.list_ancestors">[docs]</a>    <span class="k">def</span> <span class="nf">list_ancestors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ancestors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Root</span><span class="p">:</span>
+                <span class="n">ancestors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+                <span class="n">ancestors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">list_ancestors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ancestors</span></div>
+
+<div class="viewcode-block" id="Node.validate_node"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.validate_node">[docs]</a>    <span class="k">def</span> <span class="nf">validate_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">validate_node</span><span class="p">()</span></div>
+
+    <span class="c1"># Returns all tokens in the span covered by this node</span>
+<div class="viewcode-block" id="Node.list_tokens"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.list_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">list_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+                    <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tokens</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">list_tokens</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">tokens</span></div>
+
+<div class="viewcode-block" id="Node.get_token_span"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.get_token_span">[docs]</a>    <span class="k">def</span> <span class="nf">get_token_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        0 indexed</span>
+<span class="sd">        Like array slicing: For the first 3 tokens, returns 0, 3</span>
+<span class="sd">        """</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_token_indices</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="Node.get_token_indices"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.get_token_indices">[docs]</a>    <span class="k">def</span> <span class="nf">get_token_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+                    <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">indices</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">get_token_indices</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">indices</span></div>
+
+<div class="viewcode-block" id="Node.list_nonTerminals"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.list_nonTerminals">[docs]</a>    <span class="k">def</span> <span class="nf">list_nonTerminals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns all Intent and Slot nodes subordinate to this node</span>
+<span class="sd">        """</span>
+        <span class="n">non_terminals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Root</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Token</span><span class="p">:</span>
+                <span class="n">non_terminals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                <span class="n">non_terminals</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">list_nonTerminals</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">non_terminals</span></div>
+
+<div class="viewcode-block" id="Node.list_terminals"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.list_terminals">[docs]</a>    <span class="k">def</span> <span class="nf">list_terminals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns all Token nodes</span>
+<span class="sd">        """</span>
+        <span class="n">terminals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+                <span class="n">terminals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">terminals</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">list_terminals</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">terminals</span></div>
+
+<div class="viewcode-block" id="Node.get_info"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.get_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Token_Info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Node_Info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Node.flat_str"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.flat_str">[docs]</a>    <span class="k">def</span> <span class="nf">flat_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">=</span> <span class="n">OPEN</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Root</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="n">escape_brackets</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">))</span> <span class="o">+</span> <span class="s2">" "</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">string</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">flat_str</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="n">CLOSE</span> <span class="o">+</span> <span class="s2">" "</span>
+        <span class="k">return</span> <span class="n">string</span></div>
+
+<div class="viewcode-block" id="Node.children_flat_str_spans"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node.children_flat_str_spans">[docs]</a>    <span class="k">def</span> <span class="nf">children_flat_str_spans</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_token_span</span><span class="p">())</span> <span class="o">+</span> <span class="s2">":"</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">string</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">flat_str</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">string</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recursive_str</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="k">def</span> <span class="nf">_recursive_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">,</span> <span class="n">spacer</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">spacer</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">spacer</span> <span class="o">+=</span> <span class="s2">"</span><span class="se">\t</span><span class="s2">"</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">string</span> <span class="o">+=</span> <span class="n">child</span><span class="o">.</span><span class="n">_recursive_str</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">spacer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">label</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">children</span></div>
+
+
+<div class="viewcode-block" id="Root"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Root">[docs]</a><span class="k">class</span> <span class="nc">Root</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s2">"ROOT"</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Root.validate_node"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Root.validate_node">[docs]</a>    <span class="k">def</span> <span class="nf">validate_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">validate_node</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Root</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">"A root child must be an intent or token: "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"A root should not have a parent: "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">children</span></div>
+
+
+<div class="viewcode-block" id="Intent"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Intent">[docs]</a><span class="k">class</span> <span class="nc">Intent</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Intent.validate_node"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Intent.validate_node">[docs]</a>    <span class="k">def</span> <span class="nf">validate_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">validate_node</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Root</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">"An intent child must be a slot or token: "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span>
+                <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">label</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">children</span></div>
+
+
+<div class="viewcode-block" id="Slot"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Slot">[docs]</a><span class="k">class</span> <span class="nc">Slot</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Slot.validate_node"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Slot.validate_node">[docs]</a>    <span class="k">def</span> <span class="nf">validate_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">validate_node</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="n">Root</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">"An slot child must be an intent or token: "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span>
+                <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">label</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">children</span></div>
+
+
+<div class="viewcode-block" id="Token"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Token">[docs]</a><span class="k">class</span> <span class="nc">Token</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="Token.validate_node"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Token.validate_node">[docs]</a>    <span class="k">def</span> <span class="nf">validate_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"A token node is terminal and should not </span><span class="se">\</span>
+<span class="s2">                    have children: "</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span>
+                <span class="o">+</span> <span class="s2">" "</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Token.remove"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Token.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Removes this token from the tree</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">None</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">label</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">index</span></div>
+
+
+<div class="viewcode-block" id="Token_Info"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Token_Info">[docs]</a><span class="k">class</span> <span class="nc">Token_Info</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    This class extracts the essential information for a token for use in rules.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_word</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parent</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ancestors</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">label</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">list_ancestors</span><span class="p">()]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior_token</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">prior</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_prior_token</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">prior</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior_token</span> <span class="o">=</span> <span class="n">prior</span><span class="o">.</span><span class="n">label</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">next_token</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_next_token</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">next_token</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span> <span class="o">=</span> <span class="n">next_token</span><span class="o">.</span><span class="n">label</span>
+
+<div class="viewcode-block" id="Token_Info.get_parent"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Token_Info.get_parent">[docs]</a>    <span class="k">def</span> <span class="nf">get_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Root</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">label</span>
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Token Info:"</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Token Word: "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_word</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Previous Token: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_token</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Next Token: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">next_token</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Parent: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_label</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Ancestors: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ancestors</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Node_Info"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node_Info">[docs]</a><span class="k">class</span> <span class="nc">Node_Info</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    This class extracts the essential information for a mode, for use in rules.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span>
+        <span class="c1"># This is all descendent tokens, not just immediate children tokens</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">list_tokens</span><span class="p">()</span>
+        <span class="c1"># If no parent, None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parent</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="c1"># only look at slot or intent children</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_indices</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_token_indices</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ancestors</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">label</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">list_ancestors</span><span class="p">()]</span>
+        <span class="c1"># This is only non-temrinal descendents. Did you want tokens too?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">descendents</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">label</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">list_nonTerminals</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior_token</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">prior</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_prior_token</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">prior</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior_token</span> <span class="o">=</span> <span class="n">prior</span><span class="o">.</span><span class="n">label</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_type</span> <span class="o">=</span> <span class="s2">"TOKEN"</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="n">Intent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_type</span> <span class="o">=</span> <span class="s2">"INTENT"</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="n">Slot</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_type</span> <span class="o">=</span> <span class="s2">"SLOT"</span>
+
+        <span class="c1"># same span as parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">same_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_same_span</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Node_Info.get_same_span"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node_Info.get_same_span">[docs]</a>    <span class="k">def</span> <span class="nf">get_same_span</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">list_tokens</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">list_tokens</span><span class="p">()):</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="Node_Info.get_parent"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Node_Info.get_parent">[docs]</a>    <span class="k">def</span> <span class="nf">get_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Root</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">label</span>
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Info:"</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Label: "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Tokens: "</span> <span class="o">+</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"Token Indicies: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_indices</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Prior Token: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_token</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Parent: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_label</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Children: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Ancestors: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ancestors</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Descendents: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">descendents</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Label Type: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_type</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Same Span: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">same_span</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Tree"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree">[docs]</a><span class="k">class</span> <span class="nc">Tree</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">root</span><span class="p">:</span> <span class="n">Root</span><span class="p">,</span>
+        <span class="n">combination_labels</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">utterance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="n">validate_tree</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">root</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combination_labels</span> <span class="o">=</span> <span class="n">combination_labels</span>
+        <span class="k">if</span> <span class="n">validate_tree</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">validate_tree</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">v</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">"Tree validation failed: {}. </span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">"Utterance is: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">utterance</span><span class="p">)</span>
+                <span class="p">)</span>
+
+<div class="viewcode-block" id="Tree.validate_tree"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.validate_tree">[docs]</a>    <span class="k">def</span> <span class="nf">validate_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        This is a method for checking that roots/intents/slots are</span>
+<span class="sd">        nested correctly.</span>
+<span class="sd">        Root( Intent( Slot( Intent( Slot, etc.) ) ) )</span>
+<span class="sd">        """</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combination_labels</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sd">"""Root should always have one child and not {}.</span>
+<span class="sd">                    Look into {} and {}"""</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">children</span><span class="p">),</span>
+                        <span class="n">COMBINATION_INTENT_LABEL</span><span class="p">,</span>
+                        <span class="n">COMBINATION_SLOT_LABEL</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recursive_validation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Failed validation for {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tree.recursive_validation"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.recursive_validation">[docs]</a>    <span class="k">def</span> <span class="nf">recursive_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">validate_node</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">validate_node</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Tree.print_tree"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.print_tree">[docs]</a>    <span class="k">def</span> <span class="nf">print_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flat_str</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Tree.flat_str"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.flat_str">[docs]</a>    <span class="k">def</span> <span class="nf">flat_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">flat_str</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Tree.lotv_str"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.lotv_str">[docs]</a>    <span class="k">def</span> <span class="nf">lotv_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        LOTV -- Limited Output Token Vocabulary</span>
+<span class="sd">        We map the terminal tokens in the input to a constant output</span>
+<span class="sd">        (SEQLOGICAL_LOTV_TOKEN) to make the parsing task easier for models where</span>
+<span class="sd">        the decoding is decoupled from the input (e.g. seq2seq). This way,</span>
+<span class="sd">        the model can focus on learning to predict the parse tree,</span>
+<span class="sd">        rather than waste effort learning to replicate terminal tokens.</span>
+<span class="sd">        """</span>
+        <span class="n">flat_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">flat_str</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+        <span class="n">all_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_tokens</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">token</span> <span class="k">if</span> <span class="n">token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_tokens</span> <span class="k">else</span> <span class="n">SEQLOGICAL_LOTV_TOKEN</span>
+                <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">flat_str</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tree.list_tokens"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.list_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">list_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">list_tokens</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Tree.depth"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.depth">[docs]</a>    <span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># note that this calculation includes Root as part of the tree</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_depth</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">depths</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">n</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">depths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_depth</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">depths</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="Tree.to_actions"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.Tree.to_actions">[docs]</a>    <span class="k">def</span> <span class="nf">to_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_to_actions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">actions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">actions</span></div>
+
+    <span class="k">def</span> <span class="nf">_to_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span> <span class="n">actions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="n">Token</span><span class="p">:</span>
+            <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SHIFT</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="ow">is</span> <span class="n">Token</span><span class="p">:</span>
+                <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_to_actions</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">actions</span><span class="p">)</span>
+                <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">REDUCE</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_to_actions</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">actions</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        A tab-indented version of the tree.</span>
+<span class="sd">        strip() removes an extra final newline added during recursion</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">root</span></div>
+
+
+<div class="viewcode-block" id="TreeBuilder"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.TreeBuilder">[docs]</a><span class="k">class</span> <span class="nc">TreeBuilder</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">combination_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combination_labels</span> <span class="o">=</span> <span class="n">combination_labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">Root</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finalzed</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="TreeBuilder.update_tree"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.TreeBuilder.update_tree">[docs]</a>    <span class="k">def</span> <span class="nf">update_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalzed</span><span class="p">,</span> <span class="s2">"Cannot update tree since it's finalized"</span>
+        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">REDUCE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">is_valid_nonterminal</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">is_intent_nonterminal</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Intent</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">is_slot_nonterminal</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Slot</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Don't understand action </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">action</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="n">SHIFT</span><span class="p">:</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">Token</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_count</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">token_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Don't understand action </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">action</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TreeBuilder.finalize_tree"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.TreeBuilder.finalize_tree">[docs]</a>    <span class="k">def</span> <span class="nf">finalize_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">validate_tree</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Tree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">combination_labels</span><span class="p">,</span> <span class="n">validate_tree</span><span class="o">=</span><span class="n">validate_tree</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="list_from_actions"><a class="viewcode-back" href="../../../../modules/pytext.data.data_structures.html#pytext.data.data_structures.annotation.list_from_actions">[docs]</a><span class="k">def</span> <span class="nf">list_from_actions</span><span class="p">(</span>
+    <span class="n">tokens_str</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">actions_vocab</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">actions_indices</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">):</span>
+    <span class="n">actions_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">action_idx</span> <span class="ow">in</span> <span class="n">actions_indices</span><span class="p">:</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">actions_vocab</span><span class="p">[</span><span class="n">action_idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">SHIFT</span><span class="p">:</span>
+            <span class="n">actions_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">action</span><span class="p">,</span> <span class="n">tokens_str</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">is_intent_nonterminal</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+            <span class="n">actions_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">INTENT_PREFIX</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">INTENT_PREFIX</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">elif</span> <span class="n">is_slot_nonterminal</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+            <span class="n">actions_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">SLOT_PREFIX</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">SLOT_PREFIX</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">actions_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">action</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">actions_list</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

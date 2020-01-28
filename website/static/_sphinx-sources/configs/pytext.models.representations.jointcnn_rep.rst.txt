@@ -1,0 +1,8 @@
+jointcnn_rep
+============
+
+
+.. toctree::
+
+  pytext.models.representations.jointcnn_rep.JointCNNRepresentation.Config
+  pytext.models.representations.jointcnn_rep.SharedCNNRepresentation.Config

@@ -1,0 +1,36 @@
+DisjointMultitaskModel.Config
+=============================
+
+
+
+**Component:** :class:`DisjointMultitaskModel  <pytext.models.disjoint_multitask_model.DisjointMultitaskModel>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: DisjointMultitaskModel.Config
+  :noindex:
+
+  **Bases:** :class:`Model.Config <pytext.models.model.Model.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.model.ModelInput>` = :doc:`ModelInput <pytext.models.model.ModelInput>`\ ()
+    \ 
+
+
+
+**Subclasses**
+  - :class:`NewDisjointMultitaskModel.Config <pytext.models.disjoint_multitask_model.NewDisjointMultitaskModel.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {}
+  }

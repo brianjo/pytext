@@ -1,0 +1,21 @@
+data
+====
+
+
+.. toctree::
+
+  pytext.data.batch_sampler
+  pytext.data.bert_tensorizer
+  pytext.data.data
+  pytext.data.data_handler
+  pytext.data.disjoint_multitask_data
+  pytext.data.disjoint_multitask_data_handler
+  pytext.data.dynamic_pooling_batcher
+  pytext.data.featurizer
+  pytext.data.packed_lm_data
+  pytext.data.roberta_tensorizer
+  pytext.data.sources
+  pytext.data.squad_for_bert_tensorizer
+  pytext.data.squad_tensorizer
+  pytext.data.tensorizers
+  pytext.data.tokenizers

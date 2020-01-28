@@ -1,0 +1,58 @@
+pytext package
+==============
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pytext.common
+   pytext.config
+   pytext.data
+   pytext.exporters
+   pytext.fields
+   pytext.loss
+   pytext.metric_reporters
+   pytext.metrics
+   pytext.models
+   pytext.optimizer
+   pytext.task
+   pytext.torchscript
+   pytext.trainers
+   pytext.utils
+
+Submodules
+----------
+
+pytext.builtin\_task module
+---------------------------
+
+.. automodule:: pytext.builtin_task
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.main module
+------------------
+
+.. automodule:: pytext.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.workflow module
+----------------------
+
+.. automodule:: pytext.workflow
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext
+   :members:
+   :undoc-members:
+   :show-inheritance:

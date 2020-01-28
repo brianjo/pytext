@@ -1,0 +1,53 @@
+MetricReporter.Config
+=====================
+
+
+
+**Component:** :class:`MetricReporter  <pytext.metric_reporters.metric_reporter.MetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.metric_reporter
+.. py:class:: MetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`ClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config>`\ 
+  - :class:`MultiLabelClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.Config>`\ 
+  - :class:`CompositionalMetricReporter.Config <pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter.Config>`\ 
+  - :class:`DisjointMultitaskMetricReporter.Config <pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config>`\ 
+  - :class:`IntentSlotMetricReporter.Config <pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.Config>`\ 
+  - :class:`LanguageModelMetricReporter.Config <pytext.metric_reporters.language_model_metric_reporter.LanguageModelMetricReporter.Config>`\ 
+  - :class:`MaskedLMMetricReporter.Config <pytext.metric_reporters.language_model_metric_reporter.MaskedLMMetricReporter.Config>`\ 
+  - :class:`PureLossMetricReporter.Config <pytext.metric_reporters.metric_reporter.PureLossMetricReporter.Config>`\ 
+  - :class:`PairwiseRankingMetricReporter.Config <pytext.metric_reporters.pairwise_ranking_metric_reporter.PairwiseRankingMetricReporter.Config>`\ 
+  - :class:`RegressionMetricReporter.Config <pytext.metric_reporters.regression_metric_reporter.RegressionMetricReporter.Config>`\ 
+  - :class:`SquadMetricReporter.Config <pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter.Config>`\ 
+  - :class:`NERMetricReporter.Config <pytext.metric_reporters.word_tagging_metric_reporter.NERMetricReporter.Config>`\ 
+  - :class:`SequenceTaggingMetricReporter.Config <pytext.metric_reporters.word_tagging_metric_reporter.SequenceTaggingMetricReporter.Config>`\ 
+  - :class:`WordTaggingMetricReporter.Config <pytext.metric_reporters.word_tagging_metric_reporter.WordTaggingMetricReporter.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false
+  }

@@ -1,0 +1,39 @@
+PolynomialDecayScheduler.Config
+===============================
+
+
+
+**Component:** :class:`PolynomialDecayScheduler  <pytext.optimizer.scheduler.PolynomialDecayScheduler>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: PolynomialDecayScheduler.Config
+  :noindex:
+
+  **Bases:** :class:`BatchScheduler.Config <pytext.optimizer.scheduler.BatchScheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **warmup_steps**: int = ``0``
+    number of training steps over which to increase learning rate
+    
+
+  **total_steps**: int
+    number of training steps for learning rate decay
+    
+
+  **end_learning_rate**: float
+    end learning rate after `total_steps` of training
+    
+
+  **power**: float = ``1.0``
+    power used for polynomial decay calculation
+    
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

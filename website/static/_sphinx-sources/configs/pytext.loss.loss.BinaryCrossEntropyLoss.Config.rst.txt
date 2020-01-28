@@ -1,0 +1,36 @@
+BinaryCrossEntropyLoss.Config
+=============================
+
+
+
+**Component:** :class:`BinaryCrossEntropyLoss  <pytext.loss.loss.BinaryCrossEntropyLoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: BinaryCrossEntropyLoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **reweight_negative**: bool = ``True``
+    \ 
+
+  **reduce**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "reweight_negative": true,
+      "reduce": true
+  }

@@ -1,0 +1,48 @@
+LMOutputLayer.Config
+====================
+
+
+
+**Component:** :class:`LMOutputLayer  <pytext.models.output_layers.lm_output_layer.LMOutputLayer>`\ 
+
+
+.. py:currentmodule:: pytext.models.output_layers.lm_output_layer
+.. py:class:: LMOutputLayer.Config
+  :noindex:
+
+  **Bases:** :class:`OutputLayerBase.Config <pytext.models.output_layers.output_layer_base.OutputLayerBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **loss**: :doc:`CrossEntropyLoss.Config <pytext.loss.loss.CrossEntropyLoss.Config>` = :doc:`CrossEntropyLoss.Config <pytext.loss.loss.CrossEntropyLoss.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "loss": {}
+  }

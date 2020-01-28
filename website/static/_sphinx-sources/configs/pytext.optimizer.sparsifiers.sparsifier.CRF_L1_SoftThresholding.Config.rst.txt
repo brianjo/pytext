@@ -1,0 +1,40 @@
+CRF_L1_SoftThresholding.Config
+==============================
+
+
+
+**Component:** :class:`CRF_L1_SoftThresholding  <pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.sparsifiers.sparsifier
+.. py:class:: CRF_L1_SoftThresholding.Config
+  :noindex:
+
+  **Bases:** :class:`CRF_SparsifierBase.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **starting_epoch**: int = ``1``
+    \ 
+
+  **frequency**: int = ``1``
+    \ 
+
+  **lambda_l1**: float = ``0.001``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "starting_epoch": 1,
+      "frequency": 1,
+      "lambda_l1": 0.001
+  }

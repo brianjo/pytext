@@ -1,0 +1,61 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.seq_models.seqnn
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.doc_model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`SeqTokenTensorizer.Config <pytext.data.tensorizers.SeqTokenTensorizer.Config>` = :doc:`SeqTokenTensorizer.Config <pytext.data.tensorizers.SeqTokenTensorizer.Config>`\ ()
+    \ 
+
+  **dense**: Optional[:doc:`FloatListTensorizer.Config <pytext.data.tensorizers.FloatListTensorizer.Config>`] = ``None``
+    \ 
+
+  **labels**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "column": "text_seq",
+          "max_seq_len": null,
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "add_bol_token": false,
+          "add_eol_token": false,
+          "use_eol_token_for_bol": false,
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          }
+      },
+      "dense": null,
+      "labels": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "label",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      }
+  }

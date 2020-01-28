@@ -1,0 +1,350 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.tokenizers.tokenizer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">NamedTuple</span>
+
+<span class="kn">from</span> <span class="nn">fairseq.data.encoders.gpt2_bpe</span> <span class="kn">import</span> <span class="n">get_encoder</span> <span class="k">as</span> <span class="n">create_gpt2_bpe</span>
+<span class="kn">from</span> <span class="nn">fairseq.data.encoders.gpt2_bpe_utils</span> <span class="kn">import</span> <span class="n">Encoder</span> <span class="k">as</span> <span class="n">GPT2BPEEncoder</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">create_component</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.tokenizer</span> <span class="kn">import</span> <span class="n">ScriptDoNothingTokenizer</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">pytorch_pretrained_bert.tokenization</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BasicTokenizer</span><span class="p">,</span>
+    <span class="n">WordpieceTokenizer</span><span class="p">,</span>
+    <span class="n">load_vocab</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">sentencepiece</span> <span class="kn">import</span> <span class="n">SentencePieceProcessor</span>
+
+
+<div class="viewcode-block" id="Token"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.Token">[docs]</a><span class="k">class</span> <span class="nc">Token</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">start</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">end</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+<div class="viewcode-block" id="Tokenizer"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.Tokenizer">[docs]</a><span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""A simple regex-splitting tokenizer."""</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">TOKENIZER</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: A regular expression for the tokenizer to split on. Tokens are the segments</span>
+        <span class="c1">#: between the regular expression matches. The start index is inclusive of the</span>
+        <span class="c1">#: unmatched region, and the end index is exclusive (matching the first</span>
+        <span class="c1">#: character of the matched split region).</span>
+        <span class="n">split_regex</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"\s+"</span>
+        <span class="c1">#: Whether token values should be lowercased or not.</span>
+        <span class="n">lowercase</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Tokenizer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.Tokenizer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">split_regex</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">lowercase</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_regex</span><span class="o">=</span><span class="sa">r</span><span class="s2">"\s+"</span><span class="p">,</span> <span class="n">lowercase</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">split_regex</span> <span class="o">=</span> <span class="n">split_regex</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lowercase</span> <span class="o">=</span> <span class="n">lowercase</span>
+
+<div class="viewcode-block" id="Tokenizer.tokenize"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.Tokenizer.tokenize">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">tokenize_input</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lowercase</span> <span class="k">else</span> <span class="nb">input</span>
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">split_regex</span><span class="p">,</span> <span class="n">tokenize_input</span><span class="p">):</span>
+            <span class="n">split_start</span><span class="p">,</span> <span class="n">split_end</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">span</span><span class="p">()</span>
+            <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Token</span><span class="p">(</span><span class="n">tokenize_input</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">split_start</span><span class="p">],</span> <span class="n">start</span><span class="p">,</span> <span class="n">split_start</span><span class="p">))</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">split_end</span>
+        <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Token</span><span class="p">(</span><span class="n">tokenize_input</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="p">)],</span> <span class="n">start</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span> <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Tokenizer.torchscriptify"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.Tokenizer.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="DoNothingTokenizer"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.DoNothingTokenizer">[docs]</a><span class="k">class</span> <span class="nc">DoNothingTokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Tokenizer that takes a list of strings and converts to a list of Tokens.</span>
+<span class="sd">    Useful in cases where tokenizer is run before-hand</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Component</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">do_nothing</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+<div class="viewcode-block" id="DoNothingTokenizer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.DoNothingTokenizer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DoNothingTokenizer.tokenize"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.DoNothingTokenizer.tokenize">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[</span><span class="n">Token</span><span class="p">(</span><span class="n">token_text</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">token_text</span> <span class="ow">in</span> <span class="nb">input</span> <span class="k">if</span> <span class="n">token_text</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">tokens</span></div>
+
+<div class="viewcode-block" id="DoNothingTokenizer.torchscriptify"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.DoNothingTokenizer.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ScriptDoNothingTokenizer</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="BERTInitialTokenizer"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.BERTInitialTokenizer">[docs]</a><span class="k">class</span> <span class="nc">BERTInitialTokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Basic initial tokenization for BERT.  This is run prior to word piece, does</span>
+<span class="sd">    white space tokenization in addition to lower-casing and accent removal</span>
+<span class="sd">    if specified.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="sd">"""Config for this class."""</span>
+
+<div class="viewcode-block" id="BERTInitialTokenizer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="n">basic_tokenizer</span> <span class="o">=</span> <span class="n">BasicTokenizer</span><span class="p">(</span><span class="n">do_lower_case</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">lowercase</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">basic_tokenizer</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basic_tokenizer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">basic_tokenizer</span>
+
+<div class="viewcode-block" id="BERTInitialTokenizer.tokenize"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.tokenize">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">"""Tokenizes a piece of text."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">do_lower_case</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">_run_strip_accents</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">start</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># safety check, this should not happen</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">end</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Token</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span></div></div>
+
+
+<div class="viewcode-block" id="WordPieceTokenizer"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.WordPieceTokenizer">[docs]</a><span class="k">class</span> <span class="nc">WordPieceTokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
+    <span class="sd">"""Word piece tokenizer for BERT models."""</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">basic_tokenizer</span><span class="p">:</span> <span class="n">BERTInitialTokenizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BERTInitialTokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">wordpiece_vocab_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wordpiece_vocab</span><span class="p">,</span> <span class="n">basic_tokenizer</span><span class="p">,</span> <span class="n">wordpiece_tokenizer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">wordpiece_vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basic_tokenizer</span> <span class="o">=</span> <span class="n">basic_tokenizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span> <span class="o">=</span> <span class="n">wordpiece_tokenizer</span>
+
+<div class="viewcode-block" id="WordPieceTokenizer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.WordPieceTokenizer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="n">basic_tokenizer</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+            <span class="n">ComponentType</span><span class="o">.</span><span class="n">TOKENIZER</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">basic_tokenizer</span>
+        <span class="p">)</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="n">load_vocab</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">wordpiece_vocab_path</span><span class="p">)</span>
+        <span class="n">wordpiece_tokenizer</span> <span class="o">=</span> <span class="n">WordpieceTokenizer</span><span class="p">(</span><span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span> <span class="n">basic_tokenizer</span><span class="p">,</span> <span class="n">wordpiece_tokenizer</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WordPieceTokenizer.tokenize"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.WordPieceTokenizer.tokenize">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">basic_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">input_str</span><span class="p">):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">start</span>
+            <span class="k">for</span> <span class="n">sub_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+                <span class="n">piece_len</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">sub_token</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">sub_token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"##"</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sub_token</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># account for ##</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">sub_token</span> <span class="o">==</span> <span class="s2">"[UNK]"</span><span class="p">:</span>
+                    <span class="c1"># this fixes the bug wherein piece_len = 5 for all [UNK]</span>
+                    <span class="n">piece_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">piece_len</span>
+                <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Token</span><span class="p">(</span><span class="n">sub_token</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span> <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="PickleableGPT2BPEEncoder"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.PickleableGPT2BPEEncoder">[docs]</a><span class="k">class</span> <span class="nc">PickleableGPT2BPEEncoder</span><span class="p">(</span><span class="n">GPT2BPEEncoder</span><span class="p">):</span>
+    <span class="sd">"""Fairseq's encoder stores the regex module as a local reference on its encoders,</span>
+<span class="sd">    which means they can't be saved via pickle.dumps or torch.save. This modified</span>
+<span class="sd">    their save/load logic doesn't store the module, and restores the reference</span>
+<span class="sd">    after re-inflating."""</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># make a shallow copy of state to avoid side effect on the original object</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"re"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">regex</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">re</span> <span class="o">=</span> <span class="n">regex</span></div>
+
+
+<div class="viewcode-block" id="GPT2BPETokenizer"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.GPT2BPETokenizer">[docs]</a><span class="k">class</span> <span class="nc">GPT2BPETokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
+    <span class="sd">"""Tokenizer for gpt-2 and RoBERTa."""</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">bpe_encoder_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json"</span>
+        <span class="p">)</span>
+        <span class="n">bpe_vocab_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe"</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="GPT2BPETokenizer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="c1"># TODO: T57433776 remove once FairSeq support PathManager</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">bpe_encoder_path</span> <span class="o">=</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">get_local_path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">bpe_encoder_path</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">bpe_vocab_path</span> <span class="o">=</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">get_local_path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">bpe_vocab_path</span><span class="p">)</span>
+
+        <span class="n">bpe</span> <span class="o">=</span> <span class="n">create_gpt2_bpe</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">bpe_encoder_path</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">bpe_vocab_path</span><span class="p">)</span>
+        <span class="c1"># This hacks the bpe instance to be picklable</span>
+        <span class="n">bpe</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">bpe</span><span class="p">)</span>
+        <span class="n">bpe</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">=</span> <span class="n">PickleableGPT2BPEEncoder</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">bpe</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bpe</span><span class="p">:</span> <span class="n">GPT2BPEEncoder</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bpe</span> <span class="o">=</span> <span class="n">bpe</span>
+
+<div class="viewcode-block" id="GPT2BPETokenizer.tokenize"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.tokenize">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+        <span class="n">bpe_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpe</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_str</span><span class="p">)</span>
+        <span class="n">char_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bpe</span><span class="o">.</span><span class="n">decoder</span><span class="p">[</span><span class="nb">id</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="sa">u</span><span class="s2">"</span><span class="se">\u0120</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">bpe_ids</span><span class="p">]</span>
+        <span class="c1"># fix for incorrect decoding of utf-8 chars</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">char_token</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">char_tokens</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">char_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span>
+                    <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bpe</span><span class="o">.</span><span class="n">byte_decoder</span><span class="p">[</span><span class="n">char</span><span class="p">]</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">char_token</span><span class="p">]</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+            <span class="c1"># handles BPE breaking a single multi-byte char into pieces</span>
+            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">char_tokens</span><span class="p">]</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">length</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">char_token</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">bpe_ids</span><span class="p">,</span> <span class="n">char_tokens</span><span class="p">):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">input_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">char_token</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">length</span>
+            <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Token</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">),</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+            <span class="c1"># handles bad start/end indices cascading to subsequent tokens.</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">end</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span> <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="CppProcessorMixin"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.CppProcessorMixin">[docs]</a><span class="k">class</span> <span class="nc">CppProcessorMixin</span><span class="p">:</span>
+    <span class="sd">"""Cpp processors like SentencePiece don't pickle well; reload them."""</span>
+
+    <span class="k">def</span> <span class="nf">_load_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"processor"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_processor</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SentencePieceTokenizer"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.SentencePieceTokenizer">[docs]</a><span class="k">class</span> <span class="nc">SentencePieceTokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">,</span> <span class="n">CppProcessorMixin</span><span class="p">):</span>
+    <span class="sd">"""Sentence piece tokenizer."""</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">sp_model_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sp_model_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sp_model_path</span> <span class="o">=</span> <span class="n">sp_model_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_processor</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SentencePieceTokenizer.from_config"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sp_model_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SentencePieceTokenizer.tokenize"><a class="viewcode-back" href="../../../../modules/pytext.data.tokenizers.html#pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.tokenize">[docs]</a>    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]:</span>
+        <span class="n">pieces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">EncodeAsPieces</span><span class="p">(</span><span class="n">input_str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Token</span><span class="p">(</span><span class="n">piece</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">piece</span> <span class="ow">in</span> <span class="n">pieces</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_load_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processor</span> <span class="o">=</span> <span class="n">SentencePieceProcessor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">Load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sp_model_path</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,51 @@
+NewTask.Config
+==============
+
+
+
+**Component:** :class:`NewTask  <pytext.task.new_task.NewTask>`\ 
+
+
+.. py:currentmodule:: pytext.task.new_task
+.. py:class:: NewTask.Config
+  :noindex:
+
+  **Bases:** :class:`_NewTask.Config <pytext.task.new_task._NewTask.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`Data.Config <pytext.data.data.Data.Config>` = :doc:`Data.Config <pytext.data.data.Data.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>` = :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ ()
+    \ 
+
+  **model**: :doc:`BaseModel.Config <pytext.models.model.BaseModel.Config>`
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BertPairRegressionTask.Config <pytext.task.tasks.BertPairRegressionTask.Config>`\ 
+  - :class:`DocumentClassificationTask.Config <pytext.task.tasks.DocumentClassificationTask.Config>`\ 
+  - :class:`DocumentRegressionTask.Config <pytext.task.tasks.DocumentRegressionTask.Config>`\ 
+  - :class:`EnsembleTask.Config <pytext.task.tasks.EnsembleTask.Config>`\ 
+  - :class:`IntentSlotTask.Config <pytext.task.tasks.IntentSlotTask.Config>`\ 
+  - :class:`LMTask.Config <pytext.task.tasks.LMTask.Config>`\ 
+  - :class:`MaskedLMTask.Config <pytext.task.tasks.MaskedLMTask.Config>`\ 
+  - :class:`NewBertClassificationTask.Config <pytext.task.tasks.NewBertClassificationTask.Config>`\ 
+  - :class:`NewBertPairClassificationTask.Config <pytext.task.tasks.NewBertPairClassificationTask.Config>`\ 
+  - :class:`PairwiseClassificationTask.Config <pytext.task.tasks.PairwiseClassificationTask.Config>`\ 
+  - :class:`QueryDocumentPairwiseRankingTask.Config <pytext.task.tasks.QueryDocumentPairwiseRankingTask.Config>`\ 
+  - :class:`RoBERTaNERTask.Config <pytext.task.tasks.RoBERTaNERTask.Config>`\ 
+  - :class:`SemanticParsingTask.Config <pytext.task.tasks.SemanticParsingTask.Config>`\ 
+  - :class:`SeqNNTask.Config <pytext.task.tasks.SeqNNTask.Config>`\ 
+  - :class:`SquadQATask.Config <pytext.task.tasks.SquadQATask.Config>`\ 
+  - :class:`WordTaggingTask.Config <pytext.task.tasks.WordTaggingTask.Config>`\ 
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

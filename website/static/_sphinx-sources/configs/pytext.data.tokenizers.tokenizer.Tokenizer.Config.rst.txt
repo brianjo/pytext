@@ -1,0 +1,45 @@
+Tokenizer.Config
+================
+
+
+
+**Component:** :class:`Tokenizer  <pytext.data.tokenizers.tokenizer.Tokenizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tokenizers.tokenizer
+.. py:class:: Tokenizer.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **split_regex**: str = ``'\\s+'``
+    A regular expression for the tokenizer to split on. Tokens are the segments
+    between the regular expression matches. The start index is inclusive of the
+    unmatched region, and the end index is exclusive (matching the first
+    character of the matched split region).
+    
+
+  **lowercase**: bool = ``True``
+    Whether token values should be lowercased or not.
+    
+
+
+
+**Subclasses**
+  - :class:`BERTInitialTokenizer.Config <pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "split_regex": "\\s+",
+      "lowercase": true
+  }

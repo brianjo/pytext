@@ -1,0 +1,7 @@
+transformer_sentence_encoder
+============================
+
+
+.. toctree::
+
+  pytext.models.representations.transformer_sentence_encoder.TransformerSentenceEncoder.Config

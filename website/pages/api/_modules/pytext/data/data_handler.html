@@ -1,0 +1,898 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.data_handler</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">Generator</span><span class="p">,</span>
+    <span class="n">Iterable</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">MutableMapping</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Set</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+    <span class="n">Type</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">BatchContext</span><span class="p">,</span> <span class="n">DatasetFieldName</span><span class="p">,</span> <span class="n">DFColumn</span><span class="p">,</span> <span class="n">VocabMeta</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">Target</span>
+<span class="kn">from</span> <span class="nn">pytext.config.pytext_config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.data.featurizer</span> <span class="kn">import</span> <span class="n">Featurizer</span>
+<span class="kn">from</span> <span class="nn">pytext.fields</span> <span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">,</span> <span class="n">RawField</span><span class="p">,</span> <span class="n">VocabUsingField</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span><span class="p">,</span> <span class="n">distributed</span><span class="p">,</span> <span class="n">embeddings</span> <span class="k">as</span> <span class="n">embeddings_utils</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.data</span> <span class="kn">import</span> <span class="n">parse_json_array</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.path</span> <span class="kn">import</span> <span class="n">get_absolute_path</span>
+<span class="kn">from</span> <span class="nn">torchtext</span> <span class="kn">import</span> <span class="n">data</span> <span class="k">as</span> <span class="n">textdata</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">align_target_labels</span>
+
+
+<span class="k">class</span> <span class="nc">CommonMetadata</span><span class="p">:</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">]</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">FieldMeta</span>
+    <span class="n">dataset_sizes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">BatchIterator</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    BatchIterator is a wrapper of TorchText. Iterator that provide flexibility to</span>
+<span class="sd">    map batched data to a tuple of (input, target, context) and other additional</span>
+<span class="sd">    steps such as dealing with distributed training.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        batches (Iterator[TorchText.Batch]): iterator of TorchText.Batch, which</span>
+<span class="sd">            shuffles/batches the data in __iter__ and return a batch of data in</span>
+<span class="sd">            __next__</span>
+<span class="sd">        processor: function to run after getting batched data from TorchText.Iterator,</span>
+<span class="sd">            the function should define a way to map to data into</span>
+<span class="sd">            (input, target, context)</span>
+<span class="sd">        include_input (bool): if input data should be returned, default is true</span>
+<span class="sd">        include_target (bool): if target data should be returned, default is true</span>
+<span class="sd">        include_context (bool): if context data should be returned, default is true</span>
+<span class="sd">        is_train (bool): if the batch data is for training</span>
+<span class="sd">        num_batches (int): total batches to generate, this param if for distributed</span>
+<span class="sd">            training due to a limitation in PyTorch's distributed training backend</span>
+<span class="sd">            that enforces all the parallel workers to have the same number of batches</span>
+<span class="sd">            we workaround it by adding dummy batches at the end</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batches</span><span class="p">,</span>
+        <span class="n">processor</span><span class="p">,</span>
+        <span class="n">include_input</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">include_target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">include_context</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">is_train</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">num_batches</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processor</span> <span class="o">=</span> <span class="n">processor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batches</span> <span class="o">=</span> <span class="n">batches</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_input</span> <span class="o">=</span> <span class="n">include_input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_target</span> <span class="o">=</span> <span class="n">include_target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_context</span> <span class="o">=</span> <span class="n">include_context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_train</span> <span class="o">=</span> <span class="n">is_train</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_num_batches</span> <span class="o">=</span> <span class="n">num_batches</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Iterate Torchtext.Iterator, map batch data into (input, target, context)</span>
+<span class="sd">        tuple and generate dummy batches for distributed training</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            input: tuple of tensors that can be fed directly into model forward</span>
+<span class="sd">                function</span>
+<span class="sd">            target: tensor or tuple of tensors as the model target for computing</span>
+<span class="sd">                loss</span>
+<span class="sd">            context: any extra info to be used in downstream steps, can be any</span>
+<span class="sd">                data type</span>
+<span class="sd">        """</span>
+        <span class="n">num_batches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batches</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batches</span><span class="p">):</span>
+            <span class="nb">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="p">(</span>
+                <span class="n">batch</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">include_input</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">include_target</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">include_context</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_train</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+            <span class="c1"># Due to a limitation in PyTorch's distributed training backend that</span>
+            <span class="c1"># enforces that all the parallel workers to have the same number of</span>
+            <span class="c1"># batches we keep yielding the last batch until the requested total</span>
+            <span class="c1"># number of batches is fullfilled</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">num_batches</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">context</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">BatchContext</span><span class="o">.</span><span class="n">IGNORE_LOSS</span><span class="p">:</span> <span class="bp">True</span><span class="p">})</span>
+                <span class="k">for</span> <span class="n">_j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_batches</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+                    <span class="k">yield</span> <span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_num_batches</span>
+
+
+<span class="k">class</span> <span class="nc">DataHandler</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    DataHandler is the central place to prepare data for model training/testing.</span>
+<span class="sd">    The class is responsible of:</span>
+
+<span class="sd">    * Define pipeline to process data and generate batch of tensors to be</span>
+<span class="sd">      consumed by model. Each batch is a (input, target, extra_data) tuple, in</span>
+<span class="sd">      which input can be feed directly into model.</span>
+<span class="sd">    * Initialize global context, such as build vocab, load pretrained embeddings.</span>
+<span class="sd">      Store the context as metadata, and provide function to serialize/deserialize</span>
+<span class="sd">      the metadata</span>
+
+<span class="sd">    The data processing pipeline contains the following steps:</span>
+
+<span class="sd">    * Read data from file into a list of raw data examples</span>
+<span class="sd">    * Convert each row of row data to a TorchText Example. This logic happens</span>
+<span class="sd">      in process_row function and will:</span>
+
+<span class="sd">      * Invoke featurizer, which contains data processing steps to apply</span>
+<span class="sd">        for both training and inference time, e.g: tokenization</span>
+<span class="sd">      * Use the raw data and results from featurizer to do any preprocessing</span>
+
+<span class="sd">    * Generate a TorchText.Dataset that contains the list of Example, the Dataset</span>
+<span class="sd">      also has a list of TorchText.Field, which defines how to do padding and</span>
+<span class="sd">      numericalization while batching data.</span>
+<span class="sd">    * Return a BatchIterator which will give a tuple of (input, target, context)</span>
+<span class="sd">      tensors for each iteration. By default the tensors have a 1:1 mapping to</span>
+<span class="sd">      the TorchText.Field fields, but this behavior can be overwritten by</span>
+<span class="sd">      _input_from_batch, _target_from_batch, _context_from_batch functions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        raw_columns (List[str]): columns to read from data source. The order should</span>
+<span class="sd">            match the data stored in that file.</span>
+<span class="sd">        featurizer (Featurizer): perform data preprocessing that should be shared</span>
+<span class="sd">            between training and inference</span>
+<span class="sd">        features (Dict[str, Field]): a dict of name -&gt; field that used to process data</span>
+<span class="sd">            as model input</span>
+<span class="sd">        labels (Dict[str, Field]): a dict of name -&gt; field that used to process data</span>
+<span class="sd">            as training target</span>
+<span class="sd">        extra_fields (Dict[str, Field]): fields that process any extra data used</span>
+<span class="sd">            neither as model input nor target. This is None by default</span>
+<span class="sd">        text_feature_name (str): name of the text field, used to define the default</span>
+<span class="sd">            sort key of data</span>
+<span class="sd">        shuffle (bool): if the dataset should be shuffled, true by default</span>
+<span class="sd">        sort_within_batch (bool): if data within same batch should be sorted, true</span>
+<span class="sd">            by default</span>
+<span class="sd">        train_path (str): path of training data file</span>
+<span class="sd">        eval_path (str): path of evaluation data file</span>
+<span class="sd">        test_path (str): path of test data file</span>
+<span class="sd">        train_batch_size (int): training batch size, 128 by default</span>
+<span class="sd">        eval_batch_size (int): evaluation batch size, 128 by default</span>
+<span class="sd">        test_batch_size (int): test batch size, 128 by default</span>
+<span class="sd">        max_seq_len (int): maximum length of tokens to keep in sequence</span>
+<span class="sd">        pass_index (bool): if the original index of data in the batch should be</span>
+<span class="sd">            passed along to downstream steps, default is true</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="DataHandler.Config"><a class="viewcode-back" href="../../../configs/pytext.data.data_handler.DataHandler.Config.html#pytext.data.data_handler.DataHandler.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">columns_to_read</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">shuffle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">sort_within_batch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">train_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"train.tsv"</span>
+        <span class="n">eval_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"eval.tsv"</span>
+        <span class="n">test_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"test.tsv"</span>
+        <span class="n">train_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+        <span class="n">eval_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+        <span class="n">test_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+        <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_HANDLER</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">raw_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">],</span>
+        <span class="n">features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">],</span>
+        <span class="n">featurizer</span><span class="p">:</span> <span class="n">Featurizer</span><span class="p">,</span>
+        <span class="n">extra_fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">text_feature_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">TEXT_FIELD</span><span class="p">,</span>
+        <span class="n">shuffle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">sort_within_batch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">train_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"train.tsv"</span><span class="p">,</span>
+        <span class="n">eval_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"eval.tsv"</span><span class="p">,</span>
+        <span class="n">test_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"test.tsv"</span><span class="p">,</span>
+        <span class="n">train_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+        <span class="n">eval_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+        <span class="n">test_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+        <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">pass_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw_columns</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">]</span> <span class="o">=</span> <span class="n">labels</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">featurizer</span> <span class="o">=</span> <span class="n">featurizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra_fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">]</span> <span class="o">=</span> <span class="n">extra_fields</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">pass_index</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extra_fields</span><span class="p">[</span><span class="n">BatchContext</span><span class="o">.</span><span class="n">INDEX</span><span class="p">]</span> <span class="o">=</span> <span class="n">RawField</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_feature_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">text_feature_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_cls</span><span class="p">:</span> <span class="n">Type</span> <span class="o">=</span> <span class="n">CommonMetadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span> <span class="n">CommonMetadata</span> <span class="o">=</span> <span class="n">CommonMetadata</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_cache</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffle</span> <span class="o">=</span> <span class="n">shuffle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sort_within_batch</span> <span class="o">=</span> <span class="n">sort_within_batch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span> <span class="o">=</span> <span class="n">max_seq_len</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_path</span> <span class="o">=</span> <span class="n">train_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_path</span> <span class="o">=</span> <span class="n">eval_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_path</span> <span class="o">=</span> <span class="n">test_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_batch_size</span> <span class="o">=</span> <span class="n">train_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_batch_size</span> <span class="o">=</span> <span class="n">eval_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_batch_size</span> <span class="o">=</span> <span class="n">test_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_mapping</span> <span class="o">=</span> <span class="n">column_mapping</span>
+
+    <span class="k">def</span> <span class="nf">load_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_file</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">lowercase_tokens</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Loads items into a set from a file containing one item per line.</span>
+<span class="sd">        Items are added to the set from top of the file to bottom.</span>
+<span class="sd">        So, the items in the file should be ordered by a preference (if any), e.g.,</span>
+<span class="sd">        it makes sense to order tokens in descending order of frequency in corpus.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vocab_file (str): vocab file to load</span>
+<span class="sd">            vocab_size (int): maximum tokens to load, will only load the first n if</span>
+<span class="sd">                the actual vocab size is larger than this parameter</span>
+<span class="sd">            lowercase_tokens (bool): if the tokens should be lowercased</span>
+<span class="sd">        """</span>
+        <span class="n">vocab</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">vocab_file</span> <span class="o">=</span> <span class="n">get_absolute_path</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">vocab_size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">)</span> <span class="o">==</span> <span class="n">vocab_size</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span>
+                            <span class="n">f</span><span class="s2">"Read {i+1} items from {vocab_file} "</span>
+                            <span class="n">f</span><span class="s2">"to load vocab of size {vocab_size}. "</span>
+                            <span class="n">f</span><span class="s2">"Skipping rest of the file"</span>
+                        <span class="p">)</span>
+                        <span class="k">break</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">vocab</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">lowercase_tokens</span> <span class="k">else</span> <span class="n">line</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">vocab_file</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"{vocab_file} doesn't exist. Cannot load vocabulary from it"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vocab</span>
+
+    <span class="k">def</span> <span class="nf">sort_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Example</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        How to sort data in every batch, default behavior is by the length of input</span>
+<span class="sd">        text</span>
+<span class="sd">        Args:</span>
+<span class="sd">            example (Example): one torchtext example</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_feature_name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">metadata_to_save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Save metadata, pretrained_embeds_weight should be excluded</span>
+<span class="sd">        """</span>
+        <span class="c1"># make a copy</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="c1"># pretrained_embeds_weight takes a lot space and is not needed in inference time</span>
+        <span class="k">for</span> <span class="n">feature_meta</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">feature_meta</span><span class="o">.</span><span class="n">pretrained_embeds_weight</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">target_meta</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="p">:</span>
+                <span class="n">target_meta</span><span class="o">.</span><span class="n">pretrained_embeds_weight</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">pretrained_embeds_weight</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">metadata</span>
+
+    <span class="k">def</span> <span class="nf">load_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">CommonMetadata</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Load previously saved metadata</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">use_vocab</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                <span class="n">field</span><span class="o">.</span><span class="n">load_meta</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+        <span class="n">target_meta</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">target</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">target_meta</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_meta</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">target_meta</span><span class="p">):</span>
+            <span class="n">field</span><span class="o">.</span><span class="n">load_meta</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">gen_dataset_from_path</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">include_label_fields</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate a dataset from file</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dataset (TorchText.Dataset)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">use_cache</span> <span class="ow">and</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_cache</span> <span class="ow">and</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">world_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_cache</span><span class="p">[</span><span class="n">path</span><span class="p">]</span>
+
+        <span class="n">shard_range</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">distributed</span><span class="o">.</span><span class="n">get_shard_range</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">dataset_sizes</span><span class="p">[</span><span class="n">path</span><span class="p">],</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">world_size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+            <span class="k">else</span> <span class="bp">None</span>
+        <span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_columns</span><span class="p">),</span>
+            <span class="n">include_label_fields</span><span class="p">,</span>
+            <span class="n">shard_range</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">world_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_cache</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">gen_dataset</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">include_label_fields</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="n">shard_range</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate torchtext Dataset from raw in memory data.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dataset (TorchText.Dataset)</span>
+<span class="sd">        """</span>
+        <span class="n">to_process</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">to_process</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+        <span class="n">to_process</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_fields</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">include_label_fields</span><span class="p">:</span>
+            <span class="n">to_process</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">to_process</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">Target</span><span class="o">.</span><span class="n">TARGET_LABEL_FIELD</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">to_process</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="c1"># generate example from dataframe</span>
+        <span class="n">examples</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">textdata</span><span class="o">.</span><span class="n">Example</span><span class="o">.</span><span class="n">fromdict</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">shard_range</span> <span class="ow">or</span> <span class="n">shard_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">idx</span> <span class="o">&lt;=</span> <span class="n">shard_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="n">to_process</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]):</span>
+        <span class="sd">"""</span>
+<span class="sd">        preprocess the raw data to create TorchText.Example, this is the second</span>
+<span class="sd">        step in whole processing pipeline</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            data (Generator[Dict[str, Any]])</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="n">preprocessed_row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_row</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">preprocessed_row</span><span class="p">:</span>
+                <span class="n">preprocessed_row</span><span class="p">[</span><span class="n">BatchContext</span><span class="o">.</span><span class="n">INDEX</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+                <span class="k">yield</span> <span class="n">preprocessed_row</span>
+
+    <span class="k">def</span> <span class="nf">preprocess_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        preprocess steps for a single input row, sub class should override it</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">row_data</span>
+
+    <span class="k">def</span> <span class="nf">init_metadata_from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span> <span class="n">eval_path</span><span class="p">,</span> <span class="n">test_path</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Initialize metadata using data from file</span>
+<span class="sd">        """</span>
+        <span class="c1"># get data sets</span>
+        <span class="n">pathes</span> <span class="o">=</span> <span class="p">[</span><span class="n">train_path</span><span class="p">,</span> <span class="n">eval_path</span><span class="p">,</span> <span class="n">test_path</span><span class="p">]</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">pathes</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_metadata</span><span class="p">(</span><span class="o">*</span><span class="n">datasets</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">dataset_sizes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">path</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pathes</span><span class="p">,</span> <span class="n">datasets</span><span class="p">)</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">init_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Initialize metadata using data from configured path</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_metadata_from_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">init_metadata_from_raw_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">data</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Initialize metadata using in memory data</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_metadata</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_init_metadata</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">eval_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_feature_metadata</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_target_metadata</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gen_extra_metadata</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">init_feature_metadata</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">eval_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># field metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># build vocabs for features</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">feat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">use_vocab</span><span class="p">:</span>
+                <span class="n">pretrained_embeddings</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">pretrained_embeddings_path</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="n">feat</span><span class="p">,</span> <span class="s2">"pretrained_embeddings_path"</span><span class="p">,</span> <span class="bp">None</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">pretrained_embeddings_path</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span>
+                        <span class="s2">"load pretrained embeddings from {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">pretrained_embeddings_path</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">pretrained_embeddings</span> <span class="o">=</span> <span class="n">embeddings_utils</span><span class="o">.</span><span class="n">PretrainedEmbedding</span><span class="p">(</span>
+                        <span class="n">pretrained_embeddings_path</span><span class="p">,</span> <span class="n">feat</span><span class="o">.</span><span class="n">lower</span>
+                    <span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="s2">"vocab"</span><span class="p">):</span>  <span class="c1"># Don't rebuild vocab</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Vocab for feature {name} has been built. Not rebuilding."</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Building vocab for feature {name}."</span><span class="p">)</span>
+                    <span class="n">vocab_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_data_to_build_vocab</span><span class="p">(</span>
+                        <span class="n">feat</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">,</span> <span class="n">pretrained_embeddings</span>
+                    <span class="p">)</span>
+                    <span class="n">feat</span><span class="o">.</span><span class="n">build_vocab</span><span class="p">(</span><span class="o">*</span><span class="n">vocab_data</span><span class="p">,</span> <span class="n">min_freq</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">min_freq</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">"{} field's vocabulary size is {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">feat</span><span class="o">.</span><span class="n">vocab</span><span class="p">)))</span>
+
+                <span class="c1"># Initialize pretrained embedding weights.</span>
+                <span class="k">if</span> <span class="n">pretrained_embeddings</span><span class="p">:</span>
+                    <span class="n">weights</span> <span class="o">=</span> <span class="n">pretrained_embeddings</span><span class="o">.</span><span class="n">initialize_embeddings_weights</span><span class="p">(</span>
+                        <span class="n">feat</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">stoi</span><span class="p">,</span>
+                        <span class="n">VocabMeta</span><span class="o">.</span><span class="n">UNK_TOKEN</span><span class="p">,</span>
+                        <span class="n">feat</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">,</span>
+                        <span class="n">feat</span><span class="o">.</span><span class="n">embedding_init_strategy</span><span class="p">,</span>
+                    <span class="p">)</span>  <span class="c1"># this is of type torch.Tensor</span>
+
+            <span class="n">meta</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">get_meta</span><span class="p">()</span>
+            <span class="n">meta</span><span class="o">.</span><span class="n">pretrained_embeds_weight</span> <span class="o">=</span> <span class="n">weights</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">meta</span>
+
+    <span class="k">def</span> <span class="nf">init_target_metadata</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">eval_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># build vocabs for label fields</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Target</span><span class="o">.</span><span class="n">TARGET_PROB_FIELD</span><span class="p">,</span> <span class="n">Target</span><span class="o">.</span><span class="n">TARGET_LOGITS_FIELD</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="c1"># Need test data to make sure we cover all of the labels in it</span>
+            <span class="c1"># It is particularly important when BIO is enabled as a B-[Label] can</span>
+            <span class="c1"># appear in train and eval but test can have B-[Label] and I-[Label]</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">use_vocab</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="s2">"vocab"</span><span class="p">):</span>  <span class="c1"># Don't rebuild vocab</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s2">"Building vocab for label {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                    <span class="n">label</span><span class="o">.</span><span class="n">build_vocab</span><span class="p">(</span>
+                        <span class="n">train_data</span><span class="p">,</span>
+                        <span class="n">eval_data</span><span class="p">,</span>
+                        <span class="n">test_data</span><span class="p">,</span>
+                        <span class="n">min_freq</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="s2">"min_freq"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Vocab for label {name} has been built. Not rebuilding."</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span>
+                    <span class="s2">"{} field's vocabulary size is {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">itos</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">pretrained_embeddings</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">pretrained_embeddings_path</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="n">label</span><span class="p">,</span> <span class="s2">"pretrained_embeddings_path"</span><span class="p">,</span> <span class="bp">None</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">pretrained_embeddings_path</span><span class="p">:</span>
+                    <span class="n">pretrained_embeddings</span> <span class="o">=</span> <span class="n">embeddings_utils</span><span class="o">.</span><span class="n">PretrainedEmbedding</span><span class="p">(</span>
+                        <span class="n">pretrained_embeddings_path</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="n">pretrained_embeddings</span><span class="p">:</span>
+                    <span class="n">weights</span> <span class="o">=</span> <span class="n">pretrained_embeddings</span><span class="o">.</span><span class="n">initialize_embeddings_weights</span><span class="p">(</span>
+                        <span class="n">label</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">stoi</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">.</span><span class="n">unk_token</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">.</span><span class="n">embedding_init_strategy</span><span class="p">,</span>
+                    <span class="p">)</span>  <span class="c1"># this is of type torch.Tensor</span>
+
+            <span class="n">meta</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">get_meta</span><span class="p">()</span>
+            <span class="n">meta</span><span class="o">.</span><span class="n">pretrained_embeds_weight</span> <span class="o">=</span> <span class="n">weights</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span>
+
+    <span class="k">def</span> <span class="nf">_get_data_to_build_vocab</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">feat</span><span class="p">:</span> <span class="n">Field</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">eval_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">pretrained_embeddings</span><span class="p">:</span> <span class="n">embeddings_utils</span><span class="o">.</span><span class="n">PretrainedEmbedding</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        This method prepares the list of data sources that Field.build_vocab()</span>
+<span class="sd">        accepts to build vocab from. Based on the specifications from `feat`, the</span>
+<span class="sd">        data can come from</span>
+
+<span class="sd">        - train data</span>
+<span class="sd">        - eval + test data</span>
+<span class="sd">        - specified vocab file</span>
+<span class="sd">        - pretrained embeddings dictionary</span>
+<span class="sd">        """</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="n">VocabUsingField</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">vocab_from_all_data</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">"Adding tokens from train, eval, and test data to vocab."</span><span class="p">)</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">train_data</span><span class="p">,</span> <span class="n">eval_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">vocab_from_train_data</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">"Adding tokens from train data to vocab."</span><span class="p">)</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="s2">"vocab_file"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">feat</span><span class="o">.</span><span class="n">vocab_file</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Adding tokens from {feat.vocab_file} to vocab."</span><span class="p">)</span>
+            <span class="n">lowercase_tokens</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">lower</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="s2">"lower"</span><span class="p">)</span> <span class="k">else</span> <span class="bp">False</span>
+            <span class="k">assert</span> <span class="n">feat</span><span class="o">.</span><span class="n">min_freq</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="n">vocab_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_vocab</span><span class="p">(</span>
+                <span class="n">feat</span><span class="o">.</span><span class="n">vocab_file</span><span class="p">,</span> <span class="n">feat</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">lowercase_tokens</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">vocab_set</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">vocab_set</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="s2">"vocab_from_pretrained_embeddings"</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"Adding tokens from pretrained embeddings to vocab."</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">pretrained_embeddings</span>
+            <span class="k">assert</span> <span class="n">feat</span><span class="o">.</span><span class="n">min_freq</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="n">pretrained_vocab</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">token</span>
+                <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pretrained_embeddings</span><span class="o">.</span><span class="n">stoi</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">feat</span><span class="o">.</span><span class="n">vocab_size</span>
+            <span class="p">}</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">pretrained_vocab</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">_gen_extra_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">"""Subclass can overwrite to add more necessary metadata."""</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">get_train_iter_from_path</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">train_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchIterator</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate data batch iterator for training data. See `_get_train_iter()` for</span>
+<span class="sd">        details</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            train_path (str): file path of training data</span>
+<span class="sd">            batch_size (int): batch size</span>
+<span class="sd">            rank (int): used for distributed training, the rank of current Gpu,</span>
+<span class="sd">                don't set it to anything but 0 for non-distributed training</span>
+<span class="sd">            world_size (int): used for distributed training, total number of Gpu</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_train_iter</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset_from_path</span><span class="p">(</span><span class="n">train_path</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span><span class="p">),</span>
+            <span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">world_size</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_test_iter_from_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchIterator</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_test_iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset_from_path</span><span class="p">(</span><span class="n">test_path</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_train_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_train_iter_from_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_batch_size</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_eval_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_train_iter_from_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_batch_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_test_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_test_iter_from_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">test_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_batch_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_train_iter_from_raw_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchIterator</span><span class="p">:</span>
+        <span class="n">shard_range</span> <span class="o">=</span> <span class="n">distributed</span><span class="o">.</span><span class="n">get_shard_range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_data</span><span class="p">),</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_train_iter</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">shard_range</span><span class="o">=</span><span class="n">shard_range</span><span class="p">),</span>
+            <span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">world_size</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_test_iter_from_raw_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">test_data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchIterator</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_test_iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset</span><span class="p">(</span><span class="n">test_data</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_train_iter</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">shard_dataset</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchIterator</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate data batch iterator for training data. If distributed training</span>
+<span class="sd">        is enabled, the dataset will be partitioned first. We use BucketIterator</span>
+<span class="sd">        here to pool together examples with a similar size length to reduce the</span>
+<span class="sd">        padding required for each batch.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            shard_dataset (str): sharded training or evaluation dataset</span>
+<span class="sd">            batch_size (int): batch size</span>
+<span class="sd">            rank (int): used for distributed training, the rank of current Gpu,</span>
+<span class="sd">                don't set it to anything but 0 for non-distributed training</span>
+<span class="sd">            world_size (int): used for distributed training, total number of Gpu</span>
+<span class="sd">        """</span>
+        <span class="c1"># Compute the per-worker batch size</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span> <span class="o">//</span> <span class="n">world_size</span> <span class="ow">or</span> <span class="n">batch_size</span>
+
+        <span class="k">return</span> <span class="n">BatchIterator</span><span class="p">(</span>
+            <span class="n">textdata</span><span class="o">.</span><span class="n">BucketIterator</span><span class="p">(</span>
+                <span class="n">shard_dataset</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="s2">"cuda:{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span>
+                <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">,</span>
+                <span class="n">sort_within_batch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sort_within_batch</span><span class="p">,</span>
+                <span class="n">repeat</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">sort_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sort_key</span><span class="p">,</span>
+                <span class="n">shuffle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shuffle</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_postprocess_batch</span><span class="p">,</span>
+            <span class="n">num_batches</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shard_dataset</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_test_iter</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">test_dataset</span><span class="p">:</span> <span class="n">textdata</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchIterator</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">BatchIterator</span><span class="p">(</span>
+            <span class="n">textdata</span><span class="o">.</span><span class="n">Iterator</span><span class="p">(</span>
+                <span class="n">test_dataset</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="s2">"cuda:{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span>
+                <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">,</span>
+                <span class="n">sort</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">repeat</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">sort_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sort_key</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_postprocess_batch</span><span class="p">,</span>
+            <span class="n">is_train</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">num_batches</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_dataset</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_predict_iter</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="p">):</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_dataset</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">include_label_fields</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">num_batches</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">1</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">batch_size</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="n">BatchIterator</span><span class="p">(</span>
+            <span class="n">textdata</span><span class="o">.</span><span class="n">Iterator</span><span class="p">(</span>
+                <span class="n">ds</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span> <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="s2">"cuda:{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span>
+                <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">,</span>
+                <span class="n">sort</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">repeat</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">sort_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sort_key</span><span class="p">,</span>
+                <span class="n">sort_within_batch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sort_within_batch</span><span class="p">,</span>
+                <span class="n">shuffle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shuffle</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_postprocess_batch</span><span class="p">,</span>
+            <span class="n">include_target</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">is_train</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">num_batches</span><span class="o">=</span><span class="n">num_batches</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">it</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="nb">input</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">context</span> <span class="ow">in</span> <span class="n">it</span><span class="p">:</span>
+                <span class="c1"># only return the first batch since there is only one</span>
+                <span class="k">return</span> <span class="nb">input</span><span class="p">,</span> <span class="n">context</span>
+
+    <span class="k">def</span> <span class="nf">read_from_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">columns_to_use</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Read data from csv file. Input file format is required to be</span>
+<span class="sd">        tab-separated columns</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_name (str): csv file name</span>
+<span class="sd">            columns_to_use (Union[Dict[str, int], List[str]]): either a list of</span>
+<span class="sd">                column names or a dict of column name -&gt; column index in the file</span>
+<span class="sd">        """</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">get_absolute_path</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"reading data from {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">columns_to_use</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">columns_to_use</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">idx</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">columns_to_use</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">columns_to_use</span><span class="p">)))</span>
+            <span class="p">}</span>
+
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">f_handle</span><span class="p">:</span>
+            <span class="n">csv_reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f_handle</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">quoting</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">QUOTE_NONE</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">row</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">csv_reader</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">csv</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s2">"ignoring line {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+                    <span class="k">continue</span>
+                <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="k">yield</span> <span class="p">{</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">columns_to_use</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_postprocess_batch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">,</span>
+        <span class="n">include_input</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">include_target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">include_context</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">is_train</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_input_from_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">is_train</span><span class="p">)</span> <span class="k">if</span> <span class="n">include_input</span> <span class="k">else</span> <span class="bp">None</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_target_from_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="k">if</span> <span class="n">include_target</span> <span class="k">else</span> <span class="bp">None</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_context_from_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="k">if</span> <span class="n">include_context</span> <span class="k">else</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_target_prob_to_res</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">row_data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">DFColumn</span><span class="o">.</span><span class="n">TARGET_PROBS</span> <span class="ow">in</span> <span class="n">row_data</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">Target</span><span class="o">.</span><span class="n">TARGET_PROB_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_json_array</span><span class="p">(</span>
+                <span class="n">row_data</span><span class="p">[</span><span class="n">DFColumn</span><span class="o">.</span><span class="n">TARGET_PROBS</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">DFColumn</span><span class="o">.</span><span class="n">TARGET_LABELS</span> <span class="ow">in</span> <span class="n">row_data</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">Target</span><span class="o">.</span><span class="n">TARGET_LABEL_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_json_array</span><span class="p">(</span>
+                <span class="n">row_data</span><span class="p">[</span><span class="n">DFColumn</span><span class="o">.</span><span class="n">TARGET_LABELS</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">DFColumn</span><span class="o">.</span><span class="n">TARGET_LOGITS</span> <span class="ow">in</span> <span class="n">row_data</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">Target</span><span class="o">.</span><span class="n">TARGET_LOGITS_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_json_array</span><span class="p">(</span>
+                <span class="n">row_data</span><span class="p">[</span><span class="n">DFColumn</span><span class="o">.</span><span class="n">TARGET_LOGITS</span><span class="p">]</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_target_from_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Target</span><span class="o">.</span><span class="n">TARGET_PROB_FIELD</span><span class="p">,</span> <span class="n">Target</span><span class="o">.</span><span class="n">TARGET_LOGITS_FIELD</span><span class="p">]:</span>
+                <span class="n">label_vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">stoi</span>
+                <span class="n">batch_label_list</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">Target</span><span class="o">.</span><span class="n">TARGET_LABEL_FIELD</span><span class="p">)</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">align_target_labels</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">batch_label_list</span><span class="p">,</span> <span class="n">label_vocab</span><span class="p">)</span>
+            <span class="n">targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">targets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_input_from_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">is_train</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_train_input_from_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_train</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_input_from_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_train_input_from_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_test_input_from_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_train_input_from_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_context_from_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_fields</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

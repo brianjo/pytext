@@ -1,0 +1,49 @@
+VocabFileConfig
+===============
+
+
+
+**Component:** :class:`Component  <pytext.config.component.Component>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: VocabFileConfig
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **filepath**: str = ``''``
+    File containing tokens to add to vocab (first whitespace-separated entry per
+    line)
+    
+
+  **skip_header_line**: bool = ``False``
+    Whether to skip the first line of the file (e.g. if it is a header line)
+    
+
+  **lowercase_tokens**: bool = ``False``
+    Whether to lowercase each of the tokens in the file
+    
+
+  **size_limit**: int = ``0``
+    The max number of tokens to add to vocab
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "filepath": "",
+      "skip_header_line": false,
+      "lowercase_tokens": false,
+      "size_limit": 0
+  }

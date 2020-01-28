@@ -1,0 +1,78 @@
+CharacterTokenTensorizer.Config
+===============================
+
+
+
+**Component:** :class:`CharacterTokenTensorizer  <pytext.data.tensorizers.CharacterTokenTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: CharacterTokenTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str = ``'text'``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`\ ()
+    \ 
+
+  **add_bos_token**: bool = ``False``
+    \ 
+
+  **add_eos_token**: bool = ``False``
+    \ 
+
+  **use_eos_token_for_bos**: bool = ``False``
+    \ 
+
+  **max_seq_len**: Optional[int] = ``None``
+    \ 
+
+  **vocab**: :doc:`VocabConfig <pytext.data.tensorizers.VocabConfig>` = :doc:`VocabConfig <pytext.data.tensorizers.VocabConfig>`\ ()
+    \ 
+
+  **vocab_file_delimiter**: str = ``' '``
+    \ 
+
+  **max_char_length**: int = ``20``
+    The max character length for a token.
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "column": "text",
+      "tokenizer": {
+          "Tokenizer": {
+              "split_regex": "\\s+",
+              "lowercase": true
+          }
+      },
+      "add_bos_token": false,
+      "add_eos_token": false,
+      "use_eos_token_for_bos": false,
+      "max_seq_len": null,
+      "vocab": {
+          "build_from_data": true,
+          "size_from_data": 0,
+          "vocab_files": []
+      },
+      "vocab_file_delimiter": " ",
+      "max_char_length": 20
+  }

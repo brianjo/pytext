@@ -1,0 +1,34 @@
+DataSource.Config
+=================
+
+
+
+**Component:** :class:`DataSource  <pytext.data.sources.data_source.DataSource>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: DataSource.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`RowShardedDataSource.Config <pytext.data.sources.data_source.RowShardedDataSource.Config>`\ 
+  - :class:`ShardedDataSource.Config <pytext.data.sources.data_source.ShardedDataSource.Config>`\ 
+  - :class:`SquadDataSource.Config <pytext.data.sources.squad.SquadDataSource.Config>`\ 
+  - :class:`SquadDataSourceForKD.Config <pytext.data.sources.squad.SquadDataSourceForKD.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

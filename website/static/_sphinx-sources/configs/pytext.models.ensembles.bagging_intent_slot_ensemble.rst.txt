@@ -1,0 +1,7 @@
+bagging_intent_slot_ensemble
+============================
+
+
+.. toctree::
+
+  pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.Config

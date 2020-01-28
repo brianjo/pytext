@@ -1,0 +1,30 @@
+pytext.data.data\_structures package
+====================================
+
+Submodules
+----------
+
+pytext.data.data\_structures.annotation module
+----------------------------------------------
+
+.. automodule:: pytext.data.data_structures.annotation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.data\_structures.node module
+----------------------------------------
+
+.. automodule:: pytext.data.data_structures.node
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.data.data_structures
+   :members:
+   :undoc-members:
+   :show-inheritance:

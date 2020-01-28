@@ -1,0 +1,162 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.torchscript.tensorizer.normalizer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+
+<div class="viewcode-block" id="VectorNormalizer"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tensorizer.html#pytext.torchscript.tensorizer.normalizer.VectorNormalizer">[docs]</a><span class="k">class</span> <span class="nc">VectorNormalizer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""Performs in-place normalization over all features of a dense feature</span>
+<span class="sd">    vector by doing (x - mean)/stddev for each x in the feature vector.</span>
+
+<span class="sd">    This is a ScriptModule so that the normalize function can be called at</span>
+<span class="sd">    training time in the tensorizer, as well as at inference time by using it in</span>
+<span class="sd">    your torchscript forward function. To use this in your tensorizer</span>
+<span class="sd">    update_meta_data must be called once per row in your initialize function,</span>
+<span class="sd">    and then calculate_feature_stats must be called upon the last time it runs.</span>
+<span class="sd">    See usage in FloatListTensorizer for an example.</span>
+
+<span class="sd">    Setting do_normalization=False will make the normalize function an identity</span>
+<span class="sd">    function.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">do_normalization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rows</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_sums</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_squared_sums</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_normalization</span> <span class="o">=</span> <span class="n">do_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_avgs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_stddevs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">dim</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"num_rows"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rows</span><span class="p">,</span>
+            <span class="s2">"feature_sums"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_sums</span><span class="p">,</span>
+            <span class="s2">"feature_squared_sums"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_squared_sums</span><span class="p">,</span>
+            <span class="s2">"do_normalization"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_normalization</span><span class="p">,</span>
+            <span class="s2">"feature_avgs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_avgs</span><span class="p">,</span>
+            <span class="s2">"feature_stddevs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_stddevs</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rows</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"num_rows"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_sums</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"feature_sums"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_squared_sums</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"feature_squared_sums"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_normalization</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"do_normalization"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_avgs</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"feature_avgs"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_stddevs</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"feature_stddevs"</span><span class="p">]</span>
+
+    <span class="c1"># TODO: this is only to satisfy the TorchScript compiler.</span>
+    <span class="c1"># Can remove when D17551196 lands</span>
+<div class="viewcode-block" id="VectorNormalizer.forward"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tensorizer.html#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="VectorNormalizer.update_meta_data"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tensorizer.html#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.update_meta_data">[docs]</a>    <span class="k">def</span> <span class="nf">update_meta_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_normalization</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_rows</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">feature_sums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">vec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">feature_squared_sums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">vec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="VectorNormalizer.calculate_feature_stats"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tensorizer.html#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.calculate_feature_stats">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_feature_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_normalization</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feature_avgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rows</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_sums</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feature_stddevs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_squared_sums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rows</span><span class="p">)</span>
+                    <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_avgs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="o">**</span> <span class="mf">0.5</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_squared_sums</span><span class="p">))</span>
+            <span class="p">]</span></div>
+
+<div class="viewcode-block" id="VectorNormalizer.normalize"><a class="viewcode-back" href="../../../../modules/pytext.torchscript.tensorizer.html#pytext.torchscript.tensorizer.normalizer.VectorNormalizer.normalize">[docs]</a>    <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_normalization</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                    <span class="n">vec</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_avgs</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="n">vec</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">/=</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">feature_stddevs</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_stddevs</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
+                    <span class="p">)</span>
+        <span class="k">return</span> <span class="n">vec</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

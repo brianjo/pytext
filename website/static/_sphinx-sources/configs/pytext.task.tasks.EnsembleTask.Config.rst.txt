@@ -1,0 +1,35 @@
+EnsembleTask.Config
+===================
+
+
+
+**Component:** :class:`EnsembleTask  <pytext.task.tasks.EnsembleTask>`\ 
+
+
+.. py:currentmodule:: pytext.task.tasks
+.. py:class:: EnsembleTask.Config
+  :noindex:
+
+  **Bases:** :class:`NewTask.Config <pytext.task.new_task.NewTask.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`Data.Config <pytext.data.data.Data.Config>` = :doc:`Data.Config <pytext.data.data.Data.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`EnsembleTrainer.Config <pytext.trainers.ensemble_trainer.EnsembleTrainer.Config>` = :doc:`EnsembleTrainer.Config <pytext.trainers.ensemble_trainer.EnsembleTrainer.Config>`\ ()
+    \ 
+
+  **model**: :doc:`EnsembleModel.Config <pytext.models.ensembles.ensemble.EnsembleModel.Config>`
+    \ 
+
+  **metric_reporter**: Union[:doc:`ClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config>`, :doc:`IntentSlotMetricReporter.Config <pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.Config>`] = :doc:`ClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config>`\ ()
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

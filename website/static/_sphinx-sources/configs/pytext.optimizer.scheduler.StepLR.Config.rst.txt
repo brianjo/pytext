@@ -1,0 +1,38 @@
+StepLR.Config
+=============
+
+
+
+**Component:** :class:`StepLR  <pytext.optimizer.scheduler.StepLR>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: StepLR.Config
+  :noindex:
+
+  **Bases:** :class:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **step_size**: int = ``30``
+    Period of learning rate decay.
+    
+
+  **gamma**: float = ``0.1``
+    Multiplicative factor of learning rate decay.
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "step_size": 30,
+      "gamma": 0.1
+  }

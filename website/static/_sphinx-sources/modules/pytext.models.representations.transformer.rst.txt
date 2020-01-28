@@ -1,0 +1,54 @@
+pytext.models.representations.transformer package
+=================================================
+
+Submodules
+----------
+
+pytext.models.representations.transformer.multihead\_attention module
+---------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer.multihead_attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.transformer.positional\_embedding module
+----------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer.positional_embedding
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.transformer.residual\_mlp module
+--------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer.residual_mlp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.transformer.sentence\_encoder module
+------------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer.sentence_encoder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.representations.transformer.transformer module
+------------------------------------------------------------
+
+.. automodule:: pytext.models.representations.transformer.transformer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.representations.transformer
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "docusaurus": "^1.14.4",
+    "nbformat": "^0.0.2"
+  }
+}

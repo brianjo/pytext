@@ -1,0 +1,82 @@
+DisjointMultitaskDataHandler.Config
+===================================
+
+
+
+**Component:** :class:`DisjointMultitaskDataHandler  <pytext.data.disjoint_multitask_data_handler.DisjointMultitaskDataHandler>`\ 
+
+
+.. py:currentmodule:: pytext.data.disjoint_multitask_data_handler
+.. py:class:: DisjointMultitaskDataHandler.Config
+  :noindex:
+
+  **Bases:** :class:`DataHandler.Config <pytext.data.data_handler.DataHandler.Config>`\ 
+
+  Configuration class for `DisjointMultitaskDataHandler`.
+  
+  .. attribute:: upsample
+  
+     If upsample, keep cycling over each iterator in round-robin.
+     Iterators with less batches will get more passes.  If False, we do single
+     pass over each iterator, the ones which run out will sit idle.  This is
+     used for evaluation.  Default True.
+  
+     :type: bool
+  
+
+**All Attributes (including base classes)**
+
+  **columns_to_read**: list[str] = ``[]``
+    \ 
+
+  **shuffle**: bool = ``True``
+    \ 
+
+  **sort_within_batch**: bool = ``True``
+    \ 
+
+  **train_path**: str = ``'train.tsv'``
+    \ 
+
+  **eval_path**: str = ``'eval.tsv'``
+    \ 
+
+  **test_path**: str = ``'test.tsv'``
+    \ 
+
+  **train_batch_size**: int = ``128``
+    \ 
+
+  **eval_batch_size**: int = ``128``
+    \ 
+
+  **test_batch_size**: int = ``128``
+    \ 
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+  **upsample**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "columns_to_read": [],
+      "shuffle": true,
+      "sort_within_batch": true,
+      "train_path": "train.tsv",
+      "eval_path": "eval.tsv",
+      "test_path": "test.tsv",
+      "train_batch_size": 128,
+      "eval_batch_size": 128,
+      "test_batch_size": 128,
+      "column_mapping": {},
+      "upsample": true
+  }

@@ -1,0 +1,113 @@
+ContextualIntentSlotRepresentation.Config
+=========================================
+
+
+
+**Component:** :class:`ContextualIntentSlotRepresentation  <pytext.models.representations.contextual_intent_slot_rep.ContextualIntentSlotRepresentation>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.contextual_intent_slot_rep
+.. py:class:: ContextualIntentSlotRepresentation.Config
+  :noindex:
+
+  **Bases:** :class:`RepresentationBase.Config <pytext.models.representations.representation_base.RepresentationBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **sen_representation**: :doc:`DocNNRepresentation.Config <pytext.models.representations.docnn.DocNNRepresentation.Config>` = :doc:`DocNNRepresentation.Config <pytext.models.representations.docnn.DocNNRepresentation.Config>`\ ()
+    \ 
+
+  **seq_representation**: :doc:`DocNNRepresentation.Config <pytext.models.representations.docnn.DocNNRepresentation.Config>` = :doc:`DocNNRepresentation.Config <pytext.models.representations.docnn.DocNNRepresentation.Config>`\ ()
+    \ 
+
+  **joint_representation**: Union[:doc:`BiLSTMDocSlotAttention.Config <pytext.models.representations.bilstm_doc_slot_attention.BiLSTMDocSlotAttention.Config>`, :doc:`JointCNNRepresentation.Config <pytext.models.representations.jointcnn_rep.JointCNNRepresentation.Config>`] = :doc:`BiLSTMDocSlotAttention.Config <pytext.models.representations.bilstm_doc_slot_attention.BiLSTMDocSlotAttention.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "sen_representation": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "dropout": 0.4,
+          "cnn": {
+              "kernel_num": 100,
+              "kernel_sizes": [
+                  3,
+                  4
+              ],
+              "weight_norm": false,
+              "dilated": false,
+              "causal": false
+          }
+      },
+      "seq_representation": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "dropout": 0.4,
+          "cnn": {
+              "kernel_num": 100,
+              "kernel_sizes": [
+                  3,
+                  4
+              ],
+              "weight_norm": false,
+              "dilated": false,
+              "causal": false
+          }
+      },
+      "joint_representation": {
+          "BiLSTMDocSlotAttention": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "dropout": 0.4,
+              "lstm": {
+                  "BiLSTM": {
+                      "load_path": null,
+                      "save_path": null,
+                      "freeze": false,
+                      "shared_module_key": null,
+                      "dropout": 0.4,
+                      "lstm_dim": 32,
+                      "num_layers": 1,
+                      "bidirectional": true,
+                      "pack_sequence": true
+                  }
+              },
+              "pooling": null,
+              "slot_attention": null,
+              "doc_mlp_layers": 0,
+              "word_mlp_layers": 0
+          }
+      }
+  }

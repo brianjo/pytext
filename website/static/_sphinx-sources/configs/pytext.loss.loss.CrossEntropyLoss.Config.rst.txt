@@ -1,0 +1,27 @@
+CrossEntropyLoss.Config
+=======================
+
+
+
+**Component:** :class:`CrossEntropyLoss  <pytext.loss.loss.CrossEntropyLoss>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: CrossEntropyLoss.Config
+  :noindex:
+
+  **Bases:** :class:`Loss.Config <pytext.loss.loss.Loss.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

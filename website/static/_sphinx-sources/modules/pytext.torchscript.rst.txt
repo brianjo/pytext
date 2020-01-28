@@ -1,0 +1,46 @@
+pytext.torchscript package
+==========================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pytext.torchscript.tensorizer
+   pytext.torchscript.tokenizer
+
+Submodules
+----------
+
+pytext.torchscript.module module
+--------------------------------
+
+.. automodule:: pytext.torchscript.module
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.utils module
+-------------------------------
+
+.. automodule:: pytext.torchscript.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.torchscript.vocab module
+-------------------------------
+
+.. automodule:: pytext.torchscript.vocab
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.torchscript
+   :members:
+   :undoc-members:
+   :show-inheritance:

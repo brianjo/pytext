@@ -1,0 +1,7 @@
+intent_slot_output_layer
+========================
+
+
+.. toctree::
+
+  pytext.models.output_layers.intent_slot_output_layer.IntentSlotOutputLayer.Config

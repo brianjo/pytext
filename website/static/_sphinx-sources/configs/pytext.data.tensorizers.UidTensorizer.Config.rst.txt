@@ -1,0 +1,40 @@
+UidTensorizer.Config
+====================
+
+
+
+**Component:** :class:`UidTensorizer  <pytext.data.tensorizers.UidTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: UidTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str = ``'uid'``
+    \ 
+
+  **allow_unknown**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "column": "uid",
+      "allow_unknown": true
+  }

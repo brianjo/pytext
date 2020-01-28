@@ -1,0 +1,168 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="config-files-explained">
+<h1>Config Files Explained<a class="headerlink" href="#config-files-explained" title="Permalink to this headline">¶</a></h1>
+<p>PyText Models and training Tasks contain many components, and each components expects many parameters to define their behavior. PyText uses a <code class="docutils literal notranslate"><span class="pre">config</span></code> to specify those parameters. The <code class="docutils literal notranslate"><span class="pre">config</span></code> is can be loaded from a JSON file, which is what we describe here.</p>
+<div class="section" id="structure-of-a-config-file">
+<h2>Structure of a Config File<a class="headerlink" href="#structure-of-a-config-file" title="Permalink to this headline">¶</a></h2>
+<p>A typical <code class="docutils literal notranslate"><span class="pre">config</span></code> file only contains the parameters specific to your project. Here’s a fully working JSON file, and it does not need to be more complicated than this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">{</span>
+<span class="go">    "task": {</span>
+<span class="go">        "DocumentClassificationTask": {</span>
+<span class="go">            "data": {</span>
+<span class="go">              "source": {</span>
+<span class="go">                "TSVDataSource": {</span>
+<span class="go">                  "field_names": ["label", "text"],</span>
+<span class="go">                  "train_filename": "my/data/train.tsv",</span>
+<span class="go">                  "eval_filename": "my/data/eval.tsv",</span>
+<span class="go">                  "test_filename": "my/data/test.tsv"</span>
+<span class="go">                }</span>
+<span class="go">            },</span>
+<span class="go">            "model": {</span>
+<span class="go">                "embedding": {</span>
+<span class="go">                    "embed_dim": 200</span>
+<span class="go">                }</span>
+<span class="go">            }</span>
+<span class="go">        }</span>
+<span class="go">    },</span>
+<span class="go">    "version": 15</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>At the top level, the most important settings are the “task” and the “version”. “task” defines the <code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code> component to be used, which specifies where to get the “data”, which “model” to train, which “trainer” to use, and which “metric_reporter” will present the results.</p>
+<p>Each of those parameters can be a <code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code> that is specified by its class name, or omitted to use the default class with its default parameters. In the example above, we specify <code class="xref py py-class docutils literal notranslate"><span class="pre">TSVDataSource</span></code> to use <a class="reference external" href="configs/pytext.data.sources.tsv.TSVDataSource.Config.html">this class</a>, but we skip the model class name because we want to use <a class="reference external" href="configs/pytext.models.doc_model.DocModel.Config.html">the default</a> <code class="xref py py-class docutils literal notranslate"><span class="pre">DocModel</span></code>.</p>
+<p>The “version” number helps PyText maintain backwards compatibility. PyText will use <cite>config adapters</cite> to internally try and update the configs to match the latest component parameters so you don’t have to keep changing your configs at each PyText update. To manually update your config to the latest version, you can use the <a class="reference external" href="config_commands.html#updating-a-config-file">update-config command</a>.</p>
+</div>
+<div class="section" id="parameters-in-config-file">
+<h2>Parameters in Config File<a class="headerlink" href="#parameters-in-config-file" title="Permalink to this headline">¶</a></h2>
+<p>Parameters are either a component or a value. In the config above, we see that “field_names” expects a list of strings, “train_filename” expects a string, and “embed_dim” expects an integer.</p>
+<p>“source” and “model” however expect a component, and as we’ve seen in the previous section, we can optionally specify the class name of a component if we decide to use a component that is not the default. We can tell whether it’s a class name or a parameter name by looking at the first letter: class names start with an upper case letter. For “source” we decided to specify <code class="xref py py-class docutils literal notranslate"><span class="pre">TSVDataSource</span></code>, but for “model” we did not and decided to let <code class="xref py py-class docutils literal notranslate"><span class="pre">DocumentClassificationTask</span></code> use its default <code class="xref py py-class docutils literal notranslate"><span class="pre">DocModel</span></code>. We could have specified the class name like this, and that would be equivalent:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">"model": {</span>
+<span class="go">    "DocModel": {</span>
+<span class="go">        "embedding": {</span>
+<span class="go">            "embed_dim": 100</span>
+<span class="go">        }</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>In the next example, the default representation for <code class="xref py py-class docutils literal notranslate"><span class="pre">DocModel</span></code> is <code class="xref py py-class docutils literal notranslate"><span class="pre">BiLSTMDocAttention</span></code>. We did not specify “representation” before because we were happy with this default. But if we decide to use <code class="xref py py-class docutils literal notranslate"><span class="pre">DocNNRepresentation</span></code> instead, we would modify the config like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">"model": {</span>
+<span class="go">    "embedding": {</span>
+<span class="go">        "embed_dim": 100</span>
+<span class="go">    },</span>
+<span class="go">    "representation": {</span>
+<span class="go">        "DocNNRepresentation": {</span>
+<span class="go">        }</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>In this example we just want to change the class of “representation” and use its default parameters, so we don’t need to specify any of them and we can leave its parameters set empty <cite>{}</cite>.</p>
+<p>To explore more components parameters and their possible values, you can use the <a class="reference external" href="config_commands.html#exploring-config-options">help-config command</a> or <a class="reference external" href="configs/pytext.html">browse the class documentation</a>.</p>
+</div>
+<div class="section" id="changing-a-config-file">
+<h2>Changing a Config File<a class="headerlink" href="#changing-a-config-file" title="Permalink to this headline">¶</a></h2>
+<p>Users typically start with an existing config file, or create one using <a class="reference external" href="config_commands.html#creating-a-config-file">the gen-default-config command</a>, and then edit it to tweak the parameters.</p>
+<p>The file generated by <code class="docutils literal notranslate"><span class="pre">gen-default-config</span></code> is very large, because it contains the default value of every parameter for every component. Any of those parameters can be omitted from the config file, because PyText can recover their default values.</p>
+<p>In general, you should remove from your config file all the parameters you don’t want to override and keep those you do want to override now, or you might want to tweak later.</p>
+<p>For example, <code class="xref py py-class docutils literal notranslate"><span class="pre">TSVDataSource</span></code> can use a different “delimiter”, but in most cases we want to use the default “\t” for tab-separated-values files (TSV), so the config above does not specify <cite>“delimiter”: “\t”</cite>. If we wanted to load a CVS file, we could override this default by adding our own “delimiter” to our config (and since CVS fields can be “quoted”, unlike TSV where this option’s default is <cite>false</cite>, we’d also override it with <cite>true</cite>.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">"TSVDataSource": {</span>
+<span class="go">    "delimiter": ",",</span>
+<span class="go">    "quoted": true,</span>
+<span class="go">    "field_names": ["label", "text"],</span>
+<span class="go">    "train_filename": "my/data/train.csv",</span>
+<span class="go">    "eval_filename": "my/data/eval.csv",</span>
+<span class="go">    "test_filename": "my/data/test.csv"</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>The config at the top of this page is a fully working example. It could be simplified even further by removing the “model” section if you don’t want to change any of the model parameters, but in this case I guess the author decided to tweak “embed_dim”.</p>
+</div>
+<div class="section" id="json-format-primer">
+<h2>JSON Format Primer<a class="headerlink" href="#json-format-primer" title="Permalink to this headline">¶</a></h2>
+<p>A few notes about the JSON syntax and the differences with python:</p>
+<ul class="simple">
+<li><p>field names and string values should all be quoted with <cite>“double-quotes”</cite></p></li>
+<li><p>booleans are lower case: <cite>true</cite>, <cite>false</cite></p></li>
+<li><p>no trailing comma (after the last value of a block)</p></li>
+<li><p>empty value is: <cite>null</cite></p></li>
+<li><p>indentation is optional but recommended for readability</p></li>
+<li><p>the first character must be <cite>{</cite> and the last one must be <cite>}</cite></p></li>
+<li><p>obviously all brackets must be balanced: <cite>{}</cite>, <cite>[]</cite></p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="serving_models_in_production.html" title="previous chapter">Serve Models in Production</a></li>
+<li>Next: <a href="config_commands.html" title="next chapter">Config Commands</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

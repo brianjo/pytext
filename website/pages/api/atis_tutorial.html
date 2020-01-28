@@ -1,0 +1,232 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="train-intent-slot-model-on-atis-dataset">
+<h1>Train Intent-Slot model on ATIS Dataset<a class="headerlink" href="#train-intent-slot-model-on-atis-dataset" title="Permalink to this headline">¶</a></h1>
+<p><strong>OBSOLETE</strong> This documentation is using the old API and needs to be updated with the new classes configs.</p>
+<p>Intent detection and Slot filling are two common tasks in Natural Language Understanding for personal assistants. Given a user’s “utterance” (e.g. Set an alarm for 10 pm), we detect its intent (set_alarm) and tag the slots required to fulfill the intent (10 pm).</p>
+<p>The two tasks can be modeled as text classification and sequence labeling, respectively. We can train two separate models, but training a joint model has been shown to perform better.</p>
+<p>In this tutorial, we will train a joint intent-slot model in PyText on the
+<a class="reference external" href="https://www.kaggle.com/siddhadev/ms-cntk-atis/downloads/atis.zip/3">ATIS (Airline Travel Information System) dataset</a>. Note that to download the dataset, you will need a <a class="reference external" href="https://www.kaggle.com/">Kaggle</a> account for which you can sign up for free.</p>
+<div class="section" id="prepare-the-data">
+<h2>1. Prepare the data<a class="headerlink" href="#prepare-the-data" title="Permalink to this headline">¶</a></h2>
+<p>The in-built PyText data-handler expects the data to be stored in a tab-separated file that contains the intent label, slot label and the raw utterance.</p>
+<p>Download the data locally and use the script below to preprocess it into format PyText expects</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unzip &lt;download_dir&gt;/atis.zip -d &lt;download_dir&gt;/atis
+<span class="gp">$</span> python3 demo/atis_joint_model/data_processor.py
+<span class="go">  --download-folder &lt;download_dir&gt;/atis --output-directory demo/atis_joint_model/</span>
+</pre></div>
+</div>
+<p>The script will also randomly split the training data into training and validation sets. All the pre-processed data will be written to the output-directory argument specified in the command.</p>
+<p>An alternative approach here would be to write a custom data-handler for your custom data format, but that is beyond the scope of this tutorial.</p>
+</div>
+<div class="section" id="download-pre-trained-word-embeddings">
+<h2>2. Download Pre-trained word embeddings<a class="headerlink" href="#download-pre-trained-word-embeddings" title="Permalink to this headline">¶</a></h2>
+<p>Word embeddings are the vector representations of the different words understood by your model. Pre-trained word embeddings can significantly improve the accuracy of your model, since they have been trained on vast amounts of data. In this tutorial, we’ll use <a class="reference external" href="https://nlp.stanford.edu/projects/glove/">GloVe embeddings</a>, which can be downloaded by:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> curl https://nlp.stanford.edu/data/wordvecs/glove.6B.zip &gt; demo/atis_joint_model/glove.6B.zip
+<span class="gp">$</span> unzip demo/atis_joint_model/glove.6B.zip -d demo/atis_joint_model
+</pre></div>
+</div>
+<p>The downloaded file size is ~800 MB.</p>
+</div>
+<div class="section" id="train-the-model">
+<h2>3. Train the model<a class="headerlink" href="#train-the-model" title="Permalink to this headline">¶</a></h2>
+<p>To train a PyText model, you need to pick the right task and model architecture, among other parameters. Default values are available for many parameters and can give reasonable results in most cases. The following is a sample config which can train a joint intent-slot model</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">"config"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"task"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"IntentSlotTask"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">"Data"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"source"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"TSVDataSource"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"field_names"</span><span class="p">:</span> <span class="p">[</span>
+                  <span class="s2">"label"</span><span class="p">,</span>
+                  <span class="s2">"slots"</span><span class="p">,</span>
+                  <span class="s2">"text"</span><span class="p">,</span>
+                  <span class="s2">"doc_weight"</span><span class="p">,</span>
+                  <span class="s2">"word_weight"</span>
+                <span class="p">],</span>
+                <span class="s2">"train_filename"</span><span class="p">:</span> <span class="s2">"demo/atis_joint_model/atis.processed.train.csv"</span><span class="p">,</span>
+                <span class="s2">"eval_filename"</span><span class="p">:</span> <span class="s2">"demo/atis_joint_model/atis.processed.val.csv"</span><span class="p">,</span>
+                <span class="s2">"test_filename"</span><span class="p">:</span> <span class="s2">"demo/atis_joint_model/atis.processed.test.csv"</span>
+              <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">"batcher"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"PoolingBatcher"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"train_batch_size"</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+                <span class="s2">"eval_batch_size"</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+                <span class="s2">"test_batch_size"</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+                <span class="s2">"pool_num_batches"</span><span class="p">:</span> <span class="mi">10000</span>
+              <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">"sort_key"</span><span class="p">:</span> <span class="s2">"tokens"</span><span class="p">,</span>
+            <span class="s2">"in_memory"</span><span class="p">:</span> <span class="n">true</span>
+          <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">"model"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">"representation"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"BiLSTMDocSlotAttention"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"pooling"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"SelfAttention"</span><span class="p">:</span> <span class="p">{}</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="s2">"output_layer"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"doc_output"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"loss"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"CrossEntropyLoss"</span><span class="p">:</span> <span class="p">{}</span>
+              <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">"word_output"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"CRFOutputLayer"</span><span class="p">:</span> <span class="p">{}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="s2">"word_embedding"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"embed_dim"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s2">"pretrained_embeddings_path"</span><span class="p">:</span> <span class="s2">"demo/atis_joint_model/glove.6B.100d.txt"</span>
+          <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">"trainer"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">"epochs"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+          <span class="s2">"optimizer"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"Adam"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">"lr"</span><span class="p">:</span> <span class="mf">0.001</span>
+            <span class="p">}</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>We explain some of the parameters involved:</p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">IntentSlotTask</span></code> trains a joint model for document classification and word tagging.</p></li>
+<li><p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code> has multiple layers -
+- We use BiLSTM model with attention as the representation layer. The pooling attribute decides the attention technique used.
+- We use different loss functions for document classification (Cross Entropy Loss) and slot filling (CRF layer)</p></li>
+<li><p>Pre-trained word embeddings are provided within the <cite>word_embedding</cite> attribute.</p></li>
+</ul>
+<p>To train the PyText model,</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; sample_config.json
+</pre></div>
+</div>
+</div>
+<div class="section" id="tune-the-model-and-get-final-results">
+<h2>3. Tune the model and get final results<a class="headerlink" href="#tune-the-model-and-get-final-results" title="Permalink to this headline">¶</a></h2>
+<p>Tuning the model’s hyper-parameters is key to obtaining the best model accuracy. Using hyper-parameter sweeps on learning rate, number of layers, dimension and dropout of BiLSTM etc., we can achieve a F1 score of ~95% on slot labels which is close to the state-of-the-art. The fine-tuned model config is available at <code class="docutils literal notranslate"><span class="pre">demos/atis_intent_slot/atis_joint_config.json</span></code></p>
+<p>To train the model using fine tuned model config,</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; demo/atis_joint_model/atis_joint_config.json
+</pre></div>
+</div>
+</div>
+<div class="section" id="generate-predictions">
+<h2>4. Generate predictions<a class="headerlink" href="#generate-predictions" title="Permalink to this headline">¶</a></h2>
+<p>Lets make the model run on some sample utterances! You can input one by running</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext --config-file demo/atis_joint_model/atis_joint_config.json <span class="se">\</span>
+  predict --exported-model /tmp/atis_joint_model.c2 <span class="o">&lt;&lt;&lt;</span> <span class="s1">'{"text": "flights from colorado"}'</span>
+</pre></div>
+</div>
+<p>The response from the model is log of probabilities for different intents and slots, with the correct intent and slot hopefully having the highest.</p>
+<p>In the following snippet of the model’s response, we see that the intent <cite>doc_scores:flight</cite> and slot <cite>word_scores:fromloc.city_name</cite> for third word “colorado” have the highest predictions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+ <span class="o">....</span>
+ <span class="s1">'doc_scores:flight'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.00016726</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="s1">'doc_scores:ground_service+ground_fare'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">25.865768</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="s1">'doc_scores:meal'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">17.864975</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="o">..</span><span class="p">,</span>
+ <span class="s1">'word_scores:airline_name'</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">12.158762</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">15.142928</span><span class="p">],</span>
+       <span class="p">[</span> <span class="o">-</span><span class="mf">8.991585</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="s1">'word_scores:fromloc.city_name'</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">1.5084317e+01</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">1.3880151e+01</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">1.4416825e-02</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="s1">'word_scores:fromloc.state_code'</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">17.824356</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">17.89767</span> <span class="p">],</span>
+       <span class="p">[</span> <span class="o">-</span><span class="mf">9.848984</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="s1">'word_scores:meal'</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">15.079164</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">17.229427</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">17.529446</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="s1">'word_scores:transport_type'</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">14.722928</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">16.700478</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">13.4414</span>  <span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float32</span><span class="p">),</span>
+ <span class="o">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="config_commands.html" title="previous chapter">Config Commands</a></li>
+<li>Next: <a href="hierarchical_intent_slot_tutorial.html" title="next chapter">Hierarchical intent and slot filling</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

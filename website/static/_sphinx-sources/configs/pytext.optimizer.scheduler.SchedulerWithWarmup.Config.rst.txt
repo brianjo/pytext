@@ -1,0 +1,29 @@
+SchedulerWithWarmup.Config
+==========================
+
+
+
+**Component:** :class:`SchedulerWithWarmup  <pytext.optimizer.scheduler.SchedulerWithWarmup>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: SchedulerWithWarmup.Config
+  :noindex:
+
+  **Bases:** :class:`BatchScheduler.Config <pytext.optimizer.scheduler.BatchScheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **warmup_scheduler**: :doc:`WarmupScheduler.Config <pytext.optimizer.scheduler.WarmupScheduler.Config>` = :doc:`WarmupScheduler.Config <pytext.optimizer.scheduler.WarmupScheduler.Config>`\ ()
+    \ 
+
+  **scheduler**: Union[:doc:`ExponentialLR.Config <pytext.optimizer.scheduler.ExponentialLR.Config>`, :doc:`CosineAnnealingLR.Config <pytext.optimizer.scheduler.CosineAnnealingLR.Config>`, :doc:`ReduceLROnPlateau.Config <pytext.optimizer.scheduler.ReduceLROnPlateau.Config>`, :doc:`LmFineTuning.Config <pytext.optimizer.scheduler.LmFineTuning.Config>`, :doc:`CyclicLR.Config <pytext.optimizer.scheduler.CyclicLR.Config>`]
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

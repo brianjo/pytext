@@ -1,0 +1,388 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metric_reporters.metric_reporter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BatchContext</span><span class="p">,</span>
+    <span class="n">DatasetFieldName</span><span class="p">,</span>
+    <span class="n">RawExampleFieldName</span><span class="p">,</span>
+    <span class="n">Stage</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span>
+<span class="kn">from</span> <span class="nn">pytext.config.pytext_config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.metrics</span> <span class="kn">import</span> <span class="n">RealtimeMetrics</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.meter</span> <span class="kn">import</span> <span class="n">TimeMeter</span>
+
+<span class="kn">from</span> <span class="nn">.channel</span> <span class="kn">import</span> <span class="n">ConsoleChannel</span>
+
+
+<div class="viewcode-block" id="MetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter">[docs]</a><span class="k">class</span> <span class="nc">MetricReporter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    MetricReporter is responsible of three things:</span>
+
+<span class="sd">    #. Aggregate output from trainer, which includes model inputs, predictions,</span>
+<span class="sd">       targets, scores, and loss.</span>
+<span class="sd">    #. Calculate metrics using the aggregated output, and define how the metric</span>
+<span class="sd">       is used to find best model</span>
+<span class="sd">    #. Optionally report the metrics and aggregated output to various channels</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        lower_is_better (bool): Whether a lower metric indicates better performance.</span>
+<span class="sd">            Set to True for e.g. perplexity, and False for e.g. accuracy. Default</span>
+<span class="sd">            is False</span>
+<span class="sd">        channels (List[Channel]): A list of Channel that will receive metrics and</span>
+<span class="sd">            the aggregated trainer output then format and report them in any customized</span>
+<span class="sd">            way.</span>
+
+<span class="sd">    MetricReporter is tightly-coupled with metric aggregation and computation which</span>
+<span class="sd">    makes inheritance hard to reuse the parent functionalities and attributes. Next</span>
+<span class="sd">    step is to decouple the metric aggregation and computation vs metric reporting.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">METRIC_REPORTER</span>
+
+    <span class="n">lower_is_better</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/tmp/test_out.txt"</span>
+        <span class="n">pep_format</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">pep_format</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="n">channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pep_format</span> <span class="o">=</span> <span class="n">pep_format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_realtime</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_loss</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_batches</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">_reset_realtime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"tps"</span><span class="p">]</span> <span class="o">=</span> <span class="n">TimeMeter</span><span class="p">()</span>  <span class="c1"># tokens per second</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"ups"</span><span class="p">]</span> <span class="o">=</span> <span class="n">TimeMeter</span><span class="p">()</span>  <span class="c1"># updates per second</span>
+
+<div class="viewcode-block" id="MetricReporter.add_batch_stats"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.add_batch_stats">[docs]</a>    <span class="k">def</span> <span class="nf">add_batch_stats</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_batches</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">m_input</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Aggregates a batch of output data (predictions, scores, targets/true labels</span>
+<span class="sd">        and loss).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            n_batches (int): number of current batch</span>
+<span class="sd">            preds (torch.Tensor): predictions of current batch</span>
+<span class="sd">            targets (torch.Tensor): targets of current batch</span>
+<span class="sd">            scores (torch.Tensor): scores of current batch</span>
+<span class="sd">            loss (double): average loss of current batch</span>
+<span class="sd">            m_input (Tuple[torch.Tensor, ...]): model inputs of current batch</span>
+<span class="sd">            context (Dict[str, Any]): any additional context data, it could be</span>
+<span class="sd">                either a list of data which maps to each example, or a single value</span>
+<span class="sd">                for the batch</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_batches</span> <span class="o">=</span> <span class="n">n_batches</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_preds</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_targets</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_scores</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">List</span><span class="p">)):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
+        <span class="c1"># some loss functions (eg: in NewBertRegressionTask) return a tensor</span>
+        <span class="c1"># convert tensor to float</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="c1"># realtime stats</span>
+        <span class="k">if</span> <span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">NUM_TOKENS</span> <span class="ow">in</span> <span class="n">context</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"tps"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">NUM_TOKENS</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"ups"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.aggregate_preds"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.aggregate_preds">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_preds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_preds</span><span class="p">,</span> <span class="n">batch_context</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">,</span> <span class="n">batch_preds</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.aggregate_targets"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.aggregate_targets">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_targets</span><span class="p">,</span> <span class="n">batch_context</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="p">,</span> <span class="n">batch_targets</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.aggregate_scores"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.aggregate_scores">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_scores</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="p">,</span> <span class="n">batch_scores</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.aggregate_data"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.aggregate_data">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">aggregate_data</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">all_data</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Aggregate a batch of data, basically just convert tensors to list of native</span>
+<span class="sd">        python data</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">new_batch</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">simple_list</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_make_simple_list</span><span class="p">(</span><span class="n">new_batch</span><span class="p">)</span>
+        <span class="n">all_data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">simple_list</span><span class="p">)</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_make_simple_list</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">List</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">data</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">List</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">List</span><span class="p">)</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">elemlist</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">elemlist</span>
+            <span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">[[</span><span class="n">elem</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">elemlist</span><span class="p">]</span> <span class="k">for</span> <span class="n">elemlist</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MetricReporter.add_channel"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.add_channel">[docs]</a>    <span class="k">def</span> <span class="nf">add_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.batch_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.batch_context">[docs]</a>    <span class="k">def</span> <span class="nf">batch_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">BatchContext</span><span class="o">.</span><span class="n">INDEX</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">row</span><span class="p">[</span><span class="n">RawExampleFieldName</span><span class="o">.</span><span class="n">ROW_INDEX</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">NUM_TOKENS</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">NUM_TOKENS</span><span class="p">:</span> <span class="n">batch</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">NUM_TOKENS</span><span class="p">]}</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="MetricReporter.calculate_loss"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.calculate_loss">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Calculate the average loss for all aggregated batch</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_loss</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Calculate metrics, each sub class should implement it</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MetricReporter.predictions_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.predictions_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">predictions_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable predictions</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span></div>
+
+<div class="viewcode-block" id="MetricReporter.targets_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.targets_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">targets_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable targets</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span></div>
+
+    <span class="c1"># TODO this function can be merged with batch_context once data migration is done</span>
+<div class="viewcode-block" id="MetricReporter.gen_extra_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.gen_extra_context">[docs]</a>    <span class="k">def</span> <span class="nf">gen_extra_context</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate any extra intermediate context data for metric calculation</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+    <span class="c1"># TODO this method can be removed by moving Channel construction to Task</span>
+<div class="viewcode-block" id="MetricReporter.get_meta"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.get_meta">[docs]</a>    <span class="k">def</span> <span class="nf">get_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Get global meta data that is not specific to any batch, the data will be</span>
+<span class="sd">        pass along to channels</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="MetricReporter.report_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.report_metric">[docs]</a>    <span class="k">def</span> <span class="nf">report_metric</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">print_to_channels</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="bp">None</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Calculate metrics and average loss, report all statistic data to channels</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (nn.Module): the PyTorch neural network model.</span>
+<span class="sd">            stage (Stage): training, evaluation or test</span>
+<span class="sd">            epoch (int): current epoch</span>
+<span class="sd">            reset (bool): if all data should be reset after report, default is True</span>
+<span class="sd">            print_to_channels (bool): if report data to channels, default is True</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gen_extra_context</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">()</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_metric</span><span class="p">()</span>
+        <span class="n">model_select_metric</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_select_metric</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span>
+
+        <span class="c1"># print_to_channels is true only on gpu 0, but we need all gpus to sync</span>
+        <span class="c1"># metric</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">report_realtime_metric</span><span class="p">(</span><span class="n">stage</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">print_to_channels</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">channel</span><span class="o">.</span><span class="n">stages</span><span class="p">:</span>
+                    <span class="n">channel</span><span class="o">.</span><span class="n">report</span><span class="p">(</span>
+                        <span class="n">stage</span><span class="p">,</span>
+                        <span class="n">epoch</span><span class="p">,</span>
+                        <span class="n">metrics</span><span class="p">,</span>
+                        <span class="n">model_select_metric</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">predictions_to_report</span><span class="p">(),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">targets_to_report</span><span class="p">(),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">all_context</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">get_meta</span><span class="p">(),</span>
+                        <span class="n">model</span><span class="p">,</span>
+                        <span class="n">optimizer</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reset_realtime</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">metrics</span></div>
+
+<div class="viewcode-block" id="MetricReporter.report_realtime_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.report_realtime_metric">[docs]</a>    <span class="k">def</span> <span class="nf">report_realtime_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="o">!=</span> <span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">samples_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_batches</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">tps_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"tps"</span><span class="p">]</span><span class="o">.</span><span class="n">n</span>
+        <span class="n">ups_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"ups"</span><span class="p">]</span><span class="o">.</span><span class="n">n</span>
+        <span class="n">elapsed_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">realtime_meters</span><span class="p">[</span><span class="s2">"tps"</span><span class="p">]</span><span class="o">.</span><span class="n">elapsed_time</span>
+
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">DISTRIBUTED_WORLD_SIZE</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">([</span><span class="n">samples_total</span><span class="p">,</span> <span class="n">tps_total</span><span class="p">,</span> <span class="n">ups_total</span><span class="p">])</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">all_reduce</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+            <span class="p">[</span><span class="n">samples_total</span><span class="p">,</span> <span class="n">tps_total</span><span class="p">,</span> <span class="n">ups_total</span><span class="p">]</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[:]</span>
+
+        <span class="n">tps</span> <span class="o">=</span> <span class="n">tps_total</span> <span class="o">/</span> <span class="n">elapsed_time</span>
+        <span class="n">ups</span> <span class="o">=</span> <span class="n">ups_total</span> <span class="o">/</span> <span class="n">elapsed_time</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tps</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ups</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">RealtimeMetrics</span><span class="p">(</span><span class="n">samples</span><span class="o">=</span><span class="n">samples_total</span><span class="p">,</span> <span class="n">tps</span><span class="o">=</span><span class="n">tps</span><span class="p">,</span> <span class="n">ups</span><span class="o">=</span><span class="n">ups</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MetricReporter.get_model_select_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.get_model_select_metric">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_select_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Return a single numeric metric value that is used for model selection, returns</span>
+<span class="sd">        the metric itself by default, but usually metrics will be more complicated</span>
+<span class="sd">        data structures</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">metrics</span></div>
+
+<div class="viewcode-block" id="MetricReporter.compare_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.MetricReporter.compare_metric">[docs]</a>    <span class="k">def</span> <span class="nf">compare_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_metric</span><span class="p">,</span> <span class="n">old_metric</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Check if new metric indicates better model performance</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool, true if model with new_metric performs better</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">old_metric</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_select_metric</span><span class="p">(</span><span class="n">new_metric</span><span class="p">)</span>
+        <span class="n">old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_select_metric</span><span class="p">(</span><span class="n">old_metric</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new</span> <span class="o">==</span> <span class="n">old</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">new</span> <span class="o">&lt;</span> <span class="n">old</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower_is_better</span></div></div>
+
+
+<div class="viewcode-block" id="PureLossMetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.PureLossMetricReporter">[docs]</a><span class="k">class</span> <span class="nc">PureLossMetricReporter</span><span class="p">(</span><span class="n">MetricReporter</span><span class="p">):</span>
+    <span class="n">lower_is_better</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="PureLossMetricReporter.from_config"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.PureLossMetricReporter.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">([</span><span class="n">ConsoleChannel</span><span class="p">()],</span> <span class="n">config</span><span class="o">.</span><span class="n">pep_format</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PureLossMetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.metric_reporter.PureLossMetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">()</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

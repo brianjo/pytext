@@ -1,0 +1,7 @@
+slot_attention
+==============
+
+
+.. toctree::
+
+  pytext.models.representations.slot_attention.SlotAttention.Config

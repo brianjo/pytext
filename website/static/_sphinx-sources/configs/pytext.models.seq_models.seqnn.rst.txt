@@ -1,0 +1,9 @@
+seqnn
+=====
+
+
+.. toctree::
+
+  pytext.models.seq_models.seqnn.ModelInput
+  pytext.models.seq_models.seqnn.SeqNNModel.Config
+  pytext.models.seq_models.seqnn.SeqNNModel_Deprecated.Config

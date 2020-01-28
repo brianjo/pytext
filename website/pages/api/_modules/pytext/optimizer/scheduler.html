@@ -1,0 +1,618 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.optimizer.scheduler</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">create_scheduler</span>
+<span class="kn">from</span> <span class="nn">pytext.optimizer</span> <span class="kn">import</span> <span class="n">Optimizer</span>
+<span class="kn">from</span> <span class="nn">torch.optim.lr_scheduler</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CosineAnnealingLR</span> <span class="k">as</span> <span class="n">TorchCosineAnnealingLR</span><span class="p">,</span>
+    <span class="n">CyclicLR</span> <span class="k">as</span> <span class="n">TorchCyclicLR</span><span class="p">,</span>
+    <span class="n">ExponentialLR</span> <span class="k">as</span> <span class="n">TorchExponentialLR</span><span class="p">,</span>
+    <span class="n">ReduceLROnPlateau</span> <span class="k">as</span> <span class="n">TorchReduceLROnPlateau</span><span class="p">,</span>
+    <span class="n">StepLR</span> <span class="k">as</span> <span class="n">TorchStepLR</span><span class="p">,</span>
+    <span class="n">_LRScheduler</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="Scheduler"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.Scheduler">[docs]</a><span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Schedulers help in adjusting the learning rate during training. Scheduler</span>
+<span class="sd">    is a wrapper class over schedulers which can be available in torch</span>
+<span class="sd">    library or for custom implementations. There are two kinds of lr scheduling</span>
+<span class="sd">    that is supported by this class. Per epoch scheduling and per batch scheduling.</span>
+<span class="sd">    In per epoch scheduling, the learning rate is adjusted at the end of each epoch</span>
+<span class="sd">    and in per batch scheduling the learning rate is adjusted after the forward and</span>
+<span class="sd">    backward pass through one batch during the training.</span>
+
+<span class="sd">    There are two main methods that needs to be implemented by the Scheduler.</span>
+<span class="sd">    step_epoch() is called at the end of each epoch and step_batch() is called</span>
+<span class="sd">    at the end of each batch in the training data.</span>
+
+<span class="sd">    prepare() method can be used by BatchSchedulers to initialize any attributes</span>
+<span class="sd">    they may need.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">SCHEDULER</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Scheduler.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.Scheduler.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Scheduler.step_epoch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.Scheduler.step_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">step_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Scheduler.prepare"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.Scheduler.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="BatchScheduler"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.BatchScheduler">[docs]</a><span class="k">class</span> <span class="nc">BatchScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
+<div class="viewcode-block" id="BatchScheduler.prepare"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.BatchScheduler.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs</span> <span class="o">=</span> <span class="n">total_epochs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">train_iter</span><span class="p">,</span> <span class="s2">"total_num_batches"</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="LmFineTuning"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.LmFineTuning">[docs]</a><span class="k">class</span> <span class="nc">LmFineTuning</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">,</span> <span class="n">BatchScheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Fine-tuning methods from the paper</span>
+<span class="sd">    "[arXiv:1801.06146]Universal Language Model Fine-tuning for Text Classification".</span>
+
+<span class="sd">    Specifically, modifies training schedule using slanted triangular learning rates,</span>
+<span class="sd">    discriminative fine-tuning (per-layer learning rates), and gradual unfreezing.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: The fraction of iterations we increase the learning rate. Default 0.1</span>
+        <span class="n">cut_frac</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="c1">#: How much smaller the lowest LR is from the maximum LR eta_max.</span>
+        <span class="n">ratio</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+        <span class="c1">#: Number of param_groups, starting from the</span>
+        <span class="c1">#: end, that were not pretrained. The default value is 2, since the base Model</span>
+        <span class="c1">#: class supplies to the optimizer typically one param_group from the embedding</span>
+        <span class="c1">#: and one param_group from its other components.</span>
+        <span class="n">non_pretrained_param_groups</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="c1">#: Factor to multiply lr for all pretrained layers by.</span>
+        <span class="n">lm_lr_multiplier</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="c1">#: Whether to make each pretrained layer's lr</span>
+        <span class="c1">#:    one-half as large as the next (higher) layer.</span>
+        <span class="n">lm_use_per_layer_lr</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c1">#: Whether to unfreeze layers one by one (per epoch).</span>
+        <span class="n">lm_gradual_unfreezing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1">#: Though the name is `last_epoch`, it means `last batch update`.</span>
+        <span class="c1">#: last_batch_update: = current_epoch_number * num_batches_per_epoch + batch_id</span>
+        <span class="c1">#: after each batch update, it will increment 1</span>
+        <span class="n">last_epoch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">,</span>
+        <span class="n">cut_frac</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">ratio</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+        <span class="n">non_pretrained_param_groups</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">lm_lr_multiplier</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">lm_use_per_layer_lr</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">lm_gradual_unfreezing</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># to be set later by Trainer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># to be set later by Trainer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cut_frac</span> <span class="o">=</span> <span class="n">cut_frac</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">)</span> <span class="o">-</span> <span class="n">non_pretrained_param_groups</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="n">non_pretrained_param_groups</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_lr_multiplier</span> <span class="o">=</span> <span class="n">lm_lr_multiplier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_use_per_layer_lr</span> <span class="o">=</span> <span class="n">lm_use_per_layer_lr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_gradual_unfreezing</span> <span class="o">=</span> <span class="n">lm_gradual_unfreezing</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LmFineTuning</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">last_epoch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LmFineTuning.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.LmFineTuning.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">cut_frac</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">ratio</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">non_pretrained_param_groups</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">lm_lr_multiplier</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">lm_use_per_layer_lr</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">lm_gradual_unfreezing</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">last_epoch</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LmFineTuning.get_lr"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.LmFineTuning.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">)</span>
+
+        <span class="n">slanted_multiplier</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slanted_multiplier</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="n">slanted_multiplier</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lm_layer_multiplier</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lm_frozen_multiplier</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="o">*</span> <span class="n">base_lr</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">base_lr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">)</span>
+        <span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_slanted_multiplier</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">phase_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span>
+        <span class="n">phase_total_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span>
+
+        <span class="k">if</span> <span class="n">phase_step</span> <span class="o">&gt;</span> <span class="n">phase_total_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_gradual_unfreezing</span><span class="p">:</span>
+            <span class="n">unfreeze_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span> <span class="o">&gt;</span> <span class="n">unfreeze_steps</span><span class="p">:</span>
+                <span class="n">phase_step</span> <span class="o">-=</span> <span class="n">unfreeze_steps</span>
+                <span class="n">phase_total_steps</span> <span class="o">-=</span> <span class="n">unfreeze_steps</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">phase_step</span> <span class="o">%=</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span>
+                <span class="n">phase_total_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span>
+
+        <span class="n">cut</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cut_frac</span> <span class="o">*</span> <span class="n">phase_total_steps</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">phase_step</span> <span class="o">&lt;</span> <span class="n">cut</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">phase_step</span> <span class="o">/</span> <span class="n">cut</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">phase_step</span> <span class="o">-</span> <span class="n">cut</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">phase_total_steps</span> <span class="o">-</span> <span class="n">cut</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span>
+
+    <span class="k">def</span> <span class="nf">_lm_layer_multiplier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_index</span><span class="p">):</span>
+        <span class="n">multiplier</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="k">if</span> <span class="n">layer_index</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span><span class="p">:</span>
+            <span class="n">multiplier</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_lr_multiplier</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_use_per_layer_lr</span><span class="p">:</span>
+                <span class="n">multiplier</span> <span class="o">*=</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">layer_index</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">multiplier</span>
+
+    <span class="k">def</span> <span class="nf">_lm_frozen_multiplier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lm_frozen</span><span class="p">(</span><span class="n">layer_index</span><span class="p">)</span> <span class="k">else</span> <span class="mf">1.0</span>
+
+    <span class="k">def</span> <span class="nf">_lm_frozen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_index</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_gradual_unfreezing</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="n">layer_index</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_epoch</span>
+        <span class="k">return</span> <span class="n">epoch</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_pretrained_layers</span> <span class="o">-</span> <span class="n">layer_index</span>
+
+<div class="viewcode-block" id="LmFineTuning.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.LmFineTuning.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="StepLR"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.StepLR">[docs]</a><span class="k">class</span> <span class="nc">StepLR</span><span class="p">(</span><span class="n">TorchStepLR</span><span class="p">,</span> <span class="n">Scheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Wrapper around `torch.optim.lr_scheduler.StepLR`</span>
+<span class="sd">    See the original documentation for more details.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: Period of learning rate decay.</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span>
+        <span class="c1">#: Multiplicative factor of learning rate decay.</span>
+        <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<div class="viewcode-block" id="StepLR.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.StepLR.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StepLR.step_epoch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.StepLR.step_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">step_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ReduceLROnPlateau"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.ReduceLROnPlateau">[docs]</a><span class="k">class</span> <span class="nc">ReduceLROnPlateau</span><span class="p">(</span><span class="n">TorchReduceLROnPlateau</span><span class="p">,</span> <span class="n">Scheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Wrapper around `torch.optim.lr_scheduler.ReduceLROnPlateau`</span>
+<span class="sd">    See the original documentation for more details.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: This indicates the desirable direction in which we would like the</span>
+        <span class="c1">#: training to proceed. If set to true, learning rate will be reduce</span>
+        <span class="c1">#: when quantity being monitored stops going down</span>
+        <span class="n">lower_is_better</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1">#: Factor by which the learning rate will be reduced. new_lr = lr * factor</span>
+        <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="c1">#: Number of epochs with no improvement after which learning rate will</span>
+        <span class="c1">#: be reduced</span>
+        <span class="n">patience</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="c1">#: Lower bound on the learning rate of all param groups</span>
+        <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Threshold for measuring the new optimum, to only focus on significant</span>
+        <span class="c1">#: changes.</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0001</span>
+        <span class="c1">#: One of rel, abs.</span>
+        <span class="c1">#: In rel mode, dynamic_threshold = best * ( 1 + threshold ) in ‘max’ mode</span>
+        <span class="c1">#: or best * ( 1 - threshold ) in min mode.</span>
+        <span class="c1">#: In abs mode, dynamic_threshold = best + threshold in max mode or</span>
+        <span class="c1">#: best - threshold in min mode.</span>
+        <span class="n">threshold_is_absolute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1">#: Number of epochs to wait before resuming normal operation after</span>
+        <span class="c1">#: lr has been reduced.</span>
+        <span class="n">cooldown</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="ReduceLROnPlateau.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.ReduceLROnPlateau.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="s2">"min"</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">lower_is_better</span> <span class="k">else</span> <span class="s2">"max"</span><span class="p">,</span>
+            <span class="n">factor</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">factor</span><span class="p">,</span>
+            <span class="n">patience</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">patience</span><span class="p">,</span>
+            <span class="n">min_lr</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>
+            <span class="n">threshold_mode</span><span class="o">=</span><span class="p">(</span><span class="s2">"abs"</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">threshold_is_absolute</span> <span class="k">else</span> <span class="s2">"rel"</span><span class="p">),</span>
+            <span class="n">cooldown</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">cooldown</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ReduceLROnPlateau.step_epoch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.ReduceLROnPlateau.step_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">step_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CosineAnnealingLR"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.CosineAnnealingLR">[docs]</a><span class="k">class</span> <span class="nc">CosineAnnealingLR</span><span class="p">(</span><span class="n">TorchCosineAnnealingLR</span><span class="p">,</span> <span class="n">BatchScheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Wrapper around `torch.optim.lr_scheduler.CosineAnnealingLR`</span>
+<span class="sd">    See the original documentation for more details.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: Maximum number of iterations.</span>
+        <span class="n">t_max</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="c1">#: Minimum learning rate</span>
+        <span class="n">eta_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="CosineAnnealingLR.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.CosineAnnealingLR.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">t_max</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">eta_min</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CosineAnnealingLR.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.CosineAnnealingLR.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CyclicLR"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.CyclicLR">[docs]</a><span class="k">class</span> <span class="nc">CyclicLR</span><span class="p">(</span><span class="n">TorchCyclicLR</span><span class="p">,</span> <span class="n">BatchScheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Wrapper around `torch.optim.lr_scheduler.CyclicLR`</span>
+<span class="sd">    See the original documentation for more details</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">base_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="n">max_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.002</span>
+        <span class="n">step_size_up</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span>
+        <span class="n">step_size_down</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"triangular"</span>
+        <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">scale_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cycle"</span>
+        <span class="n">cycle_momentum</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">base_momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
+        <span class="n">max_momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span>
+        <span class="n">last_epoch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+<div class="viewcode-block" id="CyclicLR.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.CyclicLR.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">base_lr</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">base_lr</span><span class="p">,</span>
+            <span class="n">max_lr</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_lr</span><span class="p">,</span>
+            <span class="n">step_size_up</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">step_size_up</span><span class="p">,</span>
+            <span class="n">step_size_down</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">step_size_down</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="n">gamma</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">gamma</span><span class="p">,</span>
+            <span class="n">scale_mode</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">scale_mode</span><span class="p">,</span>
+            <span class="n">cycle_momentum</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">cycle_momentum</span><span class="p">,</span>
+            <span class="n">base_momentum</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">base_momentum</span><span class="p">,</span>
+            <span class="n">max_momentum</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_momentum</span><span class="p">,</span>
+            <span class="n">last_epoch</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">last_epoch</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CyclicLR.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.CyclicLR.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ExponentialLR"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.ExponentialLR">[docs]</a><span class="k">class</span> <span class="nc">ExponentialLR</span><span class="p">(</span><span class="n">TorchExponentialLR</span><span class="p">,</span> <span class="n">Scheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Wrapper around `torch.optim.lr_scheduler.ExponentialLR`</span>
+<span class="sd">    See the original documentation for more details.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: Multiplicative factor of learning rate decay.</span>
+        <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<div class="viewcode-block" id="ExponentialLR.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.ExponentialLR.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExponentialLR.step_epoch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.ExponentialLR.step_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">step_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="WarmupScheduler"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.WarmupScheduler">[docs]</a><span class="k">class</span> <span class="nc">WarmupScheduler</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">,</span> <span class="n">BatchScheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Scheduler to linearly increase the learning rate from 0 to its final value over</span>
+<span class="sd">    a number of steps:</span>
+
+<span class="sd">        lr = base_lr * current_step / warmup_steps</span>
+
+<span class="sd">    After the warm-up phase, the scheduler has the option of decaying the learning</span>
+<span class="sd">    rate as the inverse square root of the number of training steps taken:</span>
+
+<span class="sd">        lr = base_lr * sqrt(warmup_steps) / sqrt(current_step)</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BatchScheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: number of training steps over which to increase learning rate</span>
+        <span class="n">warmup_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span>
+
+        <span class="c1">#: whether to perform inverse sqrt decay after the warmup phase</span>
+        <span class="n">inverse_sqrt_decay</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="WarmupScheduler.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.WarmupScheduler.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">inverse_sqrt_decay</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">warmup_steps</span><span class="p">,</span> <span class="n">inverse_sqrt_decay</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">warmup_steps</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inverse_sqrt_decay</span> <span class="o">=</span> <span class="n">inverse_sqrt_decay</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decay_factor</span> <span class="o">=</span> <span class="n">warmup_steps</span> <span class="o">**</span> <span class="mf">0.5</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WarmupScheduler.prepare"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.WarmupScheduler.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_batch</span><span class="p">()</span>  <span class="c1"># initialize learning rate</span></div>
+
+<div class="viewcode-block" id="WarmupScheduler.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.WarmupScheduler.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="WarmupScheduler.get_lr"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.WarmupScheduler.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverse_sqrt_decay</span><span class="p">:</span>
+                <span class="n">lr_multiplier</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decay_factor</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lr_multiplier</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lr_multiplier</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">lr_multiplier</span> <span class="o">*</span> <span class="n">base_lr</span> <span class="k">for</span> <span class="n">base_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="PolynomialDecayScheduler"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.PolynomialDecayScheduler">[docs]</a><span class="k">class</span> <span class="nc">PolynomialDecayScheduler</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">,</span> <span class="n">BatchScheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Applies a polynomial decay with lr warmup to the learning rate.</span>
+
+<span class="sd">    It is commonly observed that a monotonically decreasing learning rate, whose</span>
+<span class="sd">    degree of change is carefully chosen, results in a better performing model.</span>
+
+<span class="sd">    This scheduler linearly increase learning rate from 0 to final value at the</span>
+<span class="sd">    beginning of training, determined by warmup_steps.</span>
+<span class="sd">    Then it applies a polynomial decay function to an optimizer step, given a</span>
+<span class="sd">    provided `base_lrs` to reach an `end_learning_rate` after `total_steps`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BatchScheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1">#: number of training steps over which to increase learning rate</span>
+        <span class="n">warmup_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: number of training steps for learning rate decay</span>
+        <span class="n">total_steps</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="c1">#: end learning rate after `total_steps` of training</span>
+        <span class="n">end_learning_rate</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="c1">#: power used for polynomial decay calculation</span>
+        <span class="n">power</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<div class="viewcode-block" id="PolynomialDecayScheduler.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.PolynomialDecayScheduler.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">total_steps</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">end_learning_rate</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">power</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">warmup_steps</span><span class="p">,</span> <span class="n">total_steps</span><span class="p">,</span> <span class="n">end_learning_rate</span><span class="p">,</span> <span class="n">power</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">total_steps</span> <span class="o">&gt;</span> <span class="n">warmup_steps</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_steps</span> <span class="o">=</span> <span class="n">total_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_learning_rate</span> <span class="o">=</span> <span class="n">end_learning_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="n">power</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PolynomialDecayScheduler.prepare"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.PolynomialDecayScheduler.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_batch</span><span class="p">()</span>  <span class="c1"># initialize learning rate</span></div>
+
+<div class="viewcode-block" id="PolynomialDecayScheduler.get_lr"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.PolynomialDecayScheduler.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">:</span>
+            <span class="c1"># during warmup the learning rate linearly increases until</span>
+            <span class="c1"># it reaches base_lr.</span>
+            <span class="n">warmup_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span>
+            <span class="n">lrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">warmup_factor</span> <span class="o">*</span> <span class="n">base_lr</span> <span class="k">for</span> <span class="n">base_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_steps</span><span class="p">:</span>
+            <span class="c1"># start polynomial weight decay until it reaches end_learning_rate</span>
+            <span class="n">decay_factor</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="mi">1</span>
+                <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)</span>
+                <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_steps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)</span>
+            <span class="p">)</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">power</span>
+
+            <span class="n">lrs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">base_lr</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_learning_rate</span><span class="p">)</span> <span class="o">*</span> <span class="n">decay_factor</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_learning_rate</span>
+                <span class="k">for</span> <span class="n">base_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># reach end_learning_rate after total_steps</span>
+            <span class="n">lrs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_learning_rate</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">lrs</span></div>
+
+<div class="viewcode-block" id="PolynomialDecayScheduler.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.PolynomialDecayScheduler.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_steps</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># update optimizer.param_groups's learning rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="SchedulerWithWarmup"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.SchedulerWithWarmup">[docs]</a><span class="k">class</span> <span class="nc">SchedulerWithWarmup</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">,</span> <span class="n">BatchScheduler</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Wraps another scheduler with a warmup phase. After `warmup_steps` defined in</span>
+<span class="sd">    warmup_scheduler.warmup_steps, the scheduler will switch to use the specified</span>
+<span class="sd">    scheduler in `scheduler`.</span>
+
+<span class="sd">    `warmup_scheduler`: is the configuration for the WarmupScheduler, that warms up</span>
+<span class="sd">    learning rate over `warmup_steps` linearly.</span>
+
+<span class="sd">    `scheduler`: is the main scheduler that will be applied after the warmup phase</span>
+<span class="sd">    (once `warmup_steps` have passed)</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BatchScheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1"># the definition of the warmup scheduler for the warmup phase</span>
+        <span class="n">warmup_scheduler</span><span class="p">:</span> <span class="n">WarmupScheduler</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WarmupScheduler</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="c1"># the definition of the main scheduler to apply once the warmup phase</span>
+        <span class="c1"># has passed</span>
+        <span class="n">scheduler</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">ExponentialLR</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">CosineAnnealingLR</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">ReduceLROnPlateau</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">LmFineTuning</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">CyclicLR</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="p">]</span>
+
+<div class="viewcode-block" id="SchedulerWithWarmup.from_config"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.SchedulerWithWarmup.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">):</span>
+        <span class="n">warmup_scheduler</span> <span class="o">=</span> <span class="n">create_scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">warmup_scheduler</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">)</span>
+        <span class="n">scheduler</span> <span class="o">=</span> <span class="n">create_scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="p">,</span> <span class="n">warmup_scheduler</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">warmup_scheduler</span><span class="o">.</span><span class="n">warmup_steps</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SchedulerWithWarmup.prepare"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.SchedulerWithWarmup.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warmup_scheduler</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">train_iter</span><span class="p">,</span> <span class="n">total_epochs</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">warmup_scheduler</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">,</span> <span class="n">switch_steps</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warmup_scheduler</span> <span class="o">=</span> <span class="n">warmup_scheduler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">scheduler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">switch_steps</span> <span class="o">=</span> <span class="n">switch_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="SchedulerWithWarmup.step_batch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.SchedulerWithWarmup.step_batch">[docs]</a>    <span class="k">def</span> <span class="nf">step_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_steps</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_steps</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curr_steps</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_scheduler</span><span class="o">.</span><span class="n">step_batch</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">step_batch</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SchedulerWithWarmup.step_epoch"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.SchedulerWithWarmup.step_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">step_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_steps</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_scheduler</span><span class="o">.</span><span class="n">step_epoch</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">step_epoch</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SchedulerWithWarmup.get_lr"><a class="viewcode-back" href="../../../modules/pytext.optimizer.html#pytext.optimizer.scheduler.SchedulerWithWarmup.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_steps</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">switch_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_scheduler</span><span class="o">.</span><span class="n">get_lr</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">get_lr</span><span class="p">()</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

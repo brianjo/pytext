@@ -1,0 +1,149 @@
+pytext.models package
+=====================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pytext.models.decoders
+   pytext.models.embeddings
+   pytext.models.ensembles
+   pytext.models.language_models
+   pytext.models.output_layers
+   pytext.models.qna
+   pytext.models.representations
+   pytext.models.semantic_parsers
+   pytext.models.seq_models
+
+Submodules
+----------
+
+pytext.models.bert\_classification\_models module
+-------------------------------------------------
+
+.. automodule:: pytext.models.bert_classification_models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.bert\_regression\_model module
+--------------------------------------------
+
+.. automodule:: pytext.models.bert_regression_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.crf module
+------------------------
+
+.. automodule:: pytext.models.crf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.disjoint\_multitask\_model module
+-----------------------------------------------
+
+.. automodule:: pytext.models.disjoint_multitask_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.distributed\_model module
+---------------------------------------
+
+.. automodule:: pytext.models.distributed_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.doc\_model module
+-------------------------------
+
+.. automodule:: pytext.models.doc_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.joint\_model module
+---------------------------------
+
+.. automodule:: pytext.models.joint_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.masked\_lm module
+-------------------------------
+
+.. automodule:: pytext.models.masked_lm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.masking\_utils module
+-----------------------------------
+
+.. automodule:: pytext.models.masking_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.model module
+--------------------------
+
+.. automodule:: pytext.models.model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.module module
+---------------------------
+
+.. automodule:: pytext.models.module
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.pair\_classification\_model module
+------------------------------------------------
+
+.. automodule:: pytext.models.pair_classification_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.query\_document\_pairwise\_ranking\_model module
+--------------------------------------------------------------
+
+.. automodule:: pytext.models.query_document_pairwise_ranking_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.roberta module
+----------------------------
+
+.. automodule:: pytext.models.roberta
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.models.word\_model module
+--------------------------------
+
+.. automodule:: pytext.models.word_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models
+   :members:
+   :undoc-members:
+   :show-inheritance:

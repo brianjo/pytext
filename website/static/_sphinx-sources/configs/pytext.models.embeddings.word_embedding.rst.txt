@@ -1,0 +1,7 @@
+word_embedding
+==============
+
+
+.. toctree::
+
+  pytext.models.embeddings.word_embedding.WordEmbedding.Config

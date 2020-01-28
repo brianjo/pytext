@@ -1,0 +1,295 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-loss-package">
+<h1>pytext.loss package<a class="headerlink" href="#pytext-loss-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.loss.loss">
+<span id="pytext-loss-loss-module"></span><h2>pytext.loss.loss module<a class="headerlink" href="#module-pytext.loss.loss" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.loss.loss.AUCPRHingeLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">AUCPRHingeLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">weights=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#AUCPRHingeLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.AUCPRHingeLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code>, <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>area under the precision-recall curve loss,
+Reference: “Scalable Learning of Non-Decomposable Objectives”, Section 5     TensorFlow Implementation:     <a class="reference external" href="https://github.com/tensorflow/models/tree/master/research/global_objectives">https://github.com/tensorflow/models/tree/master/research/global_objectives</a></p>
+<dl class="method">
+<dt id="pytext.loss.loss.AUCPRHingeLoss.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">logits</em>, <em class="sig-param">targets</em>, <em class="sig-param">reduce=True</em>, <em class="sig-param">size_average=True</em>, <em class="sig-param">weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#AUCPRHingeLoss.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.AUCPRHingeLoss.forward" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logits</strong> – Variable <span class="math notranslate nohighlight">\((N, C)\)</span> where <cite>C = number of classes</cite></p></li>
+<li><p><strong>targets</strong> – Variable <span class="math notranslate nohighlight">\((N)\)</span> where each value is
+<cite>0 &lt;= targets[i] &lt;= C-1</cite></p></li>
+<li><p><strong>weights</strong> – Coefficients for the loss. Must be a <cite>Tensor</cite> of shape
+[N] or [N, C], where <cite>N = batch_size</cite>, <cite>C = number of classes</cite>.</p></li>
+<li><p><strong>size_average</strong> (<em>bool</em><em>, </em><em>optional</em>) – By default, the losses are averaged
+over observations for each minibatch. However, if the field
+sizeAverage is set to False, the losses are instead summed
+for each minibatch. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>reduce</strong> (<em>bool</em><em>, </em><em>optional</em>) – By default, the losses are averaged or summed over
+observations for each minibatch depending on size_average. When reduce
+is False, returns a loss per input/target element instead and ignores
+size_average. Default: True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.BinaryCrossEntropyLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">BinaryCrossEntropyLoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#BinaryCrossEntropyLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.BinaryCrossEntropyLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.CosineEmbeddingLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">CosineEmbeddingLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#CosineEmbeddingLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.CosineEmbeddingLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.CrossEntropyLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">CrossEntropyLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#CrossEntropyLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.CrossEntropyLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.KLDivergenceBCELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">KLDivergenceBCELoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#KLDivergenceBCELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.KLDivergenceBCELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.KLDivergenceCELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">KLDivergenceCELoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#KLDivergenceCELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.KLDivergenceCELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.LabelSmoothedCrossEntropyLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">LabelSmoothedCrossEntropyLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#LabelSmoothedCrossEntropyLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.LabelSmoothedCrossEntropyLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.Loss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">Loss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#Loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.Loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Base class for loss functions</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.MAELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">MAELoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#MAELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.MAELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>Mean absolute error or L1 loss, for regression tasks.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.MSELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">MSELoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#MSELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.MSELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>Mean squared error or L2 loss, for regression tasks.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.MultiLabelSoftMarginLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">MultiLabelSoftMarginLoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#MultiLabelSoftMarginLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.MultiLabelSoftMarginLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.NLLLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">NLLLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#NLLLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.NLLLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.loss.PairwiseRankingLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.loss.</code><code class="sig-name descname">PairwiseRankingLoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#PairwiseRankingLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.PairwiseRankingLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>Given embeddings for a query, positive response and negative response
+computes pairwise ranking hinge loss</p>
+<dl class="method">
+<dt id="pytext.loss.loss.PairwiseRankingLoss.get_similarities">
+<em class="property">static </em><code class="sig-name descname">get_similarities</code><span class="sig-paren">(</span><em class="sig-param">embeddings</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#PairwiseRankingLoss.get_similarities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.loss.PairwiseRankingLoss.get_similarities" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.loss">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.loss" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.loss.AUCPRHingeLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">AUCPRHingeLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">weights=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#AUCPRHingeLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.AUCPRHingeLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code>, <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>area under the precision-recall curve loss,
+Reference: “Scalable Learning of Non-Decomposable Objectives”, Section 5     TensorFlow Implementation:     <a class="reference external" href="https://github.com/tensorflow/models/tree/master/research/global_objectives">https://github.com/tensorflow/models/tree/master/research/global_objectives</a></p>
+<dl class="method">
+<dt id="pytext.loss.AUCPRHingeLoss.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">logits</em>, <em class="sig-param">targets</em>, <em class="sig-param">reduce=True</em>, <em class="sig-param">size_average=True</em>, <em class="sig-param">weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#AUCPRHingeLoss.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.AUCPRHingeLoss.forward" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logits</strong> – Variable <span class="math notranslate nohighlight">\((N, C)\)</span> where <cite>C = number of classes</cite></p></li>
+<li><p><strong>targets</strong> – Variable <span class="math notranslate nohighlight">\((N)\)</span> where each value is
+<cite>0 &lt;= targets[i] &lt;= C-1</cite></p></li>
+<li><p><strong>weights</strong> – Coefficients for the loss. Must be a <cite>Tensor</cite> of shape
+[N] or [N, C], where <cite>N = batch_size</cite>, <cite>C = number of classes</cite>.</p></li>
+<li><p><strong>size_average</strong> (<em>bool</em><em>, </em><em>optional</em>) – By default, the losses are averaged
+over observations for each minibatch. However, if the field
+sizeAverage is set to False, the losses are instead summed
+for each minibatch. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>reduce</strong> (<em>bool</em><em>, </em><em>optional</em>) – By default, the losses are averaged or summed over
+observations for each minibatch depending on size_average. When reduce
+is False, returns a loss per input/target element instead and ignores
+size_average. Default: True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.Loss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">Loss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#Loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.Loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Base class for loss functions</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.CrossEntropyLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">CrossEntropyLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#CrossEntropyLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.CrossEntropyLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.CosineEmbeddingLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">CosineEmbeddingLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#CosineEmbeddingLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.CosineEmbeddingLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.BinaryCrossEntropyLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">BinaryCrossEntropyLoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#BinaryCrossEntropyLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.BinaryCrossEntropyLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.MultiLabelSoftMarginLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">MultiLabelSoftMarginLoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#MultiLabelSoftMarginLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.MultiLabelSoftMarginLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.KLDivergenceBCELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">KLDivergenceBCELoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#KLDivergenceBCELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.KLDivergenceBCELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.KLDivergenceCELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">KLDivergenceCELoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#KLDivergenceCELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.KLDivergenceCELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.MAELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">MAELoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#MAELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.MAELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>Mean absolute error or L1 loss, for regression tasks.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.MSELoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">MSELoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#MSELoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.MSELoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>Mean squared error or L2 loss, for regression tasks.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.NLLLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">NLLLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#NLLLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.NLLLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.PairwiseRankingLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">PairwiseRankingLoss</code><span class="sig-paren">(</span><em class="sig-param">config=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#PairwiseRankingLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.PairwiseRankingLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+<p>Given embeddings for a query, positive response and negative response
+computes pairwise ranking hinge loss</p>
+<dl class="method">
+<dt id="pytext.loss.PairwiseRankingLoss.get_similarities">
+<em class="property">static </em><code class="sig-name descname">get_similarities</code><span class="sig-paren">(</span><em class="sig-param">embeddings</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#PairwiseRankingLoss.get_similarities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.PairwiseRankingLoss.get_similarities" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.loss.LabelSmoothedCrossEntropyLoss">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.loss.</code><code class="sig-name descname">LabelSmoothedCrossEntropyLoss</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">ignore_index=-100</em>, <em class="sig-param">weight=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/loss/loss.html#LabelSmoothedCrossEntropyLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.loss.LabelSmoothedCrossEntropyLoss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.loss.loss.Loss" title="pytext.loss.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.loss.loss.Loss</span></code></a></p>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li>Previous: <a href="pytext.fields.html" title="previous chapter">pytext.fields package</a></li>
+<li>Next: <a href="pytext.metric_reporters.html" title="next chapter">pytext.metric_reporters package</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,63 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.qna.bert_squad_qa
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **squad_input**: Union[:doc:`SquadForBERTTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config>`, :doc:`SquadForRoBERTaTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForRoBERTaTensorizer.Config>`] = :doc:`SquadForBERTTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config>`\ ()
+    \ 
+
+  **has_answer**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ (column=\ ``'has_answer'``\ )
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "squad_input": {
+          "SquadForBERTTensorizer": {
+              "is_input": true,
+              "columns": [
+                  "question",
+                  "doc"
+              ],
+              "tokenizer": {
+                  "WordPieceTokenizer": {
+                      "basic_tokenizer": {
+                          "split_regex": "\\s+",
+                          "lowercase": true
+                      },
+                      "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                  }
+              },
+              "base_tokenizer": null,
+              "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+              "max_seq_len": 256,
+              "answers_column": "answers",
+              "answer_starts_column": "answer_starts"
+          }
+      },
+      "has_answer": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "has_answer",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      }
+  }

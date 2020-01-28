@@ -1,0 +1,147 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="hierarchical-intent-and-slot-filling">
+<h1>Hierarchical intent and slot filling<a class="headerlink" href="#hierarchical-intent-and-slot-filling" title="Permalink to this headline">¶</a></h1>
+<p>In this tutorial, we will train a semantic parser for task oriented dialog by modeling hierarchical intents and slots (<a class="reference external" href="https://arxiv.org/abs/1810.07942">Gupta et al. , Semantic Parsing for Task Oriented Dialog using Hierarchical Representations, EMNLP 2018</a>). The underlying model used in the paper is the Recurrent Neural Network Grammar (<a class="reference external" href="https://arxiv.org/abs/1602.07776">Dyer et al., Recurrent Neural Network Grammar, NAACL 2016</a>). RNNG is neural constituency parser that explicitly models the compositional tree structure of the words and phrases in an utterance.</p>
+<div class="section" id="fetch-the-dataset">
+<h2>1. Fetch the dataset<a class="headerlink" href="#fetch-the-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Download the dataset to a local directory. We will refer to this as <cite>base_dir</cite> in the next section.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -o top-dataset-semantic-parsing.zip -L https://fb.me/semanticparsingdialog
+<span class="gp">$</span> unzip top-dataset-semantic-parsing.zip
+</pre></div>
+</div>
+</div>
+<div class="section" id="prepare-configuration-file">
+<h2>2. Prepare configuration file<a class="headerlink" href="#prepare-configuration-file" title="Permalink to this headline">¶</a></h2>
+<p>Prepare the configuration file for training. A sample config file can be found in your PyText repository at <code class="docutils literal notranslate"><span class="pre">demo/configs/rnng.json</span></code>. If you haven’t set up PyText, please follow <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>, then make the following changes in the config:</p>
+<ul class="simple">
+<li><p>Set <cite>train_path</cite> to <cite>base_dir/top-dataset-semantic-parsing/train.tsv</cite>.</p></li>
+<li><p>Set <cite>eval_path</cite> to <cite>base_dir/top-dataset-semantic-parsing/eval.tsv</cite>.</p></li>
+<li><p>Set <cite>test_path</cite> to <cite>base_dir/top-dataset-semantic-parsing/test.tsv</cite>.</p></li>
+</ul>
+</div>
+<div class="section" id="train-a-model-with-the-downloaded-dataset">
+<h2>3. Train a model with the downloaded dataset<a class="headerlink" href="#train-a-model-with-the-downloaded-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Train the model using the command below</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext train &lt; demo/configs/rnng.json
+</pre></div>
+</div>
+<p>The output will look like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Merged Intent and Slot Metrics</span>
+<span class="go">P = 24.03 R = 31.90, F1 = 27.41.</span>
+</pre></div>
+</div>
+<p>This will take about hour. If you want to train with a smaller dataset to make it quick then generate a subset of the dataset using the commands below and update the paths in <code class="docutils literal notranslate"><span class="pre">demo/configs/rnng.json</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> head -n <span class="m">1000</span> base_dir/top-dataset-semantic-parsing/train.tsv &gt; base_dir/top-dataset-semantic-parsing/train_small.tsv
+<span class="gp">$</span> head -n <span class="m">100</span> base_dir/top-dataset-semantic-parsing/eval.tsv &gt; base_dir/top-dataset-semantic-parsing/eval_small.tsv
+<span class="gp">$</span> head -n <span class="m">100</span> base_dir/top-dataset-semantic-parsing/test.tsv &gt; base_dir/top-dataset-semantic-parsing/test_small.tsv
+</pre></div>
+</div>
+<p>If you now train the model with smaller datasets, the output will look like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Merged Intent and Slot Metrics</span>
+<span class="go">P = 24.03 R = 31.90, F1 = 27.41.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="test-the-model-interactively-against-input-utterances">
+<h2>4. Test the model interactively against input utterances.<a class="headerlink" href="#test-the-model-interactively-against-input-utterances" title="Permalink to this headline">¶</a></h2>
+<p>Load the model using the command below</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext) $</span> pytext predict-py --model-file<span class="o">=</span>/tmp/model.pt
+<span class="go">please input a json example, the names should be the same with column_to_read in model training config:</span>
+</pre></div>
+</div>
+<p>This will give you a REPL prompt. You can enter an utterance to get back the model’s prediction repeatedly. You should enter in a json format shown below. Once done press Ctrl+D.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"order coffee from starbucks"</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>You should see an output like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s1">'prediction'</span><span class="p">:</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+<span class="s1">'score'</span><span class="p">:</span> <span class="p">[</span>
+        <span class="mf">0.44425372408062447</span><span class="p">,</span>
+        <span class="mf">0.8018286800064633</span><span class="p">,</span>
+        <span class="mf">0.6880680051949267</span><span class="p">,</span>
+        <span class="mf">0.9891564979506277</span><span class="p">,</span>
+        <span class="mf">0.9999506231665385</span><span class="p">,</span>
+        <span class="mf">0.9992705616574005</span><span class="p">,</span>
+        <span class="mf">0.34512090135492923</span><span class="p">,</span>
+        <span class="mf">0.9999979545618913</span><span class="p">,</span>
+        <span class="mf">0.9999998668826438</span><span class="p">,</span>
+        <span class="mf">0.9999998686418744</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p>We have also provided a pre-trained model which you may download <a class="reference external" href="https://download.pytorch.org/data/rnng_topv1.1_release.pt">here</a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="atis_tutorial.html" title="previous chapter">Train Intent-Slot model on ATIS Dataset</a></li>
+<li>Next: <a href="disjoint_multitask_tutorial.html" title="next chapter">Multitask training with disjoint datasets</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

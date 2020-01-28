@@ -1,0 +1,33 @@
+BatchScheduler.Config
+=====================
+
+
+
+**Component:** :class:`BatchScheduler  <pytext.optimizer.scheduler.BatchScheduler>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: BatchScheduler.Config
+  :noindex:
+
+  **Bases:** :class:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`PolynomialDecayScheduler.Config <pytext.optimizer.scheduler.PolynomialDecayScheduler.Config>`\ 
+  - :class:`SchedulerWithWarmup.Config <pytext.optimizer.scheduler.SchedulerWithWarmup.Config>`\ 
+  - :class:`WarmupScheduler.Config <pytext.optimizer.scheduler.WarmupScheduler.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

@@ -1,0 +1,54 @@
+pytext.task package
+===================
+
+Submodules
+----------
+
+pytext.task.disjoint\_multitask module
+--------------------------------------
+
+.. automodule:: pytext.task.disjoint_multitask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.task.new\_task module
+----------------------------
+
+.. automodule:: pytext.task.new_task
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.task.serialize module
+----------------------------
+
+.. automodule:: pytext.task.serialize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.task.task module
+-----------------------
+
+.. automodule:: pytext.task.task
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.task.tasks module
+------------------------
+
+.. automodule:: pytext.task.tasks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.task
+   :members:
+   :undoc-members:
+   :show-inheritance:

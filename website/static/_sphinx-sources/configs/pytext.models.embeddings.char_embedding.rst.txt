@@ -1,0 +1,7 @@
+char_embedding
+==============
+
+
+.. toctree::
+
+  pytext.models.embeddings.char_embedding.CharacterEmbedding.Config

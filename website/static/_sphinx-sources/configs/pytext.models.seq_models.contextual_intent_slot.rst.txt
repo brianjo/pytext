@@ -1,0 +1,8 @@
+contextual_intent_slot
+======================
+
+
+.. toctree::
+
+  pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.Config
+  pytext.models.seq_models.contextual_intent_slot.ModelInput

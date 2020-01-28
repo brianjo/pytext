@@ -1,0 +1,160 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.seq_models.contextual_intent_slot</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">SeqTokenTensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.models.embeddings</span> <span class="kn">import</span> <span class="n">EmbeddingList</span><span class="p">,</span> <span class="n">WordEmbedding</span>
+<span class="kn">from</span> <span class="nn">pytext.models.joint_model</span> <span class="kn">import</span> <span class="n">IntentSlotModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.contextual_intent_slot_rep</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ContextualIntentSlotRepresentation</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="ContextualIntentSlotModel"><a class="viewcode-back" href="../../../../modules/pytext.models.seq_models.html#pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel">[docs]</a><span class="k">class</span> <span class="nc">ContextualIntentSlotModel</span><span class="p">(</span><span class="n">IntentSlotModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Joint Model for Intent classification and slot tagging with inputs of contextual</span>
+<span class="sd">    information (sequence of utterances) and dictionary feature of the last utterance.</span>
+
+<span class="sd">    Training data should include:</span>
+<span class="sd">    doc_label (string): intent classification label of either the sequence of \</span>
+<span class="sd">    utterances or just the last sentence</span>
+<span class="sd">    word_label (string): slot tagging label of the last utterance in the format\</span>
+<span class="sd">    of start_idx:end_idx:slot_label, multiple slots are separated by a comma</span>
+<span class="sd">    text (list of string): sequence of utterances for training</span>
+<span class="sd">    dict_feat (dict): a dict of features that contains the feature of each word\</span>
+<span class="sd">    in the last utterance</span>
+
+<span class="sd">    Following is an example of raw columns from training data:</span>
+
+<span class="sd">    ==========  =======================================================================</span>
+<span class="sd">    doc_label   reply-where</span>
+<span class="sd">    word_label  10:20:restaurant_name</span>
+<span class="sd">    text        ["dinner at 6?", "wanna try Tomi Sushi?"]</span>
+<span class="sd">    dict_feat   {"tokenFeatList": [{"tokenIdx": 2, "features": {"poi:eatery": 0.66}},</span>
+<span class="sd">                                   {"tokenIdx": 3, "features": {"poi:eatery": 0.66}}]}</span>
+<span class="sd">    ==========  =======================================================================</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">IntentSlotModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">IntentSlotModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+
+            <span class="n">seq_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">SeqTokenTensorizer</span><span class="o">.</span><span class="n">Config</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">SeqTokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">seq_embedding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">representation</span><span class="p">:</span> <span class="n">ContextualIntentSlotRepresentation</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">ContextualIntentSlotRepresentation</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ContextualIntentSlotModel.create_embedding"><a class="viewcode-back" href="../../../../modules/pytext.models.seq_models.html#pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.create_embedding">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_embedding</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">word_emb</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">word_embedding</span><span class="p">,</span>
+            <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">],</span>
+            <span class="n">init_from_saved_state</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">init_from_saved_state</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">seq_emb_tensorizer</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"seq_tokens"</span><span class="p">]</span>
+        <span class="n">seq_emb</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">seq_embedding</span><span class="p">,</span> <span class="n">tensorizer</span><span class="o">=</span><span class="n">seq_emb_tensorizer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingList</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">EmbeddingList</span><span class="p">([</span><span class="n">word_emb</span><span class="p">],</span> <span class="n">concat</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="n">seq_emb</span><span class="p">],</span> <span class="n">concat</span><span class="o">=</span><span class="bp">False</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ContextualIntentSlotModel.vocab_to_export"><a class="viewcode-back" href="../../../../modules/pytext.models.seq_models.html#pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.vocab_to_export">[docs]</a>    <span class="k">def</span> <span class="nf">vocab_to_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"tokens_vals"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+            <span class="s2">"seq_tokens_vals"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"seq_tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ContextualIntentSlotModel.get_export_input_names"><a class="viewcode-back" href="../../../../modules/pytext.models.seq_models.html#pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.get_export_input_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">"tokens_vals"</span><span class="p">,</span> <span class="s2">"seq_tokens_vals"</span><span class="p">,</span> <span class="s2">"tokens_lens"</span><span class="p">,</span> <span class="s2">"seq_tokens_lens"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ContextualIntentSlotModel.arrange_model_inputs"><a class="viewcode-back" href="../../../../modules/pytext.models.seq_models.html#pytext.models.seq_models.contextual_intent_slot.ContextualIntentSlotModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">arranged_inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">tokens</span><span class="p">]</span>
+        <span class="n">seq_emb_inputs</span><span class="p">,</span> <span class="n">seq_word_lens</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"seq_tokens"</span><span class="p">)</span>
+        <span class="n">arranged_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_emb_inputs</span><span class="p">)</span>
+        <span class="n">arranged_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">)</span>
+        <span class="n">arranged_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_word_lens</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">arranged_inputs</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

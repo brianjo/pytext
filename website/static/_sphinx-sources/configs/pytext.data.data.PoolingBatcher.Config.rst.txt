@@ -1,0 +1,56 @@
+PoolingBatcher.Config
+=====================
+
+
+
+**Component:** :class:`PoolingBatcher  <pytext.data.data.PoolingBatcher>`\ 
+
+
+.. py:currentmodule:: pytext.data.data
+.. py:class:: PoolingBatcher.Config
+  :noindex:
+
+  **Bases:** :class:`Batcher.Config <pytext.data.data.Batcher.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **train_batch_size**: int = ``16``
+    \ 
+
+  **eval_batch_size**: int = ``16``
+    \ 
+
+  **test_batch_size**: int = ``16``
+    \ 
+
+  **pool_num_batches**: int = ``10000``
+    Size of a pool expressed in number of batches
+    
+
+  **num_shuffled_pools**: int = ``1``
+    How many pool-sized chunks to load at a time for shuffling
+    
+
+
+
+**Subclasses**
+  - :class:`DynamicPoolingBatcher.Config <pytext.data.dynamic_pooling_batcher.DynamicPoolingBatcher.Config>`\ 
+  - :class:`ExponentialDynamicPoolingBatcher.Config <pytext.data.dynamic_pooling_batcher.ExponentialDynamicPoolingBatcher.Config>`\ 
+  - :class:`LinearDynamicPoolingBatcher.Config <pytext.data.dynamic_pooling_batcher.LinearDynamicPoolingBatcher.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "train_batch_size": 16,
+      "eval_batch_size": 16,
+      "test_batch_size": 16,
+      "pool_num_batches": 10000,
+      "num_shuffled_pools": 1
+  }

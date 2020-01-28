@@ -1,0 +1,14 @@
+doc_model
+=========
+
+
+.. toctree::
+
+  pytext.models.doc_model.ByteModelInput
+  pytext.models.doc_model.ByteTokensDocumentModel.Config
+  pytext.models.doc_model.DocModel.Config
+  pytext.models.doc_model.DocRegressionModel.Config
+  pytext.models.doc_model.ModelInput
+  pytext.models.doc_model.PersonalizedDocModel.Config
+  pytext.models.doc_model.PersonalizedModelInput
+  pytext.models.doc_model.RegressionModelInput

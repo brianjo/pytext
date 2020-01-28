@@ -1,0 +1,281 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metric_reporters.intent_slot_detection_metric_reporter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">DatasetFieldName</span><span class="p">,</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.data.data_structures.annotation</span> <span class="kn">import</span> <span class="n">CLOSE</span><span class="p">,</span> <span class="n">OPEN</span><span class="p">,</span> <span class="n">escape_brackets</span>
+<span class="kn">from</span> <span class="nn">pytext.metrics.intent_slot_metrics</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FramePredictionPair</span><span class="p">,</span>
+    <span class="n">Node</span><span class="p">,</span>
+    <span class="n">Span</span><span class="p">,</span>
+    <span class="n">compute_all_metrics</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.data</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">byte_length</span><span class="p">,</span>
+    <span class="n">get_substring_from_offsets</span><span class="p">,</span>
+    <span class="n">merge_token_labels_to_slot</span><span class="p">,</span>
+    <span class="n">parse_slot_string</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.channel</span> <span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">ConsoleChannel</span><span class="p">,</span> <span class="n">FileChannel</span>
+<span class="kn">from</span> <span class="nn">.metric_reporter</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+
+
+<span class="n">DOC_LABEL_NAMES</span> <span class="o">=</span> <span class="s2">"doc_label_names"</span>
+
+
+<div class="viewcode-block" id="create_frame"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.create_frame">[docs]</a><span class="k">def</span> <span class="nf">create_frame</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">intent_label</span><span class="p">,</span> <span class="n">slot_names_str</span><span class="p">,</span> <span class="n">byte_len</span><span class="p">):</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">intent_label</span><span class="p">,</span>
+        <span class="n">span</span><span class="o">=</span><span class="n">Span</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">byte_len</span><span class="p">),</span>
+        <span class="n">children</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">Node</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">slot</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">span</span><span class="o">=</span><span class="n">Span</span><span class="p">(</span><span class="n">slot</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">slot</span><span class="o">.</span><span class="n">end</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">parse_slot_string</span><span class="p">(</span><span class="n">slot_names_str</span><span class="p">)</span>
+        <span class="p">},</span>
+        <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">frame</span></div>
+
+
+<div class="viewcode-block" id="frame_to_str"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.frame_to_str">[docs]</a><span class="k">def</span> <span class="nf">frame_to_str</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="n">Node</span><span class="p">):</span>
+    <span class="n">annotation_str</span> <span class="o">=</span> <span class="n">OPEN</span> <span class="o">+</span> <span class="n">escape_brackets</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">label</span><span class="p">)</span> <span class="o">+</span> <span class="s2">" "</span>
+    <span class="n">cur_index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">children</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">slot</span><span class="p">:</span> <span class="n">slot</span><span class="o">.</span><span class="n">span</span><span class="o">.</span><span class="n">start</span><span class="p">):</span>
+        <span class="n">annotation_str</span> <span class="o">+=</span> <span class="n">escape_brackets</span><span class="p">(</span>
+            <span class="n">get_substring_from_offsets</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">cur_index</span><span class="p">,</span> <span class="n">slot</span><span class="o">.</span><span class="n">span</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">annotation_str</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">OPEN</span>
+            <span class="o">+</span> <span class="n">escape_brackets</span><span class="p">(</span><span class="n">slot</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">" "</span>
+            <span class="o">+</span> <span class="n">escape_brackets</span><span class="p">(</span>
+                <span class="n">get_substring_from_offsets</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">slot</span><span class="o">.</span><span class="n">span</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">slot</span><span class="o">.</span><span class="n">span</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="s2">" "</span>
+            <span class="o">+</span> <span class="n">CLOSE</span>
+        <span class="p">)</span>
+        <span class="n">cur_index</span> <span class="o">=</span> <span class="n">slot</span><span class="o">.</span><span class="n">span</span><span class="o">.</span><span class="n">end</span>
+    <span class="n">annotation_str</span> <span class="o">+=</span> <span class="p">(</span>
+        <span class="n">escape_brackets</span><span class="p">(</span><span class="n">get_substring_from_offsets</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">cur_index</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+        <span class="o">+</span> <span class="s2">" "</span>
+        <span class="o">+</span> <span class="n">CLOSE</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">annotation_str</span></div>
+
+
+<div class="viewcode-block" id="IntentSlotMetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter">[docs]</a><span class="k">class</span> <span class="nc">IntentSlotMetricReporter</span><span class="p">(</span><span class="n">MetricReporter</span><span class="p">):</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">doc_label_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">word_label_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">use_bio_labels</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">channels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Channel</span><span class="p">],</span>
+        <span class="n">slot_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"slots"</span><span class="p">,</span>
+        <span class="n">text_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"text"</span><span class="p">,</span>
+        <span class="n">token_tensorizer_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"tokens"</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">doc_label_names</span> <span class="o">=</span> <span class="n">doc_label_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_label_names</span> <span class="o">=</span> <span class="n">word_label_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_bio_labels</span> <span class="o">=</span> <span class="n">use_bio_labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slot_column_name</span> <span class="o">=</span> <span class="n">slot_column_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span> <span class="o">=</span> <span class="n">text_column_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_tensorizer_name</span> <span class="o">=</span> <span class="n">token_tensorizer_name</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">MetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.from_config"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># TODO this part should be handled more elegantly</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"text_feats"</span><span class="p">,</span> <span class="s2">"tokens"</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="p">:</span>
+                <span class="n">token_tensorizer_name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"doc_labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span>
+            <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"word_labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"word_labels"</span><span class="p">],</span> <span class="s2">"use_bio_labels"</span><span class="p">,</span> <span class="bp">False</span><span class="p">),</span>
+            <span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">(),</span> <span class="n">FileChannel</span><span class="p">((</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,),</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)],</span>
+            <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"word_labels"</span><span class="p">]</span><span class="o">.</span><span class="n">slot_column</span><span class="p">,</span>
+            <span class="n">tensorizers</span><span class="p">[</span><span class="n">token_tensorizer_name</span><span class="p">]</span><span class="o">.</span><span class="n">text_column</span><span class="p">,</span>
+            <span class="n">token_tensorizer_name</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.aggregate_preds"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.aggregate_preds">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_preds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_preds</span><span class="p">,</span> <span class="n">batch_context</span><span class="p">):</span>
+        <span class="n">intent_preds</span><span class="p">,</span> <span class="n">word_preds</span> <span class="o">=</span> <span class="n">batch_preds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">create_frame</span><span class="p">(</span>
+                    <span class="n">text</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">doc_label_names</span><span class="p">[</span><span class="n">intent_pred</span><span class="p">],</span>
+                    <span class="n">merge_token_labels_to_slot</span><span class="p">(</span>
+                        <span class="n">token_range</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">seq_len</span><span class="p">],</span>
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">word_label_names</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">word_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">seq_len</span><span class="p">]],</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">use_bio_labels</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">byte_length</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">text</span><span class="p">,</span> <span class="n">intent_pred</span><span class="p">,</span> <span class="n">word_pred</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">token_range</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">batch_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">],</span>
+                    <span class="n">intent_preds</span><span class="p">,</span>
+                    <span class="n">word_preds</span><span class="p">,</span>
+                    <span class="n">batch_context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">SEQ_LENS</span><span class="p">],</span>
+                    <span class="n">batch_context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">TOKEN_RANGE</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.aggregate_targets"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.aggregate_targets">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_targets</span><span class="p">,</span> <span class="n">batch_context</span><span class="p">):</span>
+        <span class="n">intent_targets</span> <span class="o">=</span> <span class="n">batch_targets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">create_frame</span><span class="p">(</span>
+                    <span class="n">text</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">doc_label_names</span><span class="p">[</span><span class="n">intent_target</span><span class="p">],</span>
+                    <span class="n">raw_slot_label</span><span class="p">,</span>
+                    <span class="n">byte_length</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">text</span><span class="p">,</span> <span class="n">intent_target</span><span class="p">,</span> <span class="n">raw_slot_label</span><span class="p">,</span> <span class="n">seq_len</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">batch_context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">],</span>
+                    <span class="n">intent_targets</span><span class="p">,</span>
+                    <span class="n">batch_context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">RAW_WORD_LABEL</span><span class="p">],</span>
+                    <span class="n">batch_context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">SEQ_LENS</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.get_raw_slot_str"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.get_raw_slot_str">[docs]</a>    <span class="k">def</span> <span class="nf">get_raw_slot_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_data_row</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">raw_data_row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slot_column_name</span><span class="p">]])</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.aggregate_scores"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.aggregate_scores">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_scores</span><span class="p">):</span>
+        <span class="n">intent_scores</span><span class="p">,</span> <span class="n">slot_scores</span> <span class="o">=</span> <span class="n">batch_scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">intent_score</span><span class="p">,</span> <span class="n">slot_score</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">intent_score</span><span class="p">,</span> <span class="n">slot_score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">intent_scores</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">slot_scores</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.predictions_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.predictions_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">predictions_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable predictions</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">frame_to_str</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.targets_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.targets_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">targets_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable targets</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">frame_to_str</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">compute_all_metrics</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">FramePredictionPair</span><span class="p">(</span><span class="n">pred_frame</span><span class="p">,</span> <span class="n">target_frame</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">pred_frame</span><span class="p">,</span> <span class="n">target_frame</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="p">)</span>
+            <span class="p">],</span>
+            <span class="n">frame_accuracy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.batch_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.batch_context">[docs]</a>    <span class="k">def</span> <span class="nf">batch_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">batch_context</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+        <span class="n">context</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_column_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+        <span class="p">]</span>
+        <span class="n">context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">SEQ_LENS</span><span class="p">]</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token_tensorizer_name</span><span class="p">][</span>
+            <span class="mi">1</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">TOKEN_RANGE</span><span class="p">]</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token_tensorizer_name</span><span class="p">][</span>
+            <span class="mi">2</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">context</span><span class="p">[</span><span class="n">DatasetFieldName</span><span class="o">.</span><span class="n">RAW_WORD_LABEL</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_raw_slot_str</span><span class="p">(</span><span class="n">raw_data_row</span><span class="p">)</span> <span class="k">for</span> <span class="n">raw_data_row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="IntentSlotMetricReporter.get_model_select_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.intent_slot_detection_metric_reporter.IntentSlotMetricReporter.get_model_select_metric">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_select_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">frame_accuracy</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

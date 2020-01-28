@@ -1,0 +1,8 @@
+joint_model
+===========
+
+
+.. toctree::
+
+  pytext.models.joint_model.IntentSlotModel.Config
+  pytext.models.joint_model.ModelInput

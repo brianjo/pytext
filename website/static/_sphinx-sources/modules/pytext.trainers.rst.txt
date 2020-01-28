@@ -1,0 +1,46 @@
+pytext.trainers package
+=======================
+
+Submodules
+----------
+
+pytext.trainers.ensemble\_trainer module
+----------------------------------------
+
+.. automodule:: pytext.trainers.ensemble_trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.trainers.hogwild\_trainer module
+---------------------------------------
+
+.. automodule:: pytext.trainers.hogwild_trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.trainers.trainer module
+------------------------------
+
+.. automodule:: pytext.trainers.trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.trainers.training\_state module
+--------------------------------------
+
+.. automodule:: pytext.trainers.training_state
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.trainers
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+distance_output_layer
+=====================
+
+
+.. toctree::
+
+  pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.Config

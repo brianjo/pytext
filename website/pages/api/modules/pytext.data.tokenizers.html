@@ -1,0 +1,335 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-data-tokenizers-package">
+<h1>pytext.data.tokenizers package<a class="headerlink" href="#pytext-data-tokenizers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.data.tokenizers.tokenizer">
+<span id="pytext-data-tokenizers-tokenizer-module"></span><h2>pytext.data.tokenizers.tokenizer module<a class="headerlink" href="#module-pytext.data.tokenizers.tokenizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.BERTInitialTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">BERTInitialTokenizer</code><span class="sig-paren">(</span><em class="sig-param">basic_tokenizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#BERTInitialTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.BERTInitialTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Basic initial tokenization for BERT.  This is run prior to word piece, does
+white space tokenization in addition to lower-casing and accent removal
+if specified.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#BERTInitialTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">text</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#BERTInitialTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.BERTInitialTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tokenizes a piece of text.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.CppProcessorMixin">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">CppProcessorMixin</code><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#CppProcessorMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.CppProcessorMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Cpp processors like SentencePiece don’t pickle well; reload them.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.DoNothingTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">DoNothingTokenizer</code><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.DoNothingTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Tokenizer that takes a list of strings and converts to a list of Tokens.
+Useful in cases where tokenizer is run before-hand</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.DoNothingTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.DoNothingTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.DoNothingTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.DoNothingTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input: List[str]</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.DoNothingTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.DoNothingTokenizer.torchscriptify">
+<code class="sig-name descname">torchscriptify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer.torchscriptify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.DoNothingTokenizer.torchscriptify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.GPT2BPETokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">GPT2BPETokenizer</code><span class="sig-paren">(</span><em class="sig-param">bpe: fairseq.data.encoders.gpt2_bpe_utils.Encoder</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#GPT2BPETokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.GPT2BPETokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Tokenizer for gpt-2 and RoBERTa.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#GPT2BPETokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_str: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#GPT2BPETokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.PickleableGPT2BPEEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">PickleableGPT2BPEEncoder</code><span class="sig-paren">(</span><em class="sig-param">encoder</em>, <em class="sig-param">bpe_merges</em>, <em class="sig-param">errors='replace'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#PickleableGPT2BPEEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.PickleableGPT2BPEEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">fairseq.data.encoders.gpt2_bpe_utils.Encoder</span></code></p>
+<p>Fairseq’s encoder stores the regex module as a local reference on its encoders,
+which means they can’t be saved via pickle.dumps or torch.save. This modified
+their save/load logic doesn’t store the module, and restores the reference
+after re-inflating.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.SentencePieceTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">SentencePieceTokenizer</code><span class="sig-paren">(</span><em class="sig-param">sp_model_path: str = ''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#SentencePieceTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.SentencePieceTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a>, <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.CppProcessorMixin" title="pytext.data.tokenizers.tokenizer.CppProcessorMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.CppProcessorMixin</span></code></a></p>
+<p>Sentence piece tokenizer.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#SentencePieceTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_str: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#SentencePieceTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.Token">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">Token</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">start</em>, <em class="sig-param">end</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.Token.end">
+<em class="property">property </em><code class="sig-name descname">end</code><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Token.end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.Token.start">
+<em class="property">property </em><code class="sig-name descname">start</code><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Token.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.Token.value">
+<em class="property">property </em><code class="sig-name descname">value</code><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Token.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.Tokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">Tokenizer</code><span class="sig-paren">(</span><em class="sig-param">split_regex='\s+'</em>, <em class="sig-param">lowercase=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>A simple regex-splitting tokenizer.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.Tokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.Tokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Tokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.Tokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Tokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.Tokenizer.torchscriptify">
+<code class="sig-name descname">torchscriptify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer.torchscriptify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.Tokenizer.torchscriptify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.tokenizer.WordPieceTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.tokenizer.</code><code class="sig-name descname">WordPieceTokenizer</code><span class="sig-paren">(</span><em class="sig-param">wordpiece_vocab</em>, <em class="sig-param">basic_tokenizer</em>, <em class="sig-param">wordpiece_tokenizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#WordPieceTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.WordPieceTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Word piece tokenizer for BERT models.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.WordPieceTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.WordPieceTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#WordPieceTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.WordPieceTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.tokenizer.WordPieceTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_str: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#WordPieceTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.tokenizer.WordPieceTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.data.tokenizers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.data.tokenizers" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.tokenizers.GPT2BPETokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">GPT2BPETokenizer</code><span class="sig-paren">(</span><em class="sig-param">bpe: fairseq.data.encoders.gpt2_bpe_utils.Encoder</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#GPT2BPETokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.GPT2BPETokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Tokenizer for gpt-2 and RoBERTa.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.GPT2BPETokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#GPT2BPETokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.GPT2BPETokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.GPT2BPETokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_str: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#GPT2BPETokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.GPT2BPETokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.Token">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">Token</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">start</em>, <em class="sig-param">end</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.Token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.Token.end">
+<em class="property">property </em><code class="sig-name descname">end</code><a class="headerlink" href="#pytext.data.tokenizers.Token.end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.Token.start">
+<em class="property">property </em><code class="sig-name descname">start</code><a class="headerlink" href="#pytext.data.tokenizers.Token.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.Token.value">
+<em class="property">property </em><code class="sig-name descname">value</code><a class="headerlink" href="#pytext.data.tokenizers.Token.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.Tokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">Tokenizer</code><span class="sig-paren">(</span><em class="sig-param">split_regex='\s+'</em>, <em class="sig-param">lowercase=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.Tokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>A simple regex-splitting tokenizer.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.Tokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.Tokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.Tokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.Tokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.Tokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.Tokenizer.torchscriptify">
+<code class="sig-name descname">torchscriptify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#Tokenizer.torchscriptify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.Tokenizer.torchscriptify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.DoNothingTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">DoNothingTokenizer</code><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.DoNothingTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Tokenizer that takes a list of strings and converts to a list of Tokens.
+Useful in cases where tokenizer is run before-hand</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.DoNothingTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.DoNothingTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.DoNothingTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.DoNothingTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input: List[str]</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.DoNothingTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.DoNothingTokenizer.torchscriptify">
+<code class="sig-name descname">torchscriptify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#DoNothingTokenizer.torchscriptify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.DoNothingTokenizer.torchscriptify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.WordPieceTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">WordPieceTokenizer</code><span class="sig-paren">(</span><em class="sig-param">wordpiece_vocab</em>, <em class="sig-param">basic_tokenizer</em>, <em class="sig-param">wordpiece_tokenizer</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#WordPieceTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.WordPieceTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a></p>
+<p>Word piece tokenizer for BERT models.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.WordPieceTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.WordPieceTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#WordPieceTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.WordPieceTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.WordPieceTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_str: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#WordPieceTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.WordPieceTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.CppProcessorMixin">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">CppProcessorMixin</code><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#CppProcessorMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.CppProcessorMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Cpp processors like SentencePiece don’t pickle well; reload them.</p>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.tokenizers.SentencePieceTokenizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.tokenizers.</code><code class="sig-name descname">SentencePieceTokenizer</code><span class="sig-paren">(</span><em class="sig-param">sp_model_path: str = ''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#SentencePieceTokenizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.SentencePieceTokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.Tokenizer" title="pytext.data.tokenizers.tokenizer.Tokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.Tokenizer</span></code></a>, <a class="reference internal" href="#pytext.data.tokenizers.tokenizer.CppProcessorMixin" title="pytext.data.tokenizers.tokenizer.CppProcessorMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.tokenizers.tokenizer.CppProcessorMixin</span></code></a></p>
+<p>Sentence piece tokenizer.</p>
+<dl class="method">
+<dt id="pytext.data.tokenizers.SentencePieceTokenizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.data.tokenizers.tokenizer.SentencePieceTokenizer.Config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#SentencePieceTokenizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.SentencePieceTokenizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.tokenizers.SentencePieceTokenizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_str: str</em><span class="sig-paren">)</span> → List[pytext.data.tokenizers.tokenizer.Token]<a class="reference internal" href="../_modules/pytext/data/tokenizers/tokenizer.html#SentencePieceTokenizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.tokenizers.SentencePieceTokenizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.data.html">pytext.data package</a><ul>
+<li>Previous: <a href="pytext.data.test.html" title="previous chapter">pytext.data.test package</a></li>
+<li>Next: <a href="pytext.exporters.html" title="next chapter">pytext.exporters package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

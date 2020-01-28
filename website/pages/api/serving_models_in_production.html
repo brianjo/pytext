@@ -1,0 +1,312 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="serve-models-in-production">
+<h1>Serve Models in Production<a class="headerlink" href="#serve-models-in-production" title="Permalink to this headline">¶</a></h1>
+<p>We have seen how to use PyText models in an app using Flask in the <a class="reference external" href="pytext_models_in_your_app.html">previous tutorial</a>, but the server implementation still requires a Python runtime. Caffe2 models are designed to perform well even in production scenarios with high requirements for performance and scalability.</p>
+<p>In this tutorial, we will implement a Thrift server in C++, in order to extract the maximum performance from our exported Caffe2 intent-slot model trained on the ATIS dataset. We will also prepare a Docker image which can be deployed to your cloud provider of choice.</p>
+<p>The full source code for the implemented server in this tutorial can be found in the <a class="reference external" href="https://github.com/facebookresearch/pytext/tree/master/demo/predictor_service">demos directory</a>.</p>
+<p>To complete this tutorial, you will need to have <a class="reference external" href="https://www.docker.com/products/docker-desktop">Docker</a> installed.</p>
+<div class="section" id="create-a-dockerfile-and-install-dependencies">
+<h2>1. Create a Dockerfile and install dependencies<a class="headerlink" href="#create-a-dockerfile-and-install-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>The first step is to prepare our Docker image with the necessary dependencies. In an empty, folder, create a <em>Dockerfile</em> with the <a class="reference external" href="https://github.com/facebookresearch/pytext/tree/master/demo/predictor_service/Dockerfile">following contents</a>:</p>
+<p><strong>Dockerfile</strong></p>
+<div class="highlight-dockerfile notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> ubuntu:16.04</span>
+
+<span class="c"># Install Caffe2 + dependencies</span>
+<span class="k">RUN</span> apt-get update <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends <span class="se">\</span>
+  build-essential <span class="se">\</span>
+  git <span class="se">\</span>
+  libgoogle-glog-dev <span class="se">\</span>
+  libgtest-dev <span class="se">\</span>
+  libiomp-dev <span class="se">\</span>
+  libleveldb-dev <span class="se">\</span>
+  liblmdb-dev <span class="se">\</span>
+  libopencv-dev <span class="se">\</span>
+  libopenmpi-dev <span class="se">\</span>
+  libsnappy-dev <span class="se">\</span>
+  openmpi-bin <span class="se">\</span>
+  openmpi-doc <span class="se">\</span>
+  python-dev <span class="se">\</span>
+  python-pip
+<span class="k">RUN</span> pip install --upgrade pip
+<span class="k">RUN</span> pip install setuptools wheel
+<span class="k">RUN</span> pip install future numpy protobuf typing hypothesis pyyaml
+<span class="k">RUN</span> apt-get install -y --no-install-recommends <span class="se">\</span>
+      libgflags-dev <span class="se">\</span>
+      cmake
+<span class="k">RUN</span> git clone https://github.com/pytorch/pytorch.git
+<span class="k">WORKDIR</span><span class="s"> pytorch</span>
+<span class="k">RUN</span> git submodule update --init --recursive
+<span class="k">RUN</span> python setup.py install
+
+<span class="c"># Install Thrift + dependencies</span>
+<span class="k">WORKDIR</span><span class="s"> /</span>
+<span class="k">RUN</span> apt-get update <span class="o">&amp;&amp;</span> apt-get install -y <span class="se">\</span>
+  libboost-dev <span class="se">\</span>
+  libboost-test-dev <span class="se">\</span>
+  libboost-program-options-dev <span class="se">\</span>
+  libboost-filesystem-dev <span class="se">\</span>
+  libboost-thread-dev <span class="se">\</span>
+  libevent-dev <span class="se">\</span>
+  automake <span class="se">\</span>
+  libtool <span class="se">\</span>
+  curl <span class="se">\</span>
+  flex <span class="se">\</span>
+  bison <span class="se">\</span>
+  pkg-config <span class="se">\</span>
+  libssl-dev
+<span class="k">RUN</span> curl https://www-us.apache.org/dist/thrift/0.11.0/thrift-0.11.0.tar.gz --output thrift-0.11.0.tar.gz
+<span class="k">RUN</span> tar -xvf thrift-0.11.0.tar.gz
+<span class="k">WORKDIR</span><span class="s"> thrift-0.11.0</span>
+<span class="k">RUN</span> ./bootstrap.sh
+<span class="k">RUN</span> ./configure
+<span class="k">RUN</span> make
+<span class="k">RUN</span> make install
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-thrift-api">
+<h2>2. Add Thrift API<a class="headerlink" href="#add-thrift-api" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://thrift.apache.org/">Thrift</a> is a software library for developing scalable cross-language services. It comes with a client code generation engine enabling services to be interfaced across the network on multiple languages or devices. We will use Thrift to create a service which serves our model.</p>
+<p>Our C++ server will expose a very simple API that receives an sentence/utterance as a string, and return a map of label names(<cite>string</cite>) -&gt; scores(<cite>list&lt;double&gt;</cite>). For document scores, the list will only contain one score, and for word scores, the list will contain one score per word. The corresponding thrift spec fo the API is below:</p>
+<p><strong>predictor.thrift</strong></p>
+<div class="highlight-thrift notranslate"><div class="highlight"><pre><span></span><span class="kn">namespace</span><span class="w"> </span><span class="nn">cpp</span><span class="w"> </span><span class="n">predictor_service</span><span class="w"></span>
+
+<span class="kd">service</span><span class="w"> </span><span class="nc">Predictor</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">   </span><span class="c">// Returns list of scores for each label</span>
+<span class="w">   </span><span class="kt">map</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="kt">list</span><span class="p">&lt;</span><span class="kt">double</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="nf">predict</span><span class="o">(</span><span class="mi">1</span><span class="p">:</span><span class="kt">string</span><span class="w"> </span><span class="n">doc</span><span class="p">),</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="implement-server-code">
+<h2>3. Implement server code<a class="headerlink" href="#implement-server-code" title="Permalink to this headline">¶</a></h2>
+<p>Now, we will write our server’s code. The first thing our server needs to be able to do is to load the model from a file path into the Caffe2 workspace and initialize it. We do that in the constructor of our <code class="docutils literal notranslate"><span class="pre">PredictorHandler</span></code> thrift server class:</p>
+<p><strong>server.cpp</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">PredictorHandler</span> <span class="o">:</span> <span class="k">virtual</span> <span class="k">public</span> <span class="n">PredictorIf</span> <span class="p">{</span>
+  <span class="k">private</span><span class="o">:</span>
+    <span class="n">NetDef</span> <span class="n">mPredictNet</span><span class="p">;</span>
+    <span class="n">Workspace</span> <span class="n">mWorkspace</span><span class="p">;</span>
+
+    <span class="n">NetDef</span> <span class="nf">loadAndInitModel</span><span class="p">(</span><span class="n">Workspace</span><span class="o">&amp;</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">modelFile</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">auto</span> <span class="n">db</span> <span class="o">=</span> <span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">DBReader</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span> <span class="n">DBReader</span><span class="p">(</span><span class="s">"minidb"</span><span class="p">,</span> <span class="n">modelFile</span><span class="p">));</span>
+      <span class="k">auto</span> <span class="n">metaNetDef</span> <span class="o">=</span> <span class="n">runGlobalInitialization</span><span class="p">(</span><span class="n">move</span><span class="p">(</span><span class="n">db</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">workspace</span><span class="p">);</span>
+      <span class="k">const</span> <span class="k">auto</span> <span class="n">predictInitNet</span> <span class="o">=</span> <span class="n">getNet</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">metaNetDef</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span>
+        <span class="n">PredictorConsts</span><span class="o">::</span><span class="n">default_instance</span><span class="p">().</span><span class="n">predict_init_net_type</span><span class="p">()</span>
+      <span class="p">);</span>
+      <span class="n">CAFFE_ENFORCE</span><span class="p">(</span><span class="n">workspace</span><span class="p">.</span><span class="n">RunNetOnce</span><span class="p">(</span><span class="n">predictInitNet</span><span class="p">));</span>
+
+      <span class="k">auto</span> <span class="n">predictNet</span> <span class="o">=</span> <span class="n">NetDef</span><span class="p">(</span><span class="n">getNet</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">metaNetDef</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span>
+        <span class="n">PredictorConsts</span><span class="o">::</span><span class="n">default_instance</span><span class="p">().</span><span class="n">predict_net_type</span><span class="p">()</span>
+      <span class="p">));</span>
+      <span class="n">CAFFE_ENFORCE</span><span class="p">(</span><span class="n">workspace</span><span class="p">.</span><span class="n">CreateNet</span><span class="p">(</span><span class="n">predictNet</span><span class="p">));</span>
+
+      <span class="k">return</span> <span class="n">predictNet</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">...</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="n">PredictorHandler</span><span class="p">(</span><span class="n">string</span> <span class="o">&amp;</span><span class="n">modelFile</span><span class="p">)</span><span class="o">:</span> <span class="n">mWorkspace</span><span class="p">(</span><span class="s">"workspace"</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">mPredictNet</span> <span class="o">=</span> <span class="n">loadAndInitModel</span><span class="p">(</span><span class="n">mWorkspace</span><span class="p">,</span> <span class="n">modelFile</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Now that our model is loaded, we need to implement the <cite>predict</cite> API method which is our main interface to clients. The implementation needs to do the following:</p>
+<ol class="arabic simple">
+<li><p>Pre-process the input sentence into tokens</p></li>
+<li><p>Feed the input as tensors to the model</p></li>
+<li><p>Run the model</p></li>
+<li><p>Extract and populate the results into the response</p></li>
+</ol>
+<p><strong>server.cpp</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">PredictorHandler</span> <span class="o">:</span> <span class="k">virtual</span> <span class="k">public</span> <span class="n">PredictorIf</span> <span class="p">{</span>
+<span class="p">...</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="kt">void</span> <span class="n">predict</span><span class="p">(</span><span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;&amp;</span> <span class="n">_return</span><span class="p">,</span> <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">doc</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// Pre-process: tokenize input doc</span>
+      <span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">tokens</span><span class="p">;</span>
+      <span class="n">string</span> <span class="n">docCopy</span> <span class="o">=</span> <span class="n">doc</span><span class="p">;</span>
+      <span class="n">tokenize</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">docCopy</span><span class="p">);</span>
+
+      <span class="c1">// Feed input to model as tensors</span>
+      <span class="n">Tensor</span> <span class="n">valTensor</span> <span class="o">=</span> <span class="n">TensorCPUFromValues</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="p">{</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tokens</span><span class="p">.</span><span class="n">size</span><span class="p">())},</span> <span class="p">{</span><span class="n">tokens</span><span class="p">}</span>
+      <span class="p">);</span>
+      <span class="n">BlobGetMutableTensor</span><span class="p">(</span><span class="n">mWorkspace</span><span class="p">.</span><span class="n">CreateBlob</span><span class="p">(</span><span class="s">"tokens_vals_str:value"</span><span class="p">),</span> <span class="n">CPU</span><span class="p">)</span>
+        <span class="o">-&gt;</span><span class="n">CopyFrom</span><span class="p">(</span><span class="n">valTensor</span><span class="p">);</span>
+      <span class="n">Tensor</span> <span class="n">lensTensor</span> <span class="o">=</span> <span class="n">TensorCPUFromValues</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="p">{</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">)},</span> <span class="p">{</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tokens</span><span class="p">.</span><span class="n">size</span><span class="p">())}</span>
+      <span class="p">);</span>
+      <span class="n">BlobGetMutableTensor</span><span class="p">(</span><span class="n">mWorkspace</span><span class="p">.</span><span class="n">CreateBlob</span><span class="p">(</span><span class="s">"tokens_lens"</span><span class="p">),</span> <span class="n">CPU</span><span class="p">)</span>
+        <span class="o">-&gt;</span><span class="n">CopyFrom</span><span class="p">(</span><span class="n">lensTensor</span><span class="p">);</span>
+
+      <span class="c1">// Run the model</span>
+      <span class="n">CAFFE_ENFORCE</span><span class="p">(</span><span class="n">mWorkspace</span><span class="p">.</span><span class="n">RunNet</span><span class="p">(</span><span class="n">mPredictNet</span><span class="p">.</span><span class="n">name</span><span class="p">()));</span>
+
+      <span class="c1">// Extract and populate results into the response</span>
+      <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mPredictNet</span><span class="p">.</span><span class="n">external_output</span><span class="p">().</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">string</span> <span class="n">label</span> <span class="o">=</span> <span class="n">mPredictNet</span><span class="p">.</span><span class="n">external_output</span><span class="p">()[</span><span class="n">i</span><span class="p">];</span>
+        <span class="n">_return</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">();</span>
+        <span class="n">Tensor</span> <span class="n">scoresTensor</span> <span class="o">=</span> <span class="n">mWorkspace</span><span class="p">.</span><span class="n">GetBlob</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Get</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">();</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">scoresTensor</span><span class="p">.</span><span class="n">numel</span><span class="p">();</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+          <span class="kt">float</span> <span class="n">score</span> <span class="o">=</span> <span class="n">scoresTensor</span><span class="p">.</span><span class="n">data</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">()[</span><span class="n">j</span><span class="p">];</span>
+          <span class="n">_return</span><span class="p">[</span><span class="n">label</span><span class="p">].</span><span class="n">push_back</span><span class="p">(</span><span class="n">score</span><span class="p">);</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The full source code for <em>server.cpp</em> can be found <a class="reference external" href="https://github.com/facebookresearch/pytext/tree/master/demo/predictor_service/server.cpp">here</a>.</p>
+<p>Note: The source code in the demo also implements a REST proxy for the Thrift server to make it easy to test and make calls over simple HTTP, however it is not covered in the scope of this tutorial since the Thrift protocol is what we’ll use in production.</p>
+</div>
+<div class="section" id="build-and-compile-scripts">
+<h2>4. Build and compile scripts<a class="headerlink" href="#build-and-compile-scripts" title="Permalink to this headline">¶</a></h2>
+<p>To build our server, we need to provide necessary headers during compile time and the required dependent libraries during link time: <em>libthrift.so</em>, <em>libcaffe2.so</em>, <em>libprotobuf.so</em> and <em>libc10.so</em>. The <em>Makefile</em> below does this:</p>
+<p><strong>Makefile</strong></p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">CPPFLAGS</span> <span class="o">+=</span> -g -std<span class="o">=</span>c++11 -std<span class="o">=</span>c++14 <span class="se">\</span>
+  -I./gen-cpp <span class="se">\</span>
+  -I/pytorch -I/pytorch/build <span class="se">\</span>
+      -I/pytorch/aten/src/ <span class="se">\</span>
+      -I/pytorch/third_party/protobuf/src/
+<span class="nv">CLIENT_LDFLAGS</span> <span class="o">+=</span> -lthrift
+<span class="nv">SERVER_LDFLAGS</span> <span class="o">+=</span> -L/pytorch/build/lib -lthrift -lcaffe2 -lprotobuf -lc10
+
+<span class="c"># ...</span>
+
+<span class="nf">server</span><span class="o">:</span> <span class="n">server</span>.<span class="n">o</span> <span class="n">gen</span>-<span class="n">cpp</span>/<span class="n">Predictor</span>.<span class="n">o</span>
+      g++ $^ <span class="k">$(</span>SERVER_LDFLAGS<span class="k">)</span> -o <span class="nv">$@</span>
+
+<span class="nf">clean</span><span class="o">:</span>
+      rm -f *.o server
+</pre></div>
+</div>
+<p>In our <em>Dockerfile</em>, we also add some steps to copy our local files into the docker image, compile the app, and add the necessary library search paths.</p>
+<p><strong>Dockerfile</strong></p>
+<div class="highlight-Dockerfile notranslate"><div class="highlight"><pre><span></span><span class="c"># Copy local files to /app</span>
+<span class="k">COPY</span> . /app
+<span class="k">WORKDIR</span><span class="s"> /app</span>
+
+<span class="c"># Compile app</span>
+<span class="k">RUN</span> thrift -r --gen cpp predictor.thrift
+<span class="k">RUN</span> make
+
+<span class="c"># Add library search paths</span>
+<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">'/pytorch/build/lib/'</span> &gt;&gt; /etc/ld.so.conf.d/local.conf
+<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">'/usr/local/lib/'</span> &gt;&gt; /etc/ld.so.conf.d/local.conf
+<span class="k">RUN</span> ldconfig
+</pre></div>
+</div>
+</div>
+<div class="section" id="test-run-the-server">
+<h2>5. Test/Run the server<a class="headerlink" href="#test-run-the-server" title="Permalink to this headline">¶</a></h2>
+<p>This section assumes that your local files match the one found <a class="reference external" href="https://github.com/facebookresearch/pytext/tree/master/demo/predictor">here</a>.</p>
+<p>Now that you have implemented your server, we will run the following commands to take it for a test run. In your server folder:</p>
+<ol class="arabic simple">
+<li><p>Build the image:</p></li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker build -t predictor_service .
+</pre></div>
+</div>
+<p>If successful, you should see the message “Successfully tagged predictor_service:latest”.</p>
+<ol class="arabic simple" start="2">
+<li><p>Run the server. We use <em>models/atis_joint_model.c2</em> as the local path to our model file (add your trained model there):</p></li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker run -it -p <span class="m">8080</span>:8080 predictor_service:latest ./server models/atis_joint_model.c2
+</pre></div>
+</div>
+<p>If successful, you should see the message “Server running. Thrift port: 9090, REST port: 8080”</p>
+<ol class="arabic simple" start="3">
+<li><p>Test our server by sending a test utterance “Flight from Seattle to San Francisco”:</p></li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -G <span class="s2">"http://localhost:8080"</span> --data-urlencode <span class="s2">"doc=Flights from Seattle to San Francisco"</span>
+</pre></div>
+</div>
+<p>If successful, you should see the scores printed out on the console. On further inspection, the doc score for “flight”, the 3rd word score for “B-fromloc.city_name” corresponding to “Seattle”, the 5th word score for “B-toloc.city_name” corresponding to “San”, and the 6th word score for “I-toloc.city_name” corresponding to “Francisco” should be close to 0.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">doc_scores</span><span class="p">:</span><span class="n">flight</span><span class="p">:</span><span class="o">-</span><span class="mf">2.07426e-05</span>
+<span class="n">word_scores</span><span class="p">:</span><span class="n">B</span><span class="o">-</span><span class="n">fromloc</span><span class="o">.</span><span class="n">city_name</span><span class="p">:</span><span class="o">-</span><span class="mf">14.5363</span> <span class="o">-</span><span class="mf">12.8977</span> <span class="o">-</span><span class="mf">0.000172928</span> <span class="o">-</span><span class="mf">12.9868</span> <span class="o">-</span><span class="mf">9.94603</span> <span class="o">-</span><span class="mf">16.0366</span>
+<span class="n">word_scores</span><span class="p">:</span><span class="n">B</span><span class="o">-</span><span class="n">toloc</span><span class="o">.</span><span class="n">city_name</span><span class="p">:</span><span class="o">-</span><span class="mf">15.2309</span> <span class="o">-</span><span class="mf">15.9051</span> <span class="o">-</span><span class="mf">9.89932</span> <span class="o">-</span><span class="mf">12.077</span> <span class="o">-</span><span class="mf">0.000134</span> <span class="o">-</span><span class="mf">8.52712</span>
+<span class="n">word_scores</span><span class="p">:</span><span class="n">I</span><span class="o">-</span><span class="n">toloc</span><span class="o">.</span><span class="n">city_name</span><span class="p">:</span><span class="o">-</span><span class="mf">13.1989</span> <span class="o">-</span><span class="mf">16.8094</span> <span class="o">-</span><span class="mf">15.9375</span> <span class="o">-</span><span class="mf">12.5332</span> <span class="o">-</span><span class="mf">10.7318</span> <span class="o">-</span><span class="mf">0.000501401</span>
+</pre></div>
+</div>
+<p>Congratulations! You have now built your own server that can serve your PyText models in production!</p>
+<p>We also provide a <a class="reference external" href="https://hub.docker.com/r/pytext/predictor_service">Docker image on Docker Hub</a> with this example, which you can freely use and adapt to your needs.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="pytext_models_in_your_app.html" title="previous chapter">Use PyText models in your app</a></li>
+<li>Next: <a href="config_files.html" title="next chapter">Config Files Explained</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,7 @@
+intent_slot_model_decoder
+=========================
+
+
+.. toctree::
+
+  pytext.models.decoders.intent_slot_model_decoder.IntentSlotModelDecoder.Config

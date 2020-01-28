@@ -1,0 +1,199 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.embeddings.embedding_list</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">ModuleList</span>
+<span class="kn">from</span> <span class="nn">torch.utils.tensorboard</span> <span class="kn">import</span> <span class="n">SummaryWriter</span>
+
+<span class="kn">from</span> <span class="nn">.embedding_base</span> <span class="kn">import</span> <span class="n">EmbeddingBase</span>
+
+
+<div class="viewcode-block" id="EmbeddingList"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.embedding_list.EmbeddingList">[docs]</a><span class="k">class</span> <span class="nc">EmbeddingList</span><span class="p">(</span><span class="n">EmbeddingBase</span><span class="p">,</span> <span class="n">ModuleList</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    There are more than one way to embed a token and this module provides a way</span>
+<span class="sd">    to generate a list of sub-embeddings, concat embedding tensors into a single</span>
+<span class="sd">    Tensor or return a tuple of Tensors that can be used by downstream modules.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        embeddings (Iterable[EmbeddingBase]): A sequence of embedding modules to</span>
+<span class="sd">        embed a token.</span>
+<span class="sd">        concat (bool): Whether to concatenate the embedding vectors emitted from</span>
+<span class="sd">        `embeddings` modules.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_emb_modules (int): Number of flattened embeddings in `embeddings`,</span>
+<span class="sd">            e.g: ((e1, e2), e3) has 3 in total</span>
+<span class="sd">        input_start_indices (List[int]): List of indices of the sub-embeddings</span>
+<span class="sd">            in the embedding list.</span>
+<span class="sd">        concat (bool): Whether to concatenate the embedding vectors emitted from</span>
+<span class="sd">            `embeddings` modules.</span>
+<span class="sd">        embedding_dim: Total embedding size, can be a single int or tuple of</span>
+<span class="sd">            int depending on concat setting</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">EmbeddingBase</span><span class="p">],</span> <span class="n">concat</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">EmbeddingBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_emb_modules</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">emb</span><span class="o">.</span><span class="n">num_emb_modules</span> <span class="k">for</span> <span class="n">emb</span> <span class="ow">in</span> <span class="n">embeddings</span><span class="p">)</span>
+        <span class="n">embeddings_list</span><span class="p">,</span> <span class="n">input_start_indices</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">emb</span> <span class="ow">in</span> <span class="n">embeddings</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">emb</span><span class="o">.</span><span class="n">embedding_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">embeddings_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">emb</span><span class="p">)</span>
+                <span class="n">input_start_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+            <span class="n">start</span> <span class="o">+=</span> <span class="n">emb</span><span class="o">.</span><span class="n">num_emb_modules</span>
+        <span class="n">ModuleList</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_start_indices</span> <span class="o">=</span> <span class="n">input_start_indices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">concat</span> <span class="o">=</span> <span class="n">concat</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"must have at least 1 sub embedding"</span>
+        <span class="n">embedding_dims</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">emb</span><span class="o">.</span><span class="n">embedding_dim</span> <span class="k">for</span> <span class="n">emb</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dim</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">embedding_dims</span><span class="p">)</span> <span class="k">if</span> <span class="n">concat</span> <span class="k">else</span> <span class="n">embedding_dims</span>
+
+<div class="viewcode-block" id="EmbeddingList.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.embedding_list.EmbeddingList.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">emb_input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Get embeddings from all sub-embeddings and either concatenate them</span>
+<span class="sd">        into one Tensor or return them in a tuple.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *emb_input (type): Sequence of token level embeddings to combine.</span>
+<span class="sd">                The inputs should match the size of configured embeddings. Each</span>
+<span class="sd">                of them is either a Tensor or a tuple of Tensors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Union[torch.Tensor, Tuple[torch.Tensor]]: If `concat` is True then</span>
+<span class="sd">                a Tensor is returned by concatenating all embeddings. Otherwise</span>
+<span class="sd">                all embeddings are returned in a tuple.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># tokens dim: (bsz, max_seq_len) -&gt; (bsz, max_seq_len, dim) OR</span>
+        <span class="c1"># (bsz, max_num_sen, max_seq_len) -&gt; (bsz, max_num_sen, max_seq_len, dim)</span>
+        <span class="c1"># for seqnn</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_emb_modules</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">emb_input</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"expecting {self.num_emb_modules} embeddings, "</span>
+                <span class="o">+</span> <span class="n">f</span><span class="s2">"but got {len(emb_input)} input"</span>
+            <span class="p">)</span>
+        <span class="n">tensors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">emb</span><span class="p">,</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_start_indices</span><span class="p">):</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">emb</span><span class="o">.</span><span class="n">num_emb_modules</span>
+            <span class="nb">input</span> <span class="o">=</span> <span class="n">emb_input</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+            <span class="c1"># single embedding</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># the input for the single embedding is a tuple or list of tensors</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
+                    <span class="p">[</span><span class="nb">input</span><span class="p">]</span> <span class="o">=</span> <span class="nb">input</span>
+            <span class="n">emb_tensor</span> <span class="o">=</span> <span class="n">emb</span><span class="p">(</span><span class="o">*</span><span class="nb">input</span><span class="p">)</span>
+            <span class="n">tensors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">emb_tensor</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">concat</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">tensors</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">tensors</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="EmbeddingList.get_param_groups_for_optimizer"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.embedding_list.EmbeddingList.get_param_groups_for_optimizer">[docs]</a>    <span class="k">def</span> <span class="nf">get_param_groups_for_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">]]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Organize child embedding parameters into param_groups (or layers), so the</span>
+<span class="sd">        optimizer and / or schedulers can have custom behavior per layer. The</span>
+<span class="sd">        param_groups from each child embedding are aligned at the first (lowest)</span>
+<span class="sd">        param_group.</span>
+<span class="sd">        """</span>
+        <span class="n">param_groups</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">embedding_module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_children</span><span class="p">():</span>
+            <span class="n">child_params</span> <span class="o">=</span> <span class="n">embedding_module</span><span class="o">.</span><span class="n">get_param_groups_for_optimizer</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">child_param_group</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">child_params</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_groups</span><span class="p">):</span>
+                    <span class="n">param_groups</span><span class="o">.</span><span class="n">append</span><span class="p">({})</span>
+
+                <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">child_param_group</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">param_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">)</span>
+                    <span class="n">param_groups</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+
+        <span class="k">return</span> <span class="n">param_groups</span></div>
+
+<div class="viewcode-block" id="EmbeddingList.visualize"><a class="viewcode-back" href="../../../../modules/pytext.models.embeddings.html#pytext.models.embeddings.embedding_list.EmbeddingList.visualize">[docs]</a>    <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">summary_writer</span><span class="p">:</span> <span class="n">SummaryWriter</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">summary_writer</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

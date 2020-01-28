@@ -1,0 +1,49 @@
+BaggingIntentSlotEnsembleModel.Config
+=====================================
+
+
+
+**Component:** :class:`BaggingIntentSlotEnsembleModel  <pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.ensembles.bagging_intent_slot_ensemble
+.. py:class:: BaggingIntentSlotEnsembleModel.Config
+  :noindex:
+
+  **Bases:** :class:`EnsembleModel.Config <pytext.models.ensembles.ensemble.EnsembleModel.Config>`\ 
+
+  Configuration class for `BaggingIntentSlotEnsemble`.
+  These attributes are used by `Ensemble.from_config()` to construct
+  instance of `BaggingIntentSlotEnsemble`.
+  
+  .. attribute:: models
+  
+     List of intent-slot model
+     configurations.
+  
+     :type: List[IntentSlotModel.Config]
+  
+  .. attribute:: output_layer
+  
+     Output layer of intent-slot
+     model responsible for computing loss and predictions.
+  
+     :type: IntentSlotOutputLayer
+  
+
+**All Attributes (including base classes)**
+
+  **models**: list[:doc:`IntentSlotModel.Config <pytext.models.joint_model.IntentSlotModel.Config>`]
+    \ 
+
+  **sample_rate**: float = ``1.0``
+    \ 
+
+  **use_crf**: bool = ``False``
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

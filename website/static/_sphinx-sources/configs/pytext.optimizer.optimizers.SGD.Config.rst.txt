@@ -1,0 +1,36 @@
+SGD.Config
+==========
+
+
+
+**Component:** :class:`SGD  <pytext.optimizer.optimizers.SGD>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.optimizers
+.. py:class:: SGD.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **lr**: float = ``0.001``
+    \ 
+
+  **momentum**: float = ``0.0``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "lr": 0.001,
+      "momentum": 0.0
+  }

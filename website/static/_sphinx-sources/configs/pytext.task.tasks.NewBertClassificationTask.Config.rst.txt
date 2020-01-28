@@ -1,0 +1,196 @@
+NewBertClassificationTask.Config
+================================
+
+
+
+**Component:** :class:`NewBertClassificationTask  <pytext.task.tasks.NewBertClassificationTask>`\ 
+
+
+.. py:currentmodule:: pytext.task.tasks
+.. py:class:: NewBertClassificationTask.Config
+  :noindex:
+
+  **Bases:** :class:`DocumentClassificationTask.Config <pytext.task.tasks.DocumentClassificationTask.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **data**: :doc:`Data.Config <pytext.data.data.Data.Config>` = :doc:`Data.Config <pytext.data.data.Data.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>` = :doc:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ ()
+    \ 
+
+  **model**: :doc:`NewBertModel.Config <pytext.models.bert_classification_models.NewBertModel.Config>` = :doc:`NewBertModel.Config <pytext.models.bert_classification_models.NewBertModel.Config>`\ ()
+    \ 
+
+  **metric_reporter**: Union[:doc:`ClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config>`, :doc:`PureLossMetricReporter.Config <pytext.metric_reporters.metric_reporter.PureLossMetricReporter.Config>`] = :doc:`ClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "data": {
+          "Data": {
+              "source": {
+                  "TSVDataSource": {
+                      "column_mapping": {},
+                      "train_filename": null,
+                      "test_filename": null,
+                      "eval_filename": null,
+                      "field_names": null,
+                      "delimiter": "\t",
+                      "quoted": false,
+                      "drop_incomplete_rows": false
+                  }
+              },
+              "batcher": {
+                  "PoolingBatcher": {
+                      "train_batch_size": 16,
+                      "eval_batch_size": 16,
+                      "test_batch_size": 16,
+                      "pool_num_batches": 10000,
+                      "num_shuffled_pools": 1
+                  }
+              },
+              "sort_key": null,
+              "in_memory": true
+          }
+      },
+      "trainer": {
+          "TaskTrainer": {
+              "epochs": 10,
+              "early_stop_after": 0,
+              "max_clip_norm": null,
+              "report_train_metrics": true,
+              "target_time_limit_seconds": null,
+              "do_eval": true,
+              "load_best_model_after_train": true,
+              "num_samples_to_log_progress": 1000,
+              "num_accumulated_batches": 1,
+              "num_batches_per_epoch": null,
+              "optimizer": {
+                  "Adam": {
+                      "lr": 0.001,
+                      "weight_decay": 1e-05,
+                      "eps": 1e-08
+                  }
+              },
+              "scheduler": null,
+              "sparsifier": null,
+              "fp16_args": {
+                  "FP16OptimizerFairseq": {
+                      "init_loss_scale": 128,
+                      "scale_window": null,
+                      "scale_tolerance": 0.0,
+                      "threshold_loss_scale": null,
+                      "min_loss_scale": 0.0001
+                  }
+              }
+          }
+      },
+      "model": {
+          "inputs": {
+              "tokens": {
+                  "BERTTensorizer": {
+                      "is_input": true,
+                      "columns": [
+                          "text"
+                      ],
+                      "tokenizer": {
+                          "WordPieceTokenizer": {
+                              "basic_tokenizer": {
+                                  "split_regex": "\\s+",
+                                  "lowercase": true
+                              },
+                              "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                          }
+                      },
+                      "base_tokenizer": null,
+                      "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+                      "max_seq_len": 128
+                  }
+              },
+              "dense": null,
+              "labels": {
+                  "LabelTensorizer": {
+                      "is_input": false,
+                      "column": "label",
+                      "allow_unknown": false,
+                      "pad_in_vocab": false,
+                      "label_vocab": null
+                  }
+              },
+              "num_tokens": {
+                  "is_input": false,
+                  "names": [
+                      "tokens"
+                  ],
+                  "indexes": [
+                      2
+                  ]
+              }
+          },
+          "encoder": {
+              "HuggingFaceBertSentenceEncoder": {
+                  "load_path": null,
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null,
+                  "output_dropout": 0.4,
+                  "embedding_dim": 768,
+                  "pooling": "cls_token",
+                  "export": false,
+                  "bert_cpt_dir": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/",
+                  "load_weights": true
+              }
+          },
+          "decoder": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "hidden_dims": [],
+              "out_dim": null,
+              "layer_norm": false,
+              "dropout": 0.0,
+              "activation": "relu"
+          },
+          "output_layer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {
+                  "CrossEntropyLoss": {}
+              },
+              "label_weights": null
+          }
+      },
+      "metric_reporter": {
+          "ClassificationMetricReporter": {
+              "output_path": "/tmp/test_out.txt",
+              "pep_format": false,
+              "model_select_metric": "accuracy",
+              "target_label": null,
+              "text_column_names": [
+                  "text"
+              ],
+              "additional_column_names": [],
+              "recall_at_precision_thresholds": [
+                  0.2,
+                  0.4,
+                  0.6,
+                  0.8,
+                  0.9
+              ]
+          }
+      }
+  }

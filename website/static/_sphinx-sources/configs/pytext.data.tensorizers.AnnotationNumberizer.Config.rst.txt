@@ -1,0 +1,36 @@
+AnnotationNumberizer.Config
+===========================
+
+
+
+**Component:** :class:`AnnotationNumberizer  <pytext.data.tensorizers.AnnotationNumberizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: AnnotationNumberizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **column**: str = ``'seqlogical'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "column": "seqlogical"
+  }

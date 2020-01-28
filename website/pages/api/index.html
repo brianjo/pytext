@@ -1,0 +1,183 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-documentation">
+<h1>PyText Documentation<a class="headerlink" href="#pytext-documentation" title="Permalink to this headline">¶</a></h1>
+<p>PyText is a deep-learning based NLP modeling framework built on PyTorch. PyText addresses the often-conflicting requirements of enabling rapid experimentation and of serving models at scale. It achieves this by providing simple and extensible interfaces and abstractions for model components, and by using PyTorch’s capabilities of exporting models for inference via the optimized Caffe2 execution engine. We use PyText at Facebook to iterate quickly on new modeling ideas and then seamlessly ship them at scale.</p>
+<p><strong>Core PyText Features:</strong></p>
+<ul class="simple">
+<li><p>Production ready models for various NLP/NLU tasks:</p>
+<ul>
+<li><p>Text classifiers</p>
+<ul>
+<li><p><a class="reference external" href="https://arxiv.org/abs/1408.5882">Yoon Kim (2014): Convolutional Neural Networks for Sentence Classification</a></p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/1703.03130">Lin et al. (2017): A Structured Self-attentive Sentence Embedding</a></p></li>
+</ul>
+</li>
+<li><p>Sequence taggers</p>
+<ul>
+<li><p><a class="reference external" href="https://www.aclweb.org/anthology/N16-1030">Lample et al. (2016): Neural Architectures for Named Entity Recognition</a></p></li>
+</ul>
+</li>
+<li><p>Joint intent-slot model</p>
+<ul>
+<li><p><a class="reference external" href="https://www.ijcai.org/Proceedings/16/Papers/425.pdf">Zhang et al. (2016): A Joint Model of Intent Determination and Slot Filling for Spoken Language Understanding</a></p></li>
+</ul>
+</li>
+<li><p>Contextual intent-slot models</p></li>
+</ul>
+</li>
+<li><p>Extensible components that allow easy creation of new models and tasks</p></li>
+<li><p>Ensemble training support</p></li>
+<li><p>Distributed-training support (using the new C10d backend in PyTorch 1.0)</p></li>
+<li><p>Reference implementation and a pre-trained model for the paper: <a class="reference external" href="http://aclweb.org/anthology/D18-1300">Gupta et al. (2018): Semantic Parsing for Task Oriented Dialog using Hierarchical Representations</a></p></li>
+</ul>
+</div>
+<div class="section" id="how-to-use">
+<h1>How To Use<a class="headerlink" href="#how-to-use" title="Permalink to this headline">¶</a></h1>
+<p>Please follow the tutorial series in <strong>Getting Started</strong> to get a sense of how to train a basic model and deploy to production.</p>
+<p>After that, you can explore more options of builtin models and training methods in <strong>Training More Advanced Models</strong></p>
+<p>If you want to use PyText as a library and build your own models, please check the tutorial in <strong>Extending PyText</strong></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All the demo configs and test data for the tutorials can be found in source code. You can either install PyText from source or download the files manually from GitHub.</p>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.config.html">config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.data.html">data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.exporters.html">exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.loss.html">loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.metric_reporters.html">metric_reporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.models.html">models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.task.html">task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs/pytext.trainers.html">trainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="#">Documentation overview</a><ul>
+<li>Next: <a href="installation.html" title="next chapter">Installation</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

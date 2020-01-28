@@ -1,0 +1,7 @@
+ensemble
+========
+
+
+.. toctree::
+
+  pytext.models.ensembles.ensemble.EnsembleModel.Config

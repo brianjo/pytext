@@ -1,0 +1,7 @@
+pure_doc_attention
+==================
+
+
+.. toctree::
+
+  pytext.models.representations.pure_doc_attention.PureDocAttention.Config

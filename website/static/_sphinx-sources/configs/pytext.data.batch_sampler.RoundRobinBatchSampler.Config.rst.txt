@@ -1,0 +1,32 @@
+RoundRobinBatchSampler.Config
+=============================
+
+
+
+**Component:** :class:`RoundRobinBatchSampler  <pytext.data.batch_sampler.RoundRobinBatchSampler>`\ 
+
+
+.. py:currentmodule:: pytext.data.batch_sampler
+.. py:class:: RoundRobinBatchSampler.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **iter_to_set_epoch**: str = ``''``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "iter_to_set_epoch": ""
+  }

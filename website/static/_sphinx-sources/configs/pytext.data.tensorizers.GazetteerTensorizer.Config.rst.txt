@@ -1,0 +1,50 @@
+GazetteerTensorizer.Config
+==========================
+
+
+
+**Component:** :class:`GazetteerTensorizer  <pytext.data.tensorizers.GazetteerTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: GazetteerTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Tensorizer.Config <pytext.data.tensorizers.Tensorizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **text_column**: str = ``'text'``
+    \ 
+
+  **dict_column**: str = ``'dict'``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`\ ()
+    tokenizer to split text and create dict tensors of the same size.
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "text_column": "text",
+      "dict_column": "dict",
+      "tokenizer": {
+          "Tokenizer": {
+              "split_regex": "\\s+",
+              "lowercase": true
+          }
+      }
+  }

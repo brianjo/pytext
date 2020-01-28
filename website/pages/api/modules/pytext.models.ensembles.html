@@ -1,0 +1,503 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-models-ensembles-package">
+<h1>pytext.models.ensembles package<a class="headerlink" href="#pytext-models-ensembles-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.models.ensembles.bagging_doc_ensemble">
+<span id="pytext-models-ensembles-bagging-doc-ensemble-module"></span><h2>pytext.models.ensembles.bagging_doc_ensemble module<a class="headerlink" href="#module-pytext.models.ensembles.bagging_doc_ensemble" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.ensembles.bagging_doc_ensemble.</code><code class="sig-name descname">BaggingDocEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.ensemble.EnsembleModel.Config, models: List[pytext.models.model.Model], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_doc_ensemble.html#BaggingDocEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.ensembles.ensemble.EnsembleModel" title="pytext.models.ensembles.ensemble.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.ensembles.ensemble.EnsembleModel</span></code></a></p>
+<p>Ensemble class that uses bagging for ensembling document classification
+models.</p>
+<dl class="method">
+<dt id="pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_doc_ensemble.html#BaggingDocEnsembleModel.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call <cite>forward()</cite> method of each document classification sub-model by
+passing all arguments and named arguments to the sub-models, collect the
+logits from them and average their values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Logits from the ensemble.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.ensembles.bagging_intent_slot_ensemble">
+<span id="pytext-models-ensembles-bagging-intent-slot-ensemble-module"></span><h2>pytext.models.ensembles.bagging_intent_slot_ensemble module<a class="headerlink" href="#module-pytext.models.ensembles.bagging_intent_slot_ensemble" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.ensembles.bagging_intent_slot_ensemble.</code><code class="sig-name descname">BaggingIntentSlotEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.Config, models: List[pytext.models.model.Model], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_intent_slot_ensemble.html#BaggingIntentSlotEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.ensembles.ensemble.EnsembleModel" title="pytext.models.ensembles.ensemble.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.ensembles.ensemble.EnsembleModel</span></code></a></p>
+<p>Ensemble class that uses bagging for ensembling intent-slot models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object specifying all the
+parameters of BaggingIntentSlotEnsemble.</p></li>
+<li><p><strong>models</strong> (<em>List</em><em>[</em><em>Model</em><em>]</em>) – List of intent-slot model objects.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.use_crf">
+<code class="sig-name descname">use_crf</code><a class="headerlink" href="#pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.use_crf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to use CRF for word tagging task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.output_layer">
+<code class="sig-name descname">output_layer</code><a class="headerlink" href="#pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.output_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output layer of intent-slot
+model responsible for computing loss and predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>IntentSlotOutputLayer</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_intent_slot_ensemble.html#BaggingIntentSlotEnsembleModel.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call <cite>forward()</cite> method of each intent-slot sub-model by passing all
+arguments and named arguments to the sub-models, collect the logits from
+them and average their values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Logits from the ensemble.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.merge_sub_models">
+<code class="sig-name descname">merge_sub_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_intent_slot_ensemble.html#BaggingIntentSlotEnsembleModel.merge_sub_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.merge_sub_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges all sub-models’ transition matrices when using CRF.
+Otherwise does nothing.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.ensembles.ensemble">
+<span id="pytext-models-ensembles-ensemble-module"></span><h2>pytext.models.ensembles.ensemble module<a class="headerlink" href="#module-pytext.models.ensembles.ensemble" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.ensembles.ensemble.</code><code class="sig-name descname">EnsembleModel</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.ensemble.EnsembleModel.Config, models: List[pytext.models.model.Model], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.model.Model" title="pytext.models.model.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.model.Model</span></code></a></p>
+<p>Base class for ensemble models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object specifying all the parameters of
+Ensemble.</p></li>
+<li><p><strong>models</strong> (<em>List</em><em>[</em><em>Model</em><em>]</em>) – List of sub-model objects.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.output_layer">
+<code class="sig-name descname">output_layer</code><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.output_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Responsible for computing loss and predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>OutputLayerBase</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.models">
+<code class="sig-name descname">models</code><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.models" title="Permalink to this definition">¶</a></dt>
+<dd><p>ModuleList container for sub-model objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.ModuleList]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.arrange_model_context">
+<code class="sig-name descname">arrange_model_context</code><span class="sig-paren">(</span><em class="sig-param">tensor_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.arrange_model_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.arrange_model_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.arrange_model_inputs">
+<code class="sig-name descname">arrange_model_inputs</code><span class="sig-paren">(</span><em class="sig-param">tensor_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.arrange_model_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.arrange_model_inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.arrange_targets">
+<code class="sig-name descname">arrange_targets</code><span class="sig-paren">(</span><em class="sig-param">tensor_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.arrange_targets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.arrange_targets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.caffe2_export">
+<code class="sig-name descname">caffe2_export</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em>, <em class="sig-param">tensor_dict</em>, <em class="sig-param">path</em>, <em class="sig-param">export_onnx_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.caffe2_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.caffe2_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.ensemble.EnsembleModel.Config, tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of Ensemble or one its derived
+classes from the module’s config object and tensorizers
+It creates sub-models in the ensemble using the sub-model’s configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object specifying all the
+parameters of Ensemble.</p></li>
+<li><p><strong>tensorizers</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Tensorizer</em><em>]</em>) – Tensorizer specifying all the
+parameters of the input features to the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of Ensemble.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.get_export_input_names">
+<code class="sig-name descname">get_export_input_names</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.get_export_input_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.get_export_input_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.get_export_output_names">
+<code class="sig-name descname">get_export_output_names</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.get_export_output_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.get_export_output_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.merge_sub_models">
+<code class="sig-name descname">merge_sub_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.merge_sub_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.merge_sub_models" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.save_modules">
+<code class="sig-name descname">save_modules</code><span class="sig-paren">(</span><em class="sig-param">base_path: str = ''</em>, <em class="sig-param">suffix: str = ''</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.save_modules"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.save_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the modules of all sub_models in the <cite>Ensemble</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_path</strong> (<em>str</em>) – Path of base directory. Defaults to “”.</p></li>
+<li><p><strong>suffix</strong> (<em>str</em>) – Suffix to add to the file name to save. Defaults to “”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.torchscriptify">
+<code class="sig-name descname">torchscriptify</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em>, <em class="sig-param">traced_model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.torchscriptify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.torchscriptify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.ensemble.EnsembleModel.vocab_to_export">
+<code class="sig-name descname">vocab_to_export</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.vocab_to_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.ensemble.EnsembleModel.vocab_to_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.models.ensembles">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.models.ensembles" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.models.ensembles.BaggingDocEnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.ensembles.</code><code class="sig-name descname">BaggingDocEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.ensemble.EnsembleModel.Config, models: List[pytext.models.model.Model], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_doc_ensemble.html#BaggingDocEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.BaggingDocEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.ensembles.ensemble.EnsembleModel" title="pytext.models.ensembles.ensemble.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.ensembles.ensemble.EnsembleModel</span></code></a></p>
+<p>Ensemble class that uses bagging for ensembling document classification
+models.</p>
+<dl class="method">
+<dt id="pytext.models.ensembles.BaggingDocEnsembleModel.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_doc_ensemble.html#BaggingDocEnsembleModel.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.BaggingDocEnsembleModel.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call <cite>forward()</cite> method of each document classification sub-model by
+passing all arguments and named arguments to the sub-models, collect the
+logits from them and average their values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Logits from the ensemble.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.ensembles.BaggingIntentSlotEnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.ensembles.</code><code class="sig-name descname">BaggingIntentSlotEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.Config, models: List[pytext.models.model.Model], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_intent_slot_ensemble.html#BaggingIntentSlotEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.BaggingIntentSlotEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.models.ensembles.ensemble.EnsembleModel" title="pytext.models.ensembles.ensemble.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.ensembles.ensemble.EnsembleModel</span></code></a></p>
+<p>Ensemble class that uses bagging for ensembling intent-slot models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object specifying all the
+parameters of BaggingIntentSlotEnsemble.</p></li>
+<li><p><strong>models</strong> (<em>List</em><em>[</em><em>Model</em><em>]</em>) – List of intent-slot model objects.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.BaggingIntentSlotEnsembleModel.use_crf">
+<code class="sig-name descname">use_crf</code><a class="headerlink" href="#pytext.models.ensembles.BaggingIntentSlotEnsembleModel.use_crf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to use CRF for word tagging task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.BaggingIntentSlotEnsembleModel.output_layer">
+<code class="sig-name descname">output_layer</code><a class="headerlink" href="#pytext.models.ensembles.BaggingIntentSlotEnsembleModel.output_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output layer of intent-slot
+model responsible for computing loss and predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>IntentSlotOutputLayer</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.BaggingIntentSlotEnsembleModel.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> → torch.Tensor<a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_intent_slot_ensemble.html#BaggingIntentSlotEnsembleModel.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.BaggingIntentSlotEnsembleModel.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call <cite>forward()</cite> method of each intent-slot sub-model by passing all
+arguments and named arguments to the sub-models, collect the logits from
+them and average their values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Logits from the ensemble.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.BaggingIntentSlotEnsembleModel.merge_sub_models">
+<code class="sig-name descname">merge_sub_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/models/ensembles/bagging_intent_slot_ensemble.html#BaggingIntentSlotEnsembleModel.merge_sub_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.BaggingIntentSlotEnsembleModel.merge_sub_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges all sub-models’ transition matrices when using CRF.
+Otherwise does nothing.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.models.ensembles.EnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.models.ensembles.</code><code class="sig-name descname">EnsembleModel</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.ensemble.EnsembleModel.Config, models: List[pytext.models.model.Model], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.models.html#pytext.models.model.Model" title="pytext.models.model.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.models.model.Model</span></code></a></p>
+<p>Base class for ensemble models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object specifying all the parameters of
+Ensemble.</p></li>
+<li><p><strong>models</strong> (<em>List</em><em>[</em><em>Model</em><em>]</em>) – List of sub-model objects.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.EnsembleModel.output_layer">
+<code class="sig-name descname">output_layer</code><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.output_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Responsible for computing loss and predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>OutputLayerBase</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="attribute">
+<dt id="pytext.models.ensembles.EnsembleModel.models">
+<code class="sig-name descname">models</code><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.models" title="Permalink to this definition">¶</a></dt>
+<dd><p>ModuleList container for sub-model objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>nn.ModuleList]</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.arrange_model_context">
+<code class="sig-name descname">arrange_model_context</code><span class="sig-paren">(</span><em class="sig-param">tensor_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.arrange_model_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.arrange_model_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.arrange_model_inputs">
+<code class="sig-name descname">arrange_model_inputs</code><span class="sig-paren">(</span><em class="sig-param">tensor_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.arrange_model_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.arrange_model_inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.arrange_targets">
+<code class="sig-name descname">arrange_targets</code><span class="sig-paren">(</span><em class="sig-param">tensor_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.arrange_targets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.arrange_targets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.caffe2_export">
+<code class="sig-name descname">caffe2_export</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em>, <em class="sig-param">tensor_dict</em>, <em class="sig-param">path</em>, <em class="sig-param">export_onnx_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.caffe2_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.caffe2_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config: pytext.models.ensembles.ensemble.EnsembleModel.Config, tensorizers: Dict[str, pytext.data.tensorizers.Tensorizer], *args, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method to construct an instance of Ensemble or one its derived
+classes from the module’s config object and tensorizers
+It creates sub-models in the ensemble using the sub-model’s configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>Config</em>) – Configuration object specifying all the
+parameters of Ensemble.</p></li>
+<li><p><strong>tensorizers</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Tensorizer</em><em>]</em>) – Tensorizer specifying all the
+parameters of the input features to the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An instance of Ensemble.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.get_export_input_names">
+<code class="sig-name descname">get_export_input_names</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.get_export_input_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.get_export_input_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.get_export_output_names">
+<code class="sig-name descname">get_export_output_names</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.get_export_output_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.get_export_output_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.merge_sub_models">
+<code class="sig-name descname">merge_sub_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.merge_sub_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.merge_sub_models" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.save_modules">
+<code class="sig-name descname">save_modules</code><span class="sig-paren">(</span><em class="sig-param">base_path: str = ''</em>, <em class="sig-param">suffix: str = ''</em><span class="sig-paren">)</span> → None<a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.save_modules"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.save_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the modules of all sub_models in the <cite>Ensemble</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_path</strong> (<em>str</em>) – Path of base directory. Defaults to “”.</p></li>
+<li><p><strong>suffix</strong> (<em>str</em>) – Suffix to add to the file name to save. Defaults to “”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.torchscriptify">
+<code class="sig-name descname">torchscriptify</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em>, <em class="sig-param">traced_model</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.torchscriptify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.torchscriptify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.models.ensembles.EnsembleModel.vocab_to_export">
+<code class="sig-name descname">vocab_to_export</code><span class="sig-paren">(</span><em class="sig-param">tensorizers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/models/ensembles/ensemble.html#EnsembleModel.vocab_to_export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.models.ensembles.EnsembleModel.vocab_to_export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.models.html">pytext.models package</a><ul>
+<li>Previous: <a href="pytext.models.embeddings.html" title="previous chapter">pytext.models.embeddings package</a></li>
+<li>Next: <a href="pytext.models.language_models.html" title="next chapter">pytext.models.language_models package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

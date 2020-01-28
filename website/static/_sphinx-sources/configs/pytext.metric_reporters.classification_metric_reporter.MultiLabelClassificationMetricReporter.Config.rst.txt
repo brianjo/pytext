@@ -1,0 +1,64 @@
+MultiLabelClassificationMetricReporter.Config
+=============================================
+
+
+
+**Component:** :class:`MultiLabelClassificationMetricReporter  <pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: MultiLabelClassificationMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`ClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+  **model_select_metric**: ComparableClassificationMetric = ``<ComparableClassificationMetric.ACCURACY: 'accuracy'>``
+    \ 
+
+  **target_label**: Optional[str] = ``None``
+    \ 
+
+  **text_column_names**: list[str] = ``['text']``
+    \ 
+
+  **additional_column_names**: list[str] = ``[]``
+    \ 
+
+  **recall_at_precision_thresholds**: list[float] = ``[0.2, 0.4, 0.6, 0.8, 0.9]``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false,
+      "model_select_metric": "accuracy",
+      "target_label": null,
+      "text_column_names": [
+          "text"
+      ],
+      "additional_column_names": [],
+      "recall_at_precision_thresholds": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+      ]
+  }

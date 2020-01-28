@@ -1,0 +1,80 @@
+MultilingualTSVDataSource.Config
+================================
+
+
+
+**Component:** :class:`MultilingualTSVDataSource  <pytext.data.sources.tsv.MultilingualTSVDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.data.sources.tsv
+.. py:class:: MultilingualTSVDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`TSVDataSource.Config <pytext.data.sources.tsv.TSVDataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **column_mapping**: dict[str, str] = ``{}``
+    \ 
+
+  **train_filename**: Optional[str] = ``None``
+    \ 
+
+  **test_filename**: Optional[str] = ``None``
+    \ 
+
+  **eval_filename**: Optional[str] = ``None``
+    \ 
+
+  **field_names**: Optional[list[str]] = ``None``
+    \ 
+
+  **delimiter**: str = ``'\t'``
+    \ 
+
+  **quoted**: bool = ``False``
+    \ 
+
+  **drop_incomplete_rows**: bool = ``False``
+    \ 
+
+  **data_source_languages**: dict[str, list[str]] = ``{'train': ['en'], 'eval': ['en'], 'test': ['en']}``
+    \ 
+
+  **language_columns**: list[str] = ``['language']``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "column_mapping": {},
+      "train_filename": null,
+      "test_filename": null,
+      "eval_filename": null,
+      "field_names": null,
+      "delimiter": "\t",
+      "quoted": false,
+      "drop_incomplete_rows": false,
+      "data_source_languages": {
+          "train": [
+              "en"
+          ],
+          "eval": [
+              "en"
+          ],
+          "test": [
+              "en"
+          ]
+      },
+      "language_columns": [
+          "language"
+      ]
+  }

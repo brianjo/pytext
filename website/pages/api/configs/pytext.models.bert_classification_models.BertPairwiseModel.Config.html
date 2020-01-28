@@ -1,0 +1,224 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="bertpairwisemodel-config">
+<h1>BertPairwiseModel.Config<a class="headerlink" href="#bertpairwisemodel-config" title="Permalink to this headline">¶</a></h1>
+<p><strong>Component:</strong> <a class="reference internal" href="../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel" title="pytext.models.bert_classification_models.BertPairwiseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">BertPairwiseModel</span></code></a></p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="sig-prename descclassname">BertPairwiseModel.</code><code class="sig-name descname">Config</code><a class="reference internal" href="../_modules/pytext/models/bert_classification_models.html#BertPairwiseModel.Config"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p><strong>Bases:</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">BasePairwiseModel.Config</span></code></p>
+</dd></dl>
+<p><strong>All Attributes (including base classes)</strong></p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>inputs</strong>: <a class="reference internal" href="pytext.models.bert_classification_models.ModelInput.html"><span class="doc">ModelInput</span></a> = <a class="reference internal" href="pytext.models.bert_classification_models.ModelInput.html"><span class="doc">ModelInput</span></a>()</dt><dd><p></p>
+</dd>
+<dt><strong>decoder</strong>: Optional[<a class="reference internal" href="pytext.models.decoders.mlp_decoder.MLPDecoder.Config.html"><span class="doc">MLPDecoder.Config</span></a>] = <a class="reference internal" href="pytext.models.decoders.mlp_decoder.MLPDecoder.Config.html"><span class="doc">MLPDecoder.Config</span></a>()</dt><dd><p></p>
+</dd>
+<dt><strong>output_layer</strong>: Union[<a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config.html"><span class="doc">ClassificationOutputLayer.Config</span></a>, <a class="reference internal" href="pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.Config.html"><span class="doc">PairwiseCosineDistanceOutputLayer.Config</span></a>] = <a class="reference internal" href="pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config.html"><span class="doc">ClassificationOutputLayer.Config</span></a>()</dt><dd><p></p>
+</dd>
+<dt><strong>encode_relations</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>encoder</strong>: <a class="reference internal" href="pytext.models.representations.transformer_sentence_encoder_base.TransformerSentenceEncoderBase.Config.html"><span class="doc">TransformerSentenceEncoderBase.Config</span></a> = <a class="reference internal" href="pytext.models.representations.huggingface_bert_sentence_encoder.HuggingFaceBertSentenceEncoder.Config.html"><span class="doc">HuggingFaceBertSentenceEncoder.Config</span></a>()</dt><dd><p></p>
+</dd>
+<dt><strong>shared_encoder</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+</dl>
+</div></blockquote>
+<p><strong>Default JSON</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">"inputs"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"tokens1"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"BERTTensorizer"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">"is_input"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+                <span class="nt">"columns"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">"text1"</span>
+                <span class="p">],</span>
+                <span class="nt">"tokenizer"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="nt">"WordPieceTokenizer"</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="nt">"basic_tokenizer"</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="nt">"split_regex"</span><span class="p">:</span> <span class="s2">"\\s+"</span><span class="p">,</span>
+                            <span class="nt">"lowercase"</span><span class="p">:</span> <span class="kc">true</span>
+                        <span class="p">},</span>
+                        <span class="nt">"wordpiece_vocab_path"</span><span class="p">:</span> <span class="s2">"/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="nt">"base_tokenizer"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+                <span class="nt">"vocab_file"</span><span class="p">:</span> <span class="s2">"/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"</span><span class="p">,</span>
+                <span class="nt">"max_seq_len"</span><span class="p">:</span> <span class="mi">128</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">"tokens2"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"BERTTensorizer"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">"is_input"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+                <span class="nt">"columns"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">"text2"</span>
+                <span class="p">],</span>
+                <span class="nt">"tokenizer"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="nt">"WordPieceTokenizer"</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="nt">"basic_tokenizer"</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="nt">"split_regex"</span><span class="p">:</span> <span class="s2">"\\s+"</span><span class="p">,</span>
+                            <span class="nt">"lowercase"</span><span class="p">:</span> <span class="kc">true</span>
+                        <span class="p">},</span>
+                        <span class="nt">"wordpiece_vocab_path"</span><span class="p">:</span> <span class="s2">"/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="nt">"base_tokenizer"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+                <span class="nt">"vocab_file"</span><span class="p">:</span> <span class="s2">"/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"</span><span class="p">,</span>
+                <span class="nt">"max_seq_len"</span><span class="p">:</span> <span class="mi">128</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">"labels"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"LabelTensorizer"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">"is_input"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+                <span class="nt">"column"</span><span class="p">:</span> <span class="s2">"label"</span><span class="p">,</span>
+                <span class="nt">"allow_unknown"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+                <span class="nt">"pad_in_vocab"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+                <span class="nt">"label_vocab"</span><span class="p">:</span> <span class="kc">null</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">"num_tokens"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"is_input"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+            <span class="nt">"names"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"tokens1"</span><span class="p">,</span>
+                <span class="s2">"tokens2"</span>
+            <span class="p">],</span>
+            <span class="nt">"indexes"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="mi">2</span><span class="p">,</span>
+                <span class="mi">2</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">"decoder"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"load_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nt">"save_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nt">"freeze"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+        <span class="nt">"shared_module_key"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nt">"hidden_dims"</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="nt">"out_dim"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nt">"layer_norm"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+        <span class="nt">"dropout"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="nt">"activation"</span><span class="p">:</span> <span class="s2">"relu"</span>
+    <span class="p">},</span>
+    <span class="nt">"output_layer"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"ClassificationOutputLayer"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"load_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">"save_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">"freeze"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+            <span class="nt">"shared_module_key"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">"loss"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">"CrossEntropyLoss"</span><span class="p">:</span> <span class="p">{}</span>
+            <span class="p">},</span>
+            <span class="nt">"label_weights"</span><span class="p">:</span> <span class="kc">null</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">"encode_relations"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"encoder"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"HuggingFaceBertSentenceEncoder"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">"load_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">"save_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">"freeze"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+            <span class="nt">"shared_module_key"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">"output_dropout"</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span>
+            <span class="nt">"embedding_dim"</span><span class="p">:</span> <span class="mi">768</span><span class="p">,</span>
+            <span class="nt">"pooling"</span><span class="p">:</span> <span class="s2">"cls_token"</span><span class="p">,</span>
+            <span class="nt">"export"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+            <span class="nt">"bert_cpt_dir"</span><span class="p">:</span> <span class="s2">"/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/"</span><span class="p">,</span>
+            <span class="nt">"load_weights"</span><span class="p">:</span> <span class="kc">true</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">"shared_encoder"</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html">config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html">data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html">exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html">loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html">metric_reporters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.models.html">models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html">task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html">trainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext</a><ul>
+<li><a href="pytext.models.html">models</a><ul>
+<li><a href="pytext.models.bert_classification_models.html">bert_classification_models</a><ul>
+<li>Previous: <a href="pytext.models.bert_classification_models.BertModelInput.html" title="previous chapter">BertModelInput</a></li>
+<li>Next: <a href="pytext.models.bert_classification_models.ModelInput.html" title="next chapter">ModelInput</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

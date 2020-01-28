@@ -1,0 +1,8 @@
+new_task
+========
+
+
+.. toctree::
+
+  pytext.task.new_task.NewTask.Config
+  pytext.task.new_task._NewTask.Config

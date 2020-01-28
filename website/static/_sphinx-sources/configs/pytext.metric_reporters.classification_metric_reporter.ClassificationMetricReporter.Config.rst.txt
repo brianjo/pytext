@@ -1,0 +1,74 @@
+ClassificationMetricReporter.Config
+===================================
+
+
+
+**Component:** :class:`ClassificationMetricReporter  <pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.classification_metric_reporter
+.. py:class:: ClassificationMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+  **model_select_metric**: ComparableClassificationMetric = ``<ComparableClassificationMetric.ACCURACY: 'accuracy'>``
+    \ 
+
+  **target_label**: Optional[str] = ``None``
+    \ 
+
+  **text_column_names**: list[str] = ``['text']``
+    These column names correspond to raw input data columns. Text in these
+    columns (usually just 1 column) will be concatenated and output in
+    the IntentModelChannel as an evaluation tsv.
+    
+
+  **additional_column_names**: list[str] = ``[]``
+    These column names correspond to raw input data columns, that
+    will be read by data_source into context, and included in the
+    run_model output file along with other saving results.
+    
+
+  **recall_at_precision_thresholds**: list[float] = ``[0.2, 0.4, 0.6, 0.8, 0.9]``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`MultiLabelClassificationMetricReporter.Config <pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false,
+      "model_select_metric": "accuracy",
+      "target_label": null,
+      "text_column_names": [
+          "text"
+      ],
+      "additional_column_names": [],
+      "recall_at_precision_thresholds": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+      ]
+  }

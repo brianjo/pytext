@@ -1,0 +1,519 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.doc_model</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">create_loss</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ByteTokenTensorizer</span><span class="p">,</span>
+    <span class="n">FloatListTensorizer</span><span class="p">,</span>
+    <span class="n">LabelTensorizer</span><span class="p">,</span>
+    <span class="n">NumericLabelTensorizer</span><span class="p">,</span>
+    <span class="n">Tensorizer</span><span class="p">,</span>
+    <span class="n">TokenTensorizer</span><span class="p">,</span>
+    <span class="n">UidTensorizer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">PAD</span><span class="p">,</span> <span class="n">UNK</span>
+<span class="kn">from</span> <span class="nn">pytext.exporters.exporter</span> <span class="kn">import</span> <span class="n">ModelExporter</span>
+<span class="kn">from</span> <span class="nn">pytext.loss</span> <span class="kn">import</span> <span class="n">BinaryCrossEntropyLoss</span><span class="p">,</span> <span class="n">MultiLabelSoftMarginLoss</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders.mlp_decoder</span> <span class="kn">import</span> <span class="n">DecoderBase</span><span class="p">,</span> <span class="n">MLPDecoder</span>
+<span class="kn">from</span> <span class="nn">pytext.models.embeddings</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CharacterEmbedding</span><span class="p">,</span>
+    <span class="n">EmbeddingBase</span><span class="p">,</span>
+    <span class="n">EmbeddingList</span><span class="p">,</span>
+    <span class="n">WordEmbedding</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ClassificationOutputLayer</span><span class="p">,</span>
+    <span class="n">OutputLayerBase</span><span class="p">,</span>
+    <span class="n">RegressionOutputLayer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers.doc_classification_output_layer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BinaryClassificationOutputLayer</span><span class="p">,</span>
+    <span class="n">MulticlassOutputLayer</span><span class="p">,</span>
+    <span class="n">MultiLabelOutputLayer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.bilstm_doc_attention</span> <span class="kn">import</span> <span class="n">BiLSTMDocAttention</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.deepcnn</span> <span class="kn">import</span> <span class="n">DeepCNNRepresentation</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.docnn</span> <span class="kn">import</span> <span class="n">DocNNRepresentation</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.pure_doc_attention</span> <span class="kn">import</span> <span class="n">PureDocAttention</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.representation_base</span> <span class="kn">import</span> <span class="n">RepresentationBase</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.utils</span> <span class="kn">import</span> <span class="n">make_byte_inputs</span><span class="p">,</span> <span class="n">make_sequence_lengths</span><span class="p">,</span> <span class="n">pad_2d</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.vocab</span> <span class="kn">import</span> <span class="n">ScriptVocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.label</span> <span class="kn">import</span> <span class="n">get_label_weights</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">jit</span>
+
+
+<div class="viewcode-block" id="DocModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel">[docs]</a><span class="k">class</span> <span class="nc">DocModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">"""DocModel that's compatible with the new Model abstraction, which is responsible</span>
+<span class="sd">    for describing which inputs it expects and arranging its input tensors."""</span>
+
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="n">dense</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FloatListTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">representation</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">PureDocAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">BiLSTMDocAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">DocNNRepresentation</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">DeepCNNRepresentation</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">BiLSTMDocAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">ClassificationOutputLayer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ClassificationOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="DocModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">model_inputs</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensor_dict</span><span class="p">:</span>
+            <span class="n">model_inputs</span> <span class="o">+=</span> <span class="p">(</span><span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"dense"</span><span class="p">],)</span>
+        <span class="k">return</span> <span class="n">model_inputs</span></div>
+
+<div class="viewcode-block" id="DocModel.arrange_targets"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DocModel.get_export_input_names"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.get_export_input_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"tokens_vals"</span><span class="p">,</span> <span class="s2">"tokens_lens"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"float_vec_vals"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="DocModel.get_export_output_names"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.get_export_output_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_output_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">"scores"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DocModel.vocab_to_export"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.vocab_to_export">[docs]</a>    <span class="k">def</span> <span class="nf">vocab_to_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"tokens_vals"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">)}</span></div>
+
+<div class="viewcode-block" id="DocModel.caffe2_export"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.caffe2_export">[docs]</a>    <span class="k">def</span> <span class="nf">caffe2_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">exporter</span> <span class="o">=</span> <span class="n">ModelExporter</span><span class="p">(</span>
+            <span class="n">ModelExporter</span><span class="o">.</span><span class="n">Config</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_export_input_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vocab_to_export</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_export_output_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">exporter</span><span class="o">.</span><span class="n">export_to_caffe2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="n">export_onnx_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DocModel.torchscriptify"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">traced_model</span><span class="p">):</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">torchscript_predictions</span><span class="p">()</span>
+
+        <span class="n">input_vocab</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+
+        <span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">ScriptVocabulary</span><span class="p">(</span><span class="n">input_vocab</span><span class="p">,</span> <span class="n">unk_idx</span><span class="o">=</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">UNK</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">traced_model</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">PAD</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+
+            <span class="nd">@jit.script_method</span>
+            <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+                <span class="n">seq_lens</span> <span class="o">=</span> <span class="n">make_sequence_lengths</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">lookup_indices_2d</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="n">pad_2d</span><span class="p">(</span><span class="n">word_ids</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span><span class="p">)</span>
+                <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">word_ids</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">))</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+
+        <span class="k">class</span> <span class="nc">ModelWithDenseFeat</span><span class="p">(</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">ScriptVocabulary</span><span class="p">(</span><span class="n">input_vocab</span><span class="p">,</span> <span class="n">unk_idx</span><span class="o">=</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">UNK</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"dense"</span><span class="p">]</span><span class="o">.</span><span class="n">normalizer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">traced_model</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">PAD</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+
+            <span class="nd">@jit.script_method</span>
+            <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">dense_feat</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]):</span>
+                <span class="n">seq_lens</span> <span class="o">=</span> <span class="n">make_sequence_lengths</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">lookup_indices_2d</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="n">pad_2d</span><span class="p">(</span><span class="n">word_ids</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span><span class="p">)</span>
+                <span class="n">dense_feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalizer</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">dense_feat</span><span class="p">)</span>
+                <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">word_ids</span><span class="p">),</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">),</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">dense_feat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ModelWithDenseFeat</span><span class="p">()</span> <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensorizers</span> <span class="k">else</span> <span class="n">Model</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DocModel.create_embedding"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.create_embedding">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_embedding</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">embedding</span><span class="p">,</span>
+            <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">],</span>
+            <span class="n">init_from_saved_state</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">init_from_saved_state</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DocModel.create_decoder"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.create_decoder">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_decoder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">representation_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">num_decoder_modules</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">in_dim</span> <span class="o">=</span> <span class="n">representation_dim</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="s2">"dense"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">dense</span><span class="p">:</span>
+            <span class="n">num_decoder_modules</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">in_dim</span> <span class="o">+=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">dense</span><span class="o">.</span><span class="n">dim</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="n">in_dim</span><span class="o">=</span><span class="n">in_dim</span><span class="p">,</span> <span class="n">out_dim</span><span class="o">=</span><span class="n">num_labels</span><span class="p">)</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">num_decoder_modules</span> <span class="o">=</span> <span class="n">num_decoder_modules</span>
+        <span class="k">return</span> <span class="n">decoder</span></div>
+
+<div class="viewcode-block" id="DocModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="n">embedding</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_embedding</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embedding</span><span class="o">.</span><span class="n">embedding_dim</span>
+        <span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_decoder</span><span class="p">(</span>
+            <span class="n">config</span><span class="p">,</span> <span class="n">representation</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">label_weights</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">get_label_weights</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">idx</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">label_weights</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">label_weights</span>
+            <span class="k">else</span> <span class="bp">None</span>
+        <span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">create_loss</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">label_weights</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">BinaryCrossEntropyLoss</span><span class="p">):</span>
+            <span class="n">output_layer_cls</span> <span class="o">=</span> <span class="n">BinaryClassificationOutputLayer</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">MultiLabelSoftMarginLoss</span><span class="p">):</span>
+            <span class="n">output_layer_cls</span> <span class="o">=</span> <span class="n">MultiLabelOutputLayer</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_layer_cls</span> <span class="o">=</span> <span class="n">MulticlassOutputLayer</span>
+
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer_cls</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">loss</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ByteTokensDocumentModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.ByteTokensDocumentModel">[docs]</a><span class="k">class</span> <span class="nc">ByteTokensDocumentModel</span><span class="p">(</span><span class="n">DocModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    DocModel that receives both word IDs and byte IDs as inputs (concatenating</span>
+<span class="sd">    word and byte-token embeddings to represent input tokens).</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ByteModelInput</span><span class="p">(</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">token_bytes</span><span class="p">:</span> <span class="n">ByteTokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">ByteTokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ByteModelInput</span> <span class="o">=</span> <span class="n">ByteModelInput</span><span class="p">()</span>
+        <span class="n">byte_embedding</span><span class="p">:</span> <span class="n">CharacterEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">CharacterEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ByteTokensDocumentModel.create_embedding"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.ByteTokensDocumentModel.create_embedding">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_embedding</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">word_tensorizer</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">tokens</span>
+        <span class="n">byte_tensorizer</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">token_bytes</span>
+        <span class="k">assert</span> <span class="n">word_tensorizer</span><span class="o">.</span><span class="n">column</span> <span class="o">==</span> <span class="n">byte_tensorizer</span><span class="o">.</span><span class="n">column</span>
+
+        <span class="n">word_embedding</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">embedding</span><span class="p">,</span>
+            <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">],</span>
+            <span class="n">init_from_saved_state</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">init_from_saved_state</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">byte_embedding</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">byte_embedding</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="n">ByteTokenTensorizer</span><span class="o">.</span><span class="n">NUM_BYTES</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingList</span><span class="p">([</span><span class="n">word_embedding</span><span class="p">,</span> <span class="n">byte_embedding</span><span class="p">],</span> <span class="n">concat</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ByteTokensDocumentModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.ByteTokensDocumentModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">token_bytes</span><span class="p">,</span> <span class="n">byte_seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"token_bytes"</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="n">seq_lens</span> <span class="o">==</span> <span class="n">byte_seq_lens</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="n">model_inputs</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">token_bytes</span><span class="p">,</span> <span class="n">seq_lens</span>
+        <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensor_dict</span><span class="p">:</span>
+            <span class="n">model_inputs</span> <span class="o">+=</span> <span class="p">(</span><span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"dense"</span><span class="p">],)</span>
+        <span class="k">return</span> <span class="n">model_inputs</span></div>
+
+<div class="viewcode-block" id="ByteTokensDocumentModel.get_export_input_names"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.ByteTokensDocumentModel.get_export_input_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"tokens_vals"</span><span class="p">,</span> <span class="s2">"token_bytes"</span><span class="p">,</span> <span class="s2">"tokens_lens"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="p">:</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"float_vec_vals"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">names</span></div>
+
+<div class="viewcode-block" id="ByteTokensDocumentModel.torchscriptify"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.ByteTokensDocumentModel.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">traced_model</span><span class="p">):</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">torchscript_predictions</span><span class="p">()</span>
+        <span class="n">max_byte_len</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"token_bytes"</span><span class="p">]</span><span class="o">.</span><span class="n">max_byte_len</span>
+        <span class="n">byte_offset_for_non_padding</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"token_bytes"</span><span class="p">]</span><span class="o">.</span><span class="n">offset_for_non_padding</span>
+        <span class="n">input_vocab</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+
+        <span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">ScriptVocabulary</span><span class="p">(</span><span class="n">input_vocab</span><span class="p">,</span> <span class="n">unk_idx</span><span class="o">=</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">UNK</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_byte_len</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">max_byte_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">byte_offset_for_non_padding</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span>
+                    <span class="n">byte_offset_for_non_padding</span><span class="p">,</span> <span class="nb">int</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">PAD</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">traced_model</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+
+            <span class="nd">@jit.script_method</span>
+            <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+                <span class="n">seq_lens</span> <span class="o">=</span> <span class="n">make_sequence_lengths</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">lookup_indices_2d</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="n">pad_2d</span><span class="p">(</span><span class="n">word_ids</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span><span class="p">)</span>
+                <span class="n">token_bytes</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">make_byte_inputs</span><span class="p">(</span>
+                    <span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_byte_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">byte_offset_for_non_padding</span>
+                <span class="p">)</span>
+                <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">word_ids</span><span class="p">),</span> <span class="n">token_bytes</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+
+        <span class="k">class</span> <span class="nc">ModelWithDenseFeat</span><span class="p">(</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">ScriptVocabulary</span><span class="p">(</span><span class="n">input_vocab</span><span class="p">,</span> <span class="n">unk_idx</span><span class="o">=</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">UNK</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"dense"</span><span class="p">]</span><span class="o">.</span><span class="n">normalizer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_byte_len</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">max_byte_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">byte_offset_for_non_padding</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span>
+                    <span class="n">byte_offset_for_non_padding</span><span class="p">,</span> <span class="nb">int</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">.</span><span class="n">idx</span><span class="p">[</span><span class="n">PAD</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">traced_model</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+
+            <span class="nd">@jit.script_method</span>
+            <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">dense_feat</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]):</span>
+                <span class="n">seq_lens</span> <span class="o">=</span> <span class="n">make_sequence_lengths</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">lookup_indices_2d</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_ids</span> <span class="o">=</span> <span class="n">pad_2d</span><span class="p">(</span><span class="n">word_ids</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_idx</span><span class="p">)</span>
+                <span class="n">token_bytes</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">make_byte_inputs</span><span class="p">(</span>
+                    <span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_byte_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">byte_offset_for_non_padding</span>
+                <span class="p">)</span>
+                <span class="n">dense_feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalizer</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">dense_feat</span><span class="p">)</span>
+                <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">word_ids</span><span class="p">),</span>
+                    <span class="n">token_bytes</span><span class="p">,</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">seq_lens</span><span class="p">),</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">dense_feat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ModelWithDenseFeat</span><span class="p">()</span> <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensorizers</span> <span class="k">else</span> <span class="n">Model</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="DocRegressionModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocRegressionModel">[docs]</a><span class="k">class</span> <span class="nc">DocRegressionModel</span><span class="p">(</span><span class="n">DocModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Model that's compatible with the new Model abstraction, and is configured for</span>
+<span class="sd">    regression tasks (specifically for labels, predictions, and loss).</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">RegressionModelInput</span><span class="p">(</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">NumericLabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NumericLabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">RegressionModelInput</span> <span class="o">=</span> <span class="n">RegressionModelInput</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">RegressionOutputLayer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">RegressionOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DocRegressionModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.DocRegressionModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">embedding</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_embedding</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embedding</span><span class="o">.</span><span class="n">embedding_dim</span>
+        <span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="n">in_dim</span><span class="o">=</span><span class="n">representation</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span> <span class="n">out_dim</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">RegressionOutputLayer</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PersonalizedDocModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel">[docs]</a><span class="k">class</span> <span class="nc">PersonalizedDocModel</span><span class="p">(</span><span class="n">DocModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    DocModel that includes a user embedding which learns user features to produce</span>
+<span class="sd">    personalized prediction. In this class, user-embedding is fed directly to</span>
+<span class="sd">    the decoder (i.e., does not go through the encoders).</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">PersonalizedModelInput</span><span class="p">(</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">uid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UidTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="n">UidTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">PersonalizedModelInput</span> <span class="o">=</span> <span class="n">PersonalizedModelInput</span><span class="p">()</span>
+        <span class="c1"># user_embedding is a representation for a user and is jointly trained</span>
+        <span class="c1"># with the model. Consider user ids as "words" to reuse WordEmbedding class.</span>
+        <span class="n">user_embedding</span><span class="p">:</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="PersonalizedDocModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+
+        <span class="n">user_embedding</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">user_embedding</span><span class="p">,</span>
+            <span class="n">tensorizer</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">],</span>
+            <span class="n">init_from_saved_state</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">init_from_saved_state</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Init user embeddings to be a same vector because we assume user features</span>
+        <span class="c1"># are not too different from each other.</span>
+        <span class="n">emb_shape</span> <span class="o">=</span> <span class="n">user_embedding</span><span class="o">.</span><span class="n">word_embedding</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">user_embedding</span><span class="o">.</span><span class="n">word_embedding</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">emb_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">emb_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_decoder</span><span class="p">(</span>
+            <span class="n">config</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">representation</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">+</span> <span class="n">user_embedding</span><span class="o">.</span><span class="n">embedding_dim</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">embedding</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span>
+            <span class="n">decoder</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">output_layer</span><span class="p">,</span>
+            <span class="n">user_embedding</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">EmbeddingBase</span><span class="p">,</span>
+        <span class="n">representation</span><span class="p">:</span> <span class="n">RepresentationBase</span><span class="p">,</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">DecoderBase</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">OutputLayerBase</span><span class="p">,</span>
+        <span class="n">user_embedding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EmbeddingBase</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user_embedding</span> <span class="o">=</span> <span class="n">user_embedding</span>
+
+<div class="viewcode-block" id="PersonalizedDocModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">model_inputs</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">tensor_dict</span><span class="p">)</span>
+        <span class="n">model_inputs</span> <span class="o">+=</span> <span class="p">(</span><span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">],)</span>
+        <span class="k">return</span> <span class="n">model_inputs</span></div>
+
+<div class="viewcode-block" id="PersonalizedDocModel.vocab_to_export"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel.vocab_to_export">[docs]</a>    <span class="k">def</span> <span class="nf">vocab_to_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">export_vocab</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">vocab_to_export</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">export_vocab</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">export_vocab</span></div>
+
+<div class="viewcode-block" id="PersonalizedDocModel.get_export_input_names"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel.get_export_input_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_export_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">export_inputs_names</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_export_input_names</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">export_inputs_names</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"uid"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">export_inputs_names</span></div>
+
+<div class="viewcode-block" id="PersonalizedDocModel.torchscriptify"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">traced_model</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"This model is not jittable yet."</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PersonalizedDocModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.doc_model.PersonalizedDocModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="c1"># Override forward() to include user_embedding layer explictily to the</span>
+        <span class="c1"># computation of the forward propagation.</span>
+        <span class="n">embedding_input</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="o">.</span><span class="n">num_emb_modules</span><span class="p">]</span>
+        <span class="n">token_emb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="p">(</span><span class="o">*</span><span class="n">embedding_input</span><span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">,</span> <span class="n">user_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">inputs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">other_input</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="o">.</span><span class="n">num_emb_modules</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">num_decoder_modules</span>
+        <span class="p">]</span>
+        <span class="n">input_representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">representation</span><span class="p">(</span><span class="n">token_emb</span><span class="p">,</span> <span class="o">*</span><span class="n">other_input</span><span class="p">)</span>
+
+        <span class="c1"># Some LSTM-based representations return states as (h0, c0).</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_representation</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">input_representation</span> <span class="o">=</span> <span class="n">input_representation</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">user_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_embedding</span><span class="p">(</span><span class="n">user_ids</span><span class="p">)</span>
+        <span class="c1"># Reduce dim from (batch_size, 1, emb_dim) to (batch_size, emb_dim).</span>
+        <span class="k">if</span> <span class="n">user_embeddings</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">user_embeddings</span> <span class="o">=</span> <span class="n">user_embeddings</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">decoder_inputs</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">num_decoder_modules</span><span class="p">:</span>
+            <span class="n">decoder_inputs</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">num_decoder_modules</span> <span class="p">:]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span>
+            <span class="n">input_representation</span><span class="p">,</span> <span class="n">user_embeddings</span><span class="p">,</span> <span class="o">*</span><span class="n">decoder_inputs</span>
+        <span class="p">)</span>  <span class="c1"># Return Tensor's dim = (batch_size, num_classes).</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

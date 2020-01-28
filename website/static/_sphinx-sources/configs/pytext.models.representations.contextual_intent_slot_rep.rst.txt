@@ -1,0 +1,7 @@
+contextual_intent_slot_rep
+==========================
+
+
+.. toctree::
+
+  pytext.models.representations.contextual_intent_slot_rep.ContextualIntentSlotRepresentation.Config

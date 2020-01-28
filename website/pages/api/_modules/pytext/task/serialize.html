@@ -1,0 +1,412 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.task.serialize</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">config_to_json</span><span class="p">,</span> <span class="n">pytext_config_from_json</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">CommonMetadata</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.models</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">pytext.trainers.training_state</span> <span class="kn">import</span> <span class="n">TrainingState</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+
+
+<span class="n">DATA_STATE</span> <span class="o">=</span> <span class="s2">"data_state"</span>
+<span class="n">CONFIG_JSON</span> <span class="o">=</span> <span class="s2">"config_json"</span>
+<span class="n">MODEL_STATE</span> <span class="o">=</span> <span class="s2">"model_state"</span>
+<span class="n">SERIALIZE_VERSION_KEY</span> <span class="o">=</span> <span class="s2">"pytext_serialization_version"</span>
+<span class="n">TENSORIZERS</span> <span class="o">=</span> <span class="s2">"tensorizers"</span>
+<span class="n">TRAINING_STATE</span> <span class="o">=</span> <span class="s2">"training_state"</span>
+
+
+<span class="n">LATEST_SERIALIZE_VERSION</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">LOADER_VERSION_MAP</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="register_snapshot_loader"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.register_snapshot_loader">[docs]</a><span class="k">def</span> <span class="nf">register_snapshot_loader</span><span class="p">(</span><span class="n">version</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">LOADER_VERSION_MAP</span><span class="p">[</span><span class="n">version</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="k">global</span> <span class="n">LATEST_SERIALIZE_VERSION</span>
+        <span class="n">LATEST_SERIALIZE_VERSION</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">LATEST_SERIALIZE_VERSION</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fn</span>
+
+    <span class="k">return</span> <span class="n">decorator</span></div>
+
+
+<div class="viewcode-block" id="load_v1"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.load_v1">[docs]</a><span class="nd">@register_snapshot_loader</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_v1</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">pytext_config_from_json</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">CONFIG_JSON</span><span class="p">])</span>
+    <span class="c1"># importing in file level generates circular import/dependency failures,</span>
+    <span class="c1"># that need refator later to fix</span>
+    <span class="kn">from</span> <span class="nn">.task</span> <span class="kn">import</span> <span class="n">create_task</span>
+
+    <span class="n">task</span> <span class="o">=</span> <span class="n">create_task</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">task</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="n">DATA_STATE</span><span class="p">],</span> <span class="n">model_state</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="n">MODEL_STATE</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">task</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="bp">None</span></div>
+
+
+<div class="viewcode-block" id="load_v2"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.load_v2">[docs]</a><span class="nd">@register_snapshot_loader</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_v2</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">pytext_config_from_json</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">CONFIG_JSON</span><span class="p">])</span>
+    <span class="n">model_state</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">MODEL_STATE</span><span class="p">]</span>
+    <span class="n">tensorizers</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">TENSORIZERS</span><span class="p">]</span>
+    <span class="c1"># importing in file level generates circular import/dependency failures,</span>
+    <span class="c1"># that need refator later to fix</span>
+    <span class="kn">from</span> <span class="nn">.task</span> <span class="kn">import</span> <span class="n">create_task</span>
+
+    <span class="n">task</span> <span class="o">=</span> <span class="n">create_task</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">task</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="n">DATA_STATE</span><span class="p">],</span>
+        <span class="n">model_state</span><span class="o">=</span><span class="n">model_state</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">task</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="bp">None</span></div>
+
+
+<div class="viewcode-block" id="load_v3"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.load_v3">[docs]</a><span class="nd">@register_snapshot_loader</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">load_v3</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">saved_config</span> <span class="o">=</span> <span class="n">pytext_config_from_json</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">CONFIG_JSON</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">overwrite_config</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">overwrite_config</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Use config from current task"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">saved_config</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Use config saved in snapshot"</span><span class="p">)</span>
+
+    <span class="n">model_state</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">MODEL_STATE</span><span class="p">]</span>
+    <span class="n">training_state</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">TRAINING_STATE</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">training_state</span> <span class="ow">and</span> <span class="n">training_state</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">:</span>
+        <span class="n">tensorizers</span> <span class="o">=</span> <span class="n">training_state</span><span class="o">.</span><span class="n">tensorizers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tensorizers</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">TENSORIZERS</span><span class="p">]</span>
+    <span class="c1"># importing in file level generates circular import/dependency failures,</span>
+    <span class="c1"># that need refator later to fix</span>
+    <span class="kn">from</span> <span class="nn">.task</span> <span class="kn">import</span> <span class="n">create_task</span>
+
+    <span class="n">task</span> <span class="o">=</span> <span class="n">create_task</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">task</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="n">DATA_STATE</span><span class="p">],</span>
+        <span class="n">model_state</span><span class="o">=</span><span class="n">model_state</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># TODO: T53664090 @stevenliu save &amp; load state_dict() of optimizer and scheduler</span>
+    <span class="k">if</span> <span class="n">training_state</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">training_state</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+            <span class="n">training_state</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">model</span>
+        <span class="k">if</span> <span class="n">training_state</span><span class="o">.</span><span class="n">optimizer</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span><span class="p">:</span>
+            <span class="sd">"""</span>
+<span class="sd">            https://pytorch.org/tutorials/beginner/saving_loading_models.html</span>
+<span class="sd">            Unpickling optimizer object from checkpoint could result in a</span>
+<span class="sd">            different parameter copy from model parameters. Especially in</span>
+<span class="sd">            mixied precision training, which optimizer param_groups maintains</span>
+<span class="sd">            master weights copy instead of the model parameters.</span>
+
+<span class="sd">            The suggested loading mechanism is</span>
+
+<span class="sd">            model = TheModelClass(*args, **kwargs)</span>
+<span class="sd">            optimizer = TheOptimizerClass(model.parameters(), *args, **kwargs)</span>
+
+<span class="sd">            checkpoint = torch.load(PATH)</span>
+<span class="sd">            model.load_state_dict(checkpoint['model_state_dict'])</span>
+<span class="sd">            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])</span>
+<span class="sd">            """</span>
+
+            <span class="n">optimizer</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">training_state</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">())</span>
+            <span class="n">training_state</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+
+    <span class="k">return</span> <span class="n">task</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">training_state</span></div>
+
+
+<div class="viewcode-block" id="load_checkpoint"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.load_checkpoint">[docs]</a><span class="k">def</span> <span class="nf">load_checkpoint</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="k">lambda</span> <span class="n">storage</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">storage</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Loaded checkpoint..."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">SERIALIZE_VERSION_KEY</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">load_v1</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">LOADER_VERSION_MAP</span><span class="p">[</span><span class="n">state</span><span class="p">[</span><span class="n">SERIALIZE_VERSION_KEY</span><span class="p">]](</span><span class="n">state</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="save_checkpoint"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.save_checkpoint">[docs]</a><span class="k">def</span> <span class="nf">save_checkpoint</span><span class="p">(</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CommonMetadata</span><span class="p">],</span>
+    <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span>
+    <span class="n">training_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TrainingState</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># Currently torch.save() has error pickling certain models when not saving</span>
+    <span class="c1"># by model.state_dict(), thus currently overriding the model in</span>
+    <span class="c1"># training_state with None, and put back saving</span>
+    <span class="c1"># https://github.com/pytorch/pytorch/issues/15116</span>
+    <span class="n">model_in_training_state</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">training_state</span><span class="p">:</span>
+        <span class="n">model_in_training_state</span><span class="p">,</span> <span class="n">training_state</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">training_state</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">DATA_STATE</span><span class="p">:</span> <span class="n">meta</span><span class="p">,</span>
+            <span class="n">CONFIG_JSON</span><span class="p">:</span> <span class="n">config_to_json</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">config</span><span class="p">),</span>
+            <span class="n">MODEL_STATE</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span>
+            <span class="n">SERIALIZE_VERSION_KEY</span><span class="p">:</span> <span class="n">LATEST_SERIALIZE_VERSION</span><span class="p">,</span>
+            <span class="n">TENSORIZERS</span><span class="p">:</span> <span class="n">tensorizers</span><span class="p">,</span>
+            <span class="n">TRAINING_STATE</span><span class="p">:</span> <span class="n">training_state</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">training_state</span><span class="p">:</span>
+            <span class="n">training_state</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model_in_training_state</span></div>
+
+
+<div class="viewcode-block" id="get_latest_checkpoint_path"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.get_latest_checkpoint_path">[docs]</a><span class="k">def</span> <span class="nf">get_latest_checkpoint_path</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Get the latest checkpoint path</span>
+<span class="sd">    args:</span>
+<span class="sd">        dir_path: the dir to scan for existing checkpoint files. Default: if None,</span>
+<span class="sd">        the latest checkpoint path saved in momery will be returned</span>
+<span class="sd">    Returns: checkpoint_path</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">dir_path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_CHECKPOINT_MANAGER</span><span class="o">.</span><span class="n">get_latest_checkpoint_path</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+        <span class="n">checkpoint_indices</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">file_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"-"</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"checkpoint"</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">checkpoint_indices</span><span class="p">:</span>
+            <span class="n">latest_checkpoint_path</span> <span class="o">=</span> <span class="n">f</span><span class="s2">"{dir_path}/checkpoint-{max(checkpoint_indices)}"</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">"find the latest checkpoint: {latest_checkpoint_path}"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">latest_checkpoint_path</span>
+    <span class="k">return</span> <span class="bp">None</span></div>
+
+
+<div class="viewcode-block" id="get_post_training_snapshot_path"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.get_post_training_snapshot_path">[docs]</a><span class="k">def</span> <span class="nf">get_post_training_snapshot_path</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_CHECKPOINT_MANAGER</span><span class="o">.</span><span class="n">get_post_training_snapshot_path</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="CheckpointManager"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager">[docs]</a><span class="k">class</span> <span class="nc">CheckpointManager</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">        CheckpointManager is class abstraction to manage training job's</span>
+<span class="sd">        checkpoints with different IO and storage, using two functions:</span>
+<span class="sd">        save() and load().</span>
+<span class="sd">    """</span>
+
+    <span class="n">DELIMITER</span> <span class="o">=</span> <span class="s2">"-"</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># keep a list of saved checkpoint path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_saved_paths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_post_training_snapshot_path</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c1"># generate per epoch checkpoint save path</span>
+<div class="viewcode-block" id="CheckpointManager.generate_checkpoint_path"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager.generate_checkpoint_path">[docs]</a>    <span class="k">def</span> <span class="nf">generate_checkpoint_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">dir_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">save_snapshot_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s2">"{dir_name}/checkpoint{self.DELIMITER}{identifier}"</span></div>
+
+<div class="viewcode-block" id="CheckpointManager.save"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CommonMetadata</span><span class="p">],</span>
+        <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span>
+        <span class="n">training_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TrainingState</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        save a checkpoint to given path, config, model and training_state</span>
+<span class="sd">        together represent the checkpoint. When identifier is None, this</span>
+<span class="sd">        function is used to save post-training snapshot</span>
+<span class="sd">        """</span>
+        <span class="n">saved_path</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">identifier</span><span class="p">:</span>
+            <span class="c1"># saving during-training checkpoints</span>
+            <span class="n">saved_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_checkpoint_path</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">identifier</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"Saving checkpoint to "</span><span class="p">,</span> <span class="n">saved_path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># saving post-training snapshot if no identifer given</span>
+            <span class="n">saved_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">save_snapshot_path</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Saving pytorch model to: {saved_path}"</span><span class="p">)</span>
+
+        <span class="n">saved_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">saved_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">saved_folder</span><span class="p">):</span>
+            <span class="n">PathManager</span><span class="o">.</span><span class="n">mkdirs</span><span class="p">(</span><span class="n">saved_folder</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"created {saved_folder}"</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">saved_path</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">checkpoint_f</span><span class="p">:</span>
+            <span class="n">save_checkpoint</span><span class="p">(</span>
+                <span class="n">checkpoint_f</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">training_state</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">identifier</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_saved_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_post_training_snapshot_path</span> <span class="o">=</span> <span class="n">saved_path</span>
+        <span class="k">return</span> <span class="n">saved_path</span></div>
+
+<div class="viewcode-block" id="CheckpointManager.load"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">load_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Loads a checkpoint from disk.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            load_path (str): the file path to load for checkpoint</span>
+<span class="sd">        Returns: task (Task), config (PyTextConfig) and training_state (TrainingState)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">load_path</span> <span class="ow">and</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">load_path</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s2">"Invalid snapshot path{load_path}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Loading model from {load_path}"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">load_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">checkpoint_f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">load_checkpoint</span><span class="p">(</span><span class="n">checkpoint_f</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CheckpointManager.list"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager.list">[docs]</a>    <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Return all existing checkpoint path in str</span>
+<span class="sd">        Returns: checkpoint_path_list (List[str]), list elements are in the same</span>
+<span class="sd">        order of checkpoint saving</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_saved_paths</span></div>
+
+<div class="viewcode-block" id="CheckpointManager.get_latest_checkpoint_path"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager.get_latest_checkpoint_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_latest_checkpoint_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Return most recent saved checkpoint path in str</span>
+<span class="sd">        Returns: checkpoint_path (str)</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_saved_paths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_saved_paths</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="CheckpointManager.get_post_training_snapshot_path"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.CheckpointManager.get_post_training_snapshot_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_post_training_snapshot_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_post_training_snapshot_path</span></div></div>
+
+
+<span class="n">_CHECKPOINT_MANAGER</span> <span class="o">=</span> <span class="n">CheckpointManager</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="set_checkpoint_manager"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.set_checkpoint_manager">[docs]</a><span class="k">def</span> <span class="nf">set_checkpoint_manager</span><span class="p">(</span><span class="n">manager</span><span class="p">:</span> <span class="n">CheckpointManager</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="k">global</span> <span class="n">_CHECKPOINT_MANAGER</span>
+    <span class="n">_CHECKPOINT_MANAGER</span> <span class="o">=</span> <span class="n">manager</span></div>
+
+
+<div class="viewcode-block" id="save"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.save">[docs]</a><span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CommonMetadata</span><span class="p">],</span>
+    <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span>
+    <span class="n">training_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TrainingState</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Save all stateful information of a training task to a specified file-like</span>
+<span class="sd">    object, will save the original config, model state, metadata,</span>
+<span class="sd">    training state if training is not completed</span>
+<span class="sd">    Args:</span>
+<span class="sd">    identifier (str): used to identify a checkpoint within a training job,</span>
+<span class="sd">    used as a suffix for save path</span>
+<span class="sd">    config (PytextConfig): contains all raw parameter/hyper-parameters</span>
+<span class="sd">    for training task</span>
+<span class="sd">    model (Model): actual model in training</span>
+<span class="sd">    training_state (TrainingState): stateful infomation during training</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    identifier (str): if identifier is not specified, will save to</span>
+<span class="sd">    config.save_snapshot_path to be consistent to post-training snapshot;</span>
+<span class="sd">    if specified, will be used to save checkpoint during training,</span>
+<span class="sd">    identifier is used to identify checkpoints in the same training</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_CHECKPOINT_MANAGER</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+        <span class="n">config</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">training_state</span><span class="p">,</span> <span class="n">identifier</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.serialize.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">load_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Load task, config and training state from a saved snapshot</span>
+<span class="sd">    by default, it will construct the task using the saved config then load</span>
+<span class="sd">    metadata and model state.</span>
+
+<span class="sd">    if overwrite_task is specified, it will construct the task using</span>
+<span class="sd">    overwrite_task then load metadata and model state.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_CHECKPOINT_MANAGER</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">load_path</span><span class="p">,</span> <span class="n">overwrite_config</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

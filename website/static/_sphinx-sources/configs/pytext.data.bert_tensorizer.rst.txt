@@ -1,0 +1,8 @@
+bert_tensorizer
+===============
+
+
+.. toctree::
+
+  pytext.data.bert_tensorizer.BERTTensorizer.Config
+  pytext.data.bert_tensorizer.BERTTensorizerBase.Config

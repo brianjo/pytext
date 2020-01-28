@@ -1,0 +1,7 @@
+module_config
+=============
+
+
+.. toctree::
+
+  pytext.config.module_config.CNNParams

@@ -1,0 +1,12 @@
+pooling
+=======
+
+
+.. toctree::
+
+  pytext.models.representations.pooling.BoundaryPool.Config
+  pytext.models.representations.pooling.LastTimestepPool.Config
+  pytext.models.representations.pooling.MaxPool.Config
+  pytext.models.representations.pooling.MeanPool.Config
+  pytext.models.representations.pooling.NoPool.Config
+  pytext.models.representations.pooling.SelfAttention.Config

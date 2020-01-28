@@ -1,0 +1,9 @@
+trainers
+========
+
+
+.. toctree::
+
+  pytext.trainers.ensemble_trainer
+  pytext.trainers.hogwild_trainer
+  pytext.trainers.trainer

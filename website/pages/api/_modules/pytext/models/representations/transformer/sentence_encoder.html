@@ -1,0 +1,220 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.representations.transformer.sentence_encoder</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span> <span class="nn">.transformer</span> <span class="kn">import</span> <span class="n">Transformer</span>
+
+
+<div class="viewcode-block" id="SentenceEncoder"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder">[docs]</a><span class="k">class</span> <span class="nc">SentenceEncoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    This is a TorchScriptable implementation of RoBERTa from fairseq</span>
+<span class="sd">    for the purposes of creating a productionized RoBERTa model. It distills just</span>
+<span class="sd">    the elements which are required to implement the RoBERTa model, and within that</span>
+<span class="sd">    is restructured and rewritten to be able to be compiled by TorchScript for</span>
+<span class="sd">    production use cases.</span>
+
+<span class="sd">    This SentenceEncoder can load in the public RoBERTa weights directly with</span>
+<span class="sd">    `load_roberta_state_dict`, which will translate the keys as they exist in</span>
+<span class="sd">    the publicly released RoBERTa to the correct structure for this implementation.</span>
+<span class="sd">    The default constructor value will have the same size and shape as that model.</span>
+
+<span class="sd">    To use RoBERTa with this, download the RoBERTa public weights as `roberta.weights`</span>
+
+<span class="sd">    &gt;&gt;&gt; encoder = SentenceEncoder()</span>
+<span class="sd">    &gt;&gt;&gt; weights = torch.load("roberta.weights")</span>
+<span class="sd">    &gt;&gt;&gt; encoder.load_roberta_state_dict(weights)</span>
+
+<span class="sd">    Within this you will still need to preprocess inputs using fairseq and the publicly</span>
+<span class="sd">    released vocabs, and finally place this encoder in a model alongside say an MLP</span>
+<span class="sd">    output layer to do classification.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transformer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Transformer</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">transformer</span> <span class="ow">or</span> <span class="n">Transformer</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SentenceEncoder.forward"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="n">all_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="n">last_layer</span> <span class="o">=</span> <span class="n">all_layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># T x B x C</span>
+        <span class="k">return</span> <span class="n">last_layer</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SentenceEncoder.extract_features"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.extract_features">[docs]</a>    <span class="k">def</span> <span class="nf">extract_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="c1"># support passing in a single sentence</span>
+        <span class="k">if</span> <span class="n">tokens</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SentenceEncoder.load_roberta_state_dict"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.SentenceEncoder.load_roberta_state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">load_roberta_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">translate_roberta_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="remove_state_keys"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.remove_state_keys">[docs]</a><span class="k">def</span> <span class="nf">remove_state_keys</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">keys_regex</span><span class="p">):</span>
+    <span class="sd">"""Remove keys from state that match a regex"""</span>
+    <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">keys_regex</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">regex</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">k</span><span class="p">)}</span></div>
+
+
+<div class="viewcode-block" id="rename_state_keys"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.rename_state_keys">[docs]</a><span class="k">def</span> <span class="nf">rename_state_keys</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">keys_regex</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+    <span class="sd">"""Rename keys from state that match a regex; replacement can use capture groups"""</span>
+    <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">keys_regex</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="p">(</span><span class="n">k</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">regex</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">else</span> <span class="n">regex</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">replacement</span><span class="p">,</span> <span class="n">k</span><span class="p">)):</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="rename_component_from_root"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.rename_component_from_root">[docs]</a><span class="k">def</span> <span class="nf">rename_component_from_root</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">old_name</span><span class="p">,</span> <span class="n">new_name</span><span class="p">):</span>
+    <span class="sd">"""Rename keys from state using full python paths"""</span>
+    <span class="k">return</span> <span class="n">rename_state_keys</span><span class="p">(</span>
+        <span class="n">state</span><span class="p">,</span> <span class="s2">"^"</span> <span class="o">+</span> <span class="n">old_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\."</span><span class="p">)</span> <span class="o">+</span> <span class="s2">".?(.*)$"</span><span class="p">,</span> <span class="n">new_name</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">".\1"</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="merge_input_projection"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.merge_input_projection">[docs]</a><span class="k">def</span> <span class="nf">merge_input_projection</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    New checkpoints of fairseq multihead attention split in_projections into</span>
+<span class="sd">    k,v,q projections. This function merge them back to to make it compatible.</span>
+<span class="sd">    """</span>
+    <span class="n">items_to_add</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">keys_to_remove</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bias_suffix</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"q_proj.bias"</span><span class="p">,</span> <span class="s2">"k_proj.bias"</span><span class="p">,</span> <span class="s2">"v_proj.bias"</span><span class="p">]</span>
+    <span class="n">weight_suffix</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"q_proj.weight"</span><span class="p">,</span> <span class="s2">"k_proj.weight"</span><span class="p">,</span> <span class="s2">"v_proj.weight"</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">override_state</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">new_suffix</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="n">new_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">+</span> <span class="n">new_suffix</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">new_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">items_to_add</span><span class="p">:</span>
+            <span class="n">items_to_add</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+                <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">items_to_add</span><span class="p">[</span><span class="n">new_key</span><span class="p">][</span><span class="n">idx</span> <span class="o">*</span> <span class="n">dim</span> <span class="p">:</span> <span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dim</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">keys_to_remove</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="c1"># weights</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">weight_suffix</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">suffix</span><span class="p">):</span>
+                <span class="n">override_state</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="s2">"in_proj_weight"</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="c1"># bias</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bias_suffix</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">suffix</span><span class="p">):</span>
+                <span class="n">override_state</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="s2">"in_proj_bias"</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys_to_remove</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">items_to_add</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">state</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">return</span> <span class="n">state</span></div>
+
+
+<div class="viewcode-block" id="translate_roberta_state_dict"><a class="viewcode-back" href="../../../../../modules/pytext.models.representations.transformer.html#pytext.models.representations.transformer.sentence_encoder.translate_roberta_state_dict">[docs]</a><span class="k">def</span> <span class="nf">translate_roberta_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">):</span>
+    <span class="sd">"""Translate the public RoBERTa weights to ones which match SentenceEncoder."""</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_component_from_root</span><span class="p">(</span>
+        <span class="n">state_dict</span><span class="p">,</span> <span class="s2">"decoder.sentence_encoder"</span><span class="p">,</span> <span class="s2">"transformer"</span>
+    <span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"embed_tokens"</span><span class="p">,</span> <span class="s2">"token_embedding"</span><span class="p">)</span>
+    <span class="c1"># TODO: segment_embeddings?</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span>
+        <span class="n">new_state</span><span class="p">,</span> <span class="s2">"embed_positions"</span><span class="p">,</span> <span class="s2">"positional_embedding.embedding"</span>
+    <span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"emb_layer_norm"</span><span class="p">,</span> <span class="s2">"embedding_layer_norm"</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"self_attn"</span><span class="p">,</span> <span class="s2">"attention"</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">merge_input_projection</span><span class="p">(</span><span class="n">new_state</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"_proj.(.*)"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"put_projection.\1"</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"fc1"</span><span class="p">,</span> <span class="s2">"residual_mlp.mlp.0"</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">rename_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"fc2"</span><span class="p">,</span> <span class="s2">"residual_mlp.mlp.3"</span><span class="p">)</span>
+
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">remove_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"^sentence_"</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">remove_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="s2">"_classification_head."</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">remove_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^decoder\.lm_head"</span><span class="p">)</span>
+    <span class="n">new_state</span> <span class="o">=</span> <span class="n">remove_state_keys</span><span class="p">(</span><span class="n">new_state</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"segment_embedding"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_state</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../../index.html">Module code</a><ul>
+<li><a href="../../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

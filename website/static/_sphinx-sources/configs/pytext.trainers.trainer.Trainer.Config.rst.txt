@@ -1,0 +1,121 @@
+Trainer.Config
+==============
+
+
+
+**Component:** :class:`Trainer  <pytext.trainers.trainer.Trainer>`\ 
+
+
+.. py:currentmodule:: pytext.trainers.trainer
+.. py:class:: Trainer.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **epochs**: int = ``10``
+    Training epochs
+    
+
+  **early_stop_after**: int = ``0``
+    Stop after how many epochs when the eval metric is not improving
+    
+
+  **max_clip_norm**: Optional[float] = ``None``
+    Clip gradient norm if set
+    
+
+  **report_train_metrics**: bool = ``True``
+    Whether metrics on training data should be computed and reported.
+    
+
+  **target_time_limit_seconds**: Optional[int] = ``None``
+    Target time limit for training, default (None) to no time limit.
+    
+
+  **do_eval**: bool = ``True``
+    Whether to do evaluation and model selection based on it.
+    
+
+  **load_best_model_after_train**: bool = ``True``
+    \ 
+
+  **num_samples_to_log_progress**: int = ``1000``
+    Number of samples for logging training progress.
+    
+
+  **num_accumulated_batches**: int = ``1``
+    Number of forward & backward per batch before update gradients, the
+    actual_batch_size = batch_size x num_accumulated_batches
+    
+
+  **num_batches_per_epoch**: Optional[int] = ``None``
+    Define epoch as a fixed number of batches. Subsequent epochs will continue
+    to iterate through the data, cycling through it when they reach the end.
+    If not set, use exactly one pass through the dataset as one epoch.
+    This configuration only affects the train epochs, test and eval
+    will always test their entire datasets.
+    
+
+  **optimizer**: :doc:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>` = :doc:`Adam.Config <pytext.optimizer.optimizers.Adam.Config>`\ ()
+    config for optimizer, used in parameter update
+    
+
+  **scheduler**: Optional[:doc:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`] = ``None``
+    \ 
+
+  **sparsifier**: Optional[:doc:`Sparsifier.Config <pytext.optimizer.sparsifiers.sparsifier.Sparsifier.Config>`] = ``None``
+    \ 
+
+  **fp16_args**: :doc:`FP16Optimizer.Config <pytext.optimizer.fp16_optimizer.FP16Optimizer.Config>` = :doc:`FP16OptimizerFairseq.Config <pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.Config>`\ ()
+    Define arguments for fp16 training. A fp16_optimizer will be created
+    and wraps the original optimizer, which will scale loss during
+    backward and master weight will be maintained on original optimizer.
+    https://arxiv.org/abs/1710.03740
+    
+
+
+
+**Subclasses**
+  - :class:`TaskTrainer.Config <pytext.trainers.trainer.TaskTrainer.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "epochs": 10,
+      "early_stop_after": 0,
+      "max_clip_norm": null,
+      "report_train_metrics": true,
+      "target_time_limit_seconds": null,
+      "do_eval": true,
+      "load_best_model_after_train": true,
+      "num_samples_to_log_progress": 1000,
+      "num_accumulated_batches": 1,
+      "num_batches_per_epoch": null,
+      "optimizer": {
+          "Adam": {
+              "lr": 0.001,
+              "weight_decay": 1e-05,
+              "eps": 1e-08
+          }
+      },
+      "scheduler": null,
+      "sparsifier": null,
+      "fp16_args": {
+          "FP16OptimizerFairseq": {
+              "init_loss_scale": 128,
+              "scale_window": null,
+              "scale_tolerance": 0.0,
+              "threshold_loss_scale": null,
+              "min_loss_scale": 0.0001
+          }
+      }
+  }

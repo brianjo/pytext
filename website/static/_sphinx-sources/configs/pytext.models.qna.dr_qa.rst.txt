@@ -1,0 +1,8 @@
+dr_qa
+=====
+
+
+.. toctree::
+
+  pytext.models.qna.dr_qa.DrQAModel.Config
+  pytext.models.qna.dr_qa.ModelInput

@@ -1,0 +1,40 @@
+FP16OptimizerApex.Config
+========================
+
+
+
+**Component:** :class:`FP16OptimizerApex  <pytext.optimizer.fp16_optimizer.FP16OptimizerApex>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.fp16_optimizer
+.. py:class:: FP16OptimizerApex.Config
+  :noindex:
+
+  **Bases:** :class:`FP16Optimizer.Config <pytext.optimizer.fp16_optimizer.FP16Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **opt_level**: str = ``'O2'``
+    \ 
+
+  **init_loss_scale**: Optional[int] = ``None``
+    \ 
+
+  **min_loss_scale**: Optional[float] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "opt_level": "O2",
+      "init_loss_scale": null,
+      "min_loss_scale": null
+  }

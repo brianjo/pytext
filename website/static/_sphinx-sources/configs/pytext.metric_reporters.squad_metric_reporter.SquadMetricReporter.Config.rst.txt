@@ -1,0 +1,52 @@
+SquadMetricReporter.Config
+==========================
+
+
+
+**Component:** :class:`SquadMetricReporter  <pytext.metric_reporters.squad_metric_reporter.SquadMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.squad_metric_reporter
+.. py:class:: SquadMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+  **n_best_size**: int = ``5``
+    \ 
+
+  **max_answer_length**: int = ``16``
+    \ 
+
+  **ignore_impossible**: bool = ``True``
+    \ 
+
+  **false_label**: str = ``'False'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false,
+      "n_best_size": 5,
+      "max_answer_length": 16,
+      "ignore_impossible": true,
+      "false_label": "False"
+  }

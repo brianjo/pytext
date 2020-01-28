@@ -1,0 +1,40 @@
+CompositionalMetricReporter.Config
+==================================
+
+
+
+**Component:** :class:`CompositionalMetricReporter  <pytext.metric_reporters.compositional_metric_reporter.CompositionalMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.compositional_metric_reporter
+.. py:class:: CompositionalMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+  **text_column_name**: str = ``'tokenized_text'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false,
+      "text_column_name": "tokenized_text"
+  }

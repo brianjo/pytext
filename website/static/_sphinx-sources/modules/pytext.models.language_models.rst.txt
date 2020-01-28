@@ -1,0 +1,22 @@
+pytext.models.language\_models package
+======================================
+
+Submodules
+----------
+
+pytext.models.language\_models.lmlstm module
+--------------------------------------------
+
+.. automodule:: pytext.models.language_models.lmlstm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.models.language_models
+   :members:
+   :undoc-members:
+   :show-inheritance:

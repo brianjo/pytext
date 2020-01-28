@@ -1,0 +1,55 @@
+ModelInput
+==========
+
+
+
+.. py:currentmodule:: pytext.models.semantic_parsers.rnng.rnng_parser
+.. py:class:: ModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ (column=\ ``'tokenized_text'``\ )
+    \ 
+
+  **actions**: :doc:`AnnotationNumberizer.Config <pytext.data.tensorizers.AnnotationNumberizer.Config>` = :doc:`AnnotationNumberizer.Config <pytext.data.tensorizers.AnnotationNumberizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "column": "tokenized_text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      },
+      "actions": {
+          "is_input": true,
+          "column": "seqlogical"
+      }
+  }

@@ -1,0 +1,345 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.exporters.exporter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">caffe2.python</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">caffe2.python.onnx.backend_rep</span> <span class="kn">import</span> <span class="n">Caffe2Rep</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">ComponentType</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">FeatureConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">CommonMetadata</span>
+<span class="kn">from</span> <span class="nn">pytext.fields</span> <span class="kn">import</span> <span class="n">FieldMeta</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">onnx</span>
+
+
+<div class="viewcode-block" id="ModelExporter"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter">[docs]</a><span class="k">class</span> <span class="nc">ModelExporter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Model exporter exports a PyTorch model to Caffe2 model using ONNX</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        input_names (List[Str]): names of the input variables to model forward</span>
+<span class="sd">            function, in a flattened way.</span>
+<span class="sd">            e.g: forward(tokens, dict) where tokens is List[Tensor] and dict is</span>
+<span class="sd">            a tuple of value and length: (List[Tensor], List[Tensor]) the</span>
+<span class="sd">            input names should looks like ['token', 'dict_value', 'dict_length']</span>
+<span class="sd">        dummy_model_input (Tuple[torch.Tensor]): dummy values to define the</span>
+<span class="sd">            shape of input tensors, should exactly match the shape of the model</span>
+<span class="sd">            forward function</span>
+<span class="sd">        vocab_map (Dict[str, List[str]]): dict of input feature names</span>
+<span class="sd">            to corresponding index_to_string array, e.g:</span>
+<span class="sd">            ::</span>
+
+<span class="sd">                {</span>
+<span class="sd">                    "text": ["&lt;UNK&gt;", "W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"],</span>
+<span class="sd">                    "dict": ["&lt;UNK&gt;", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"]</span>
+<span class="sd">                }</span>
+<span class="sd">        output_names (List[Str]): names of output variables</span>
+<span class="sd">    """</span>
+
+    <span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">ComponentType</span><span class="o">.</span><span class="n">EXPORTER</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">export_logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">export_raw_to_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="ModelExporter.from_config"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">,</span>
+        <span class="n">feature_config</span><span class="p">:</span> <span class="n">FeatureConfig</span><span class="p">,</span>
+        <span class="n">target_config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ConfigBase</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ConfigBase</span><span class="p">]],</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="n">CommonMetadata</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">            Gather all the necessary metadata from configs and global metadata to be</span>
+<span class="sd">            used in exporter</span>
+<span class="sd">        """</span>
+        <span class="n">input_names</span><span class="p">,</span> <span class="n">dummy_model_input</span><span class="p">,</span> <span class="n">vocab_map</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_feature_metadata</span><span class="p">(</span>
+            <span class="n">feature_config</span><span class="p">,</span> <span class="n">meta</span><span class="o">.</span><span class="n">features</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_config</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">target_config</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_config</span><span class="p">]</span>
+        <span class="n">output_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">name</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">target_config</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">target</span><span class="o">.</span><span class="n">export_output_names</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">input_names</span><span class="p">,</span> <span class="n">dummy_model_input</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">,</span> <span class="n">output_names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ModelExporter.get_feature_metadata"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.get_feature_metadata">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_feature_metadata</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">feature_config</span><span class="p">:</span> <span class="n">FeatureConfig</span><span class="p">,</span> <span class="n">feature_meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="c1"># The number of names in input_names *must* be equal to the number of</span>
+        <span class="c1"># tensors passed in dummy_input</span>
+        <span class="p">(</span>
+            <span class="n">input_names</span><span class="p">,</span>
+            <span class="n">dummy_model_input</span><span class="p">,</span>
+            <span class="n">feature_itos_map</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_exportable_metadata</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">),</span> <span class="n">feature_config</span><span class="p">,</span> <span class="n">feature_meta</span>
+        <span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_add_feature_lengths</span><span class="p">(</span><span class="n">input_names</span><span class="p">,</span> <span class="n">dummy_model_input</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">input_names</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dummy_model_input</span><span class="p">),</span> <span class="n">feature_itos_map</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">input_names</span><span class="p">,</span> <span class="n">dummy_model_input</span><span class="p">,</span> <span class="n">vocab_map</span><span class="p">,</span> <span class="n">output_names</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span> <span class="o">=</span> <span class="n">input_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span> <span class="o">=</span> <span class="n">output_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span> <span class="o">=</span> <span class="n">dummy_model_input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_map</span> <span class="o">=</span> <span class="n">vocab_map</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="c1"># validate feature vocab</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_map</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"{name} is not found in input names {self.input_names}, </span><span class="se">\</span>
+<span class="s2">                    there's a mismatch"</span>
+                <span class="p">)</span>
+
+<div class="viewcode-block" id="ModelExporter.prepend_operators"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.prepend_operators">[docs]</a>    <span class="k">def</span> <span class="nf">prepend_operators</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">c2_prepared</span><span class="p">:</span> <span class="n">Caffe2Rep</span><span class="p">,</span> <span class="n">input_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Caffe2Rep</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Prepend operators to the converted caffe2 net, do nothing by default</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            c2_prepared (Caffe2Rep): caffe2 net rep</span>
+<span class="sd">            input_names (List[str]): current input names to the caffe2 net</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            c2_prepared (Caffe2Rep): caffe2 net with prepended operators</span>
+<span class="sd">            input_names (List[str]): list of input names for the new net</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">onnx</span><span class="o">.</span><span class="n">add_feats_numericalize_ops</span><span class="p">(</span><span class="n">c2_prepared</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_map</span><span class="p">,</span> <span class="n">input_names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ModelExporter.postprocess_output"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.postprocess_output">[docs]</a>    <span class="k">def</span> <span class="nf">postprocess_output</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">init_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">predict_net</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">,</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">workspace</span><span class="p">,</span>
+        <span class="n">output_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">py_model</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Postprocess the model output, generate additional blobs for human readable</span>
+<span class="sd">        prediction. By default it use export function of output layer from pytorch</span>
+<span class="sd">        model to append additional operators to caffe2 net</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            init_net (caffe2.python.Net): caffe2 init net created by the current graph</span>
+<span class="sd">            predict_net (caffe2.python.Net): caffe2 net created by the current graph</span>
+<span class="sd">            workspace (caffe2.python.workspace): caffe2 current workspace</span>
+<span class="sd">            output_names (List[str]): current output names of the caffe2 net</span>
+<span class="sd">            py_model (Model): original pytorch model object</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            result: list of blobs that will be added to the caffe2 model</span>
+<span class="sd">            final_output_names: list of output names of the blobs to add</span>
+<span class="sd">        """</span>
+        <span class="n">model_out</span> <span class="o">=</span> <span class="n">py_model</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">py_model</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">export_to_caffe2</span><span class="p">(</span>
+            <span class="n">workspace</span><span class="p">,</span> <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">model_out</span><span class="p">,</span> <span class="o">*</span><span class="n">output_names</span>
+        <span class="p">)</span>
+
+        <span class="c1"># optionally include the last decoder layer of pytorch model</span>
+        <span class="n">final_output_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="n">output_names</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">export_logits</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">res</span><span class="p">,</span> <span class="n">final_output_names</span></div>
+
+<div class="viewcode-block" id="ModelExporter.get_extra_params"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.get_extra_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_extra_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list of blobs to be added as extra params to the caffe2 model</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="ModelExporter.export_to_caffe2"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.export_to_caffe2">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_caffe2</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        export pytorch model to caffe2 by first using ONNX to convert logic in forward</span>
+<span class="sd">        function to a caffe2 net, and then prepend/append additional operators to</span>
+<span class="sd">        the caffe2 net according to the model</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (Model): pytorch model to export</span>
+<span class="sd">            export_path (str): path to save the exported caffe2 model</span>
+<span class="sd">            export_onnx_path (str): path to save the exported onnx model</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            final_output_names: list of caffe2 model output names</span>
+<span class="sd">        """</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Saving caffe2 model to: {export_path}"</span><span class="p">)</span>
+
+        <span class="n">c2_prepared</span> <span class="o">=</span> <span class="n">onnx</span><span class="o">.</span><span class="n">pytorch_to_caffe2</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span><span class="p">,</span>
+            <span class="n">export_path</span><span class="p">,</span>
+            <span class="n">export_onnx_path</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">c2_prepared</span><span class="p">,</span> <span class="n">final_input_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepend_operators</span><span class="p">(</span>
+            <span class="n">c2_prepared</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Required because of https://github.com/pytorch/pytorch/pull/6456/files</span>
+        <span class="k">with</span> <span class="n">c2_prepared</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">_ctx</span><span class="p">:</span>
+            <span class="n">predict_net</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">(</span><span class="n">c2_prepared</span><span class="o">.</span><span class="n">predict_net</span><span class="p">)</span>
+            <span class="n">init_net</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">Net</span><span class="p">(</span><span class="n">c2_prepared</span><span class="o">.</span><span class="n">init_net</span><span class="p">)</span>
+
+            <span class="n">net_outputs</span><span class="p">,</span> <span class="n">final_out_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocess_output</span><span class="p">(</span>
+                <span class="n">init_net</span><span class="p">,</span> <span class="n">predict_net</span><span class="p">,</span> <span class="n">c2_prepared</span><span class="o">.</span><span class="n">workspace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span><span class="p">,</span> <span class="n">model</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">net_outputs</span><span class="p">:</span>
+                <span class="n">predict_net</span><span class="o">.</span><span class="n">AddExternalOutput</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="n">c2_prepared</span><span class="o">.</span><span class="n">predict_net</span> <span class="o">=</span> <span class="n">predict_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+            <span class="n">c2_prepared</span><span class="o">.</span><span class="n">init_net</span> <span class="o">=</span> <span class="n">init_net</span><span class="o">.</span><span class="n">Proto</span><span class="p">()</span>
+
+        <span class="c1"># Save predictor net to file</span>
+        <span class="n">onnx</span><span class="o">.</span><span class="n">export_nets_to_predictor_file</span><span class="p">(</span>
+            <span class="n">c2_prepared</span><span class="p">,</span>
+            <span class="n">final_input_names</span><span class="p">,</span>
+            <span class="n">final_out_names</span><span class="p">,</span>
+            <span class="n">export_path</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_extra_params</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">final_out_names</span></div>
+
+<div class="viewcode-block" id="ModelExporter.export_to_metrics"><a class="viewcode-back" href="../../../modules/pytext.exporters.html#pytext.exporters.exporter.ModelExporter.export_to_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metric_channels</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Exports the pytorch model to tensorboard as a graph.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (Model): pytorch model to export</span>
+<span class="sd">            metric_channels (List[Channel]): outputs of model's execution graph</span>
+<span class="sd">        """</span>
+
+        <span class="k">for</span> <span class="n">mc</span> <span class="ow">in</span> <span class="n">metric_channels</span> <span class="ow">or</span> <span class="p">[]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">export_raw_to_metrics</span><span class="p">:</span>
+                <span class="n">mc</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">,</span> <span class="n">operator_export_type</span><span class="o">=</span><span class="s2">"RAW"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mc</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">)</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_get_exportable_metadata</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">exportable_filter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">feature_config</span><span class="p">:</span> <span class="n">FeatureConfig</span><span class="p">,</span>
+        <span class="n">feature_meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+        <span class="c1"># The number of names in input_names *must* be equal to the number of</span>
+        <span class="c1"># tensors passed in dummy_input</span>
+        <span class="n">input_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dummy_model_input</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">feature_itos_map</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">feat_config</span> <span class="ow">in</span> <span class="n">feature_config</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">exportable_filter</span><span class="p">(</span><span class="n">feat_config</span><span class="p">):</span>
+                <span class="n">input_names</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">feat_config</span><span class="o">.</span><span class="n">export_input_names</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">feature_meta</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="s2">"vocab"</span><span class="p">,</span> <span class="bp">None</span><span class="p">):</span>
+                    <span class="n">feature_itos_map</span><span class="p">[</span><span class="n">feat_config</span><span class="o">.</span><span class="n">export_input_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">feature_meta</span><span class="p">[</span>
+                        <span class="n">name</span>
+                    <span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">itos</span>
+                <span class="n">dummy_model_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature_meta</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dummy_model_input</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">input_names</span><span class="p">,</span> <span class="n">dummy_model_input</span><span class="p">,</span> <span class="n">feature_itos_map</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_add_feature_lengths</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">input_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">dummy_model_input</span><span class="p">:</span> <span class="n">List</span><span class="p">):</span>
+        <span class="sd">"""If any of the input_names have tokens or seq_tokens, add the length</span>
+<span class="sd">        of those tokens to dummy_input</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="s2">"tokens_vals"</span> <span class="ow">in</span> <span class="n">input_names</span><span class="p">:</span>
+            <span class="n">dummy_model_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+            <span class="p">)</span>  <span class="c1"># token lengths</span>
+            <span class="n">input_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"tokens_lens"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"seq_tokens_vals"</span> <span class="ow">in</span> <span class="n">input_names</span><span class="p">:</span>
+            <span class="n">dummy_model_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+            <span class="p">)</span>  <span class="c1"># seq lengths</span>
+            <span class="n">input_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"seq_tokens_lens"</span><span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

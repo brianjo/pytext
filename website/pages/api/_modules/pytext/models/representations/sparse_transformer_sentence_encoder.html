@@ -1,0 +1,187 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.representations.sparse_transformer_sentence_encoder</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">fairseq.modules.sparse_transformer_sentence_encoder</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SparseTransformerSentenceEncoder</span> <span class="k">as</span> <span class="n">SparseTransformerSentenceEncoderModule</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.transformer_sentence_encoder</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransformerSentenceEncoder</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="SparseTransformerSentenceEncoder"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.sparse_transformer_sentence_encoder.SparseTransformerSentenceEncoder">[docs]</a><span class="k">class</span> <span class="nc">SparseTransformerSentenceEncoder</span><span class="p">(</span><span class="n">TransformerSentenceEncoder</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Implementation of the Transformer Sentence Encoder. This directly makes</span>
+<span class="sd">    use of the TransformerSentenceEncoder module in Fairseq.</span>
+
+<span class="sd">    A few interesting config options:</span>
+<span class="sd">        - encoder_normalize_before detemines whether the layer norm is applied</span>
+<span class="sd">          before or after self_attention. This is similar to original</span>
+<span class="sd">          implementation from Google.</span>
+<span class="sd">        - activation_fn can be set to 'gelu' instead of the default of 'relu'.</span>
+<span class="sd">        - project_representation adds a linear projection + tanh to the pooled output</span>
+<span class="sd">          in the style of BERT.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">TransformerSentenceEncoder</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="c1"># Dropout parameters</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">attention_dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">activation_dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+        <span class="c1"># Parameters related to hidden states and self-attention</span>
+        <span class="n">embedding_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">768</span>
+        <span class="n">ffn_embedding_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3072</span>
+        <span class="n">num_encoder_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+        <span class="n">num_segments</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="c1"># Parameters related to positions</span>
+        <span class="n">use_position_embeddings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1"># the fairseq module for position embeddings offsets all position</span>
+        <span class="c1"># ids by the padding index. Disable this offset by setting this flag</span>
+        <span class="c1"># to False. This will work correctly since we mask out the embeddings</span>
+        <span class="c1"># associated with padding in the encoder</span>
+        <span class="n">offset_positions_by_padding</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c1"># Model Initialization parameters</span>
+        <span class="n">apply_bert_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c1"># Misc. Params</span>
+        <span class="n">encoder_normalize_before</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">activation_fn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"relu"</span>
+        <span class="n">project_representation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+
+        <span class="c1"># multilingual is set to true for cross-lingual LM training</span>
+        <span class="n">multilingual</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c1"># Flags for freezing parameters (e.g. during fine-tuning)</span>
+        <span class="n">freeze_embeddings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">n_trans_layers_to_freeze</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Sparse multihead attention parameters</span>
+        <span class="n">is_bidirectional</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+        <span class="n">expressivity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span>
+        <span class="n">output_encoded_layers</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">padding_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwarg</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">config</span><span class="p">,</span>
+            <span class="n">output_encoded_layers</span><span class="o">=</span><span class="n">output_encoded_layers</span><span class="p">,</span>
+            <span class="n">padding_idx</span><span class="o">=</span><span class="n">padding_idx</span><span class="p">,</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab_size</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sentence_encoder</span> <span class="o">=</span> <span class="n">SparseTransformerSentenceEncoderModule</span><span class="p">(</span>
+            <span class="n">padding_idx</span><span class="o">=</span><span class="n">padding_idx</span><span class="p">,</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab_size</span><span class="p">,</span>
+            <span class="n">num_encoder_layers</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">num_encoder_layers</span><span class="p">,</span>
+            <span class="n">embedding_dim</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">embedding_dim</span><span class="p">,</span>
+            <span class="n">ffn_embedding_dim</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">ffn_embedding_dim</span><span class="p">,</span>
+            <span class="n">num_attention_heads</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">attention_dropout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">attention_dropout</span><span class="p">,</span>
+            <span class="n">activation_dropout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">activation_dropout</span><span class="p">,</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+            <span class="n">num_segments</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">num_segments</span><span class="p">,</span>
+            <span class="n">use_position_embeddings</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">use_position_embeddings</span><span class="p">,</span>
+            <span class="n">offset_positions_by_padding</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">offset_positions_by_padding</span><span class="p">,</span>
+            <span class="n">encoder_normalize_before</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">encoder_normalize_before</span><span class="p">,</span>
+            <span class="n">apply_bert_init</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">apply_bert_init</span><span class="p">,</span>
+            <span class="n">activation_fn</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">activation_fn</span><span class="p">,</span>
+            <span class="n">freeze_embeddings</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">freeze_embeddings</span><span class="p">,</span>
+            <span class="n">n_trans_layers_to_freeze</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">n_trans_layers_to_freeze</span><span class="p">,</span>
+            <span class="n">export</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">,</span>
+            <span class="n">is_bidirectional</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">is_bidirectional</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">expressivity</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">expressivity</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

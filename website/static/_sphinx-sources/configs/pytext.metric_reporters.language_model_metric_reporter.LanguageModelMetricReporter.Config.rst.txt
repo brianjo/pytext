@@ -1,0 +1,48 @@
+LanguageModelMetricReporter.Config
+==================================
+
+
+
+**Component:** :class:`LanguageModelMetricReporter  <pytext.metric_reporters.language_model_metric_reporter.LanguageModelMetricReporter>`\ 
+
+
+.. py:currentmodule:: pytext.metric_reporters.language_model_metric_reporter
+.. py:class:: LanguageModelMetricReporter.Config
+  :noindex:
+
+  **Bases:** :class:`MetricReporter.Config <pytext.metric_reporters.metric_reporter.MetricReporter.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **output_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **pep_format**: bool = ``False``
+    \ 
+
+  **aggregate_metrics**: bool = ``True``
+    \ 
+
+  **perplexity_type**: PerplexityType = ``<PerplexityType.MEDIAN: 'median'>``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`MaskedLMMetricReporter.Config <pytext.metric_reporters.language_model_metric_reporter.MaskedLMMetricReporter.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "output_path": "/tmp/test_out.txt",
+      "pep_format": false,
+      "aggregate_metrics": true,
+      "perplexity_type": "median"
+  }

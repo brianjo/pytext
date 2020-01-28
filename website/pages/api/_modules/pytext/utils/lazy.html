@@ -1,0 +1,250 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.lazy</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+
+
+<div class="viewcode-block" id="lazy_property"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.lazy_property">[docs]</a><span class="k">class</span> <span class="nc">lazy_property</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    More or less copy-pasta: http://stackoverflow.com/a/6849299</span>
+<span class="sd">    Meant to be used for lazy evaluation of an object attribute.</span>
+<span class="sd">    property should represent non-mutable data, as it replaces itself.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fget</span> <span class="o">=</span> <span class="n">fget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__doc__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">obj_cls_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="UninitializedLazyModuleError"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.UninitializedLazyModuleError">[docs]</a><span class="k">class</span> <span class="nc">UninitializedLazyModuleError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">"""A lazy module was used improperly."""</span></div>
+
+
+<div class="viewcode-block" id="Infer"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.Infer">[docs]</a><span class="k">class</span> <span class="nc">Infer</span><span class="p">:</span>
+    <span class="sd">"""A value which can be inferred from a forward pass. Infer objects should</span>
+<span class="sd">    be passed as arguments or keyword arguments to Lazy objects; see Lazy</span>
+<span class="sd">    documentation for more details.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolve_fn</span><span class="p">):</span>
+        <span class="sd">"""resolve_fn is called by Lazy on the arguments of the first forward pass</span>
+<span class="sd">        to the Lazy module, and the Infer object will be replaced in the call by the</span>
+<span class="sd">        output of this function. It should have the same signature as the</span>
+<span class="sd">        Lazy-wrapped Module's forward function."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span> <span class="o">=</span> <span class="n">resolve_fn</span>
+
+<div class="viewcode-block" id="Infer.dimension"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.Infer.dimension">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+        <span class="sd">"""A helper for creating Infer arguments looking at specific dimensions."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="k">lambda</span> <span class="nb">input</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="n">dim</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="Lazy"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.Lazy">[docs]</a><span class="k">class</span> <span class="nc">Lazy</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    A module which is able to infer some of its parameters from the inputs to</span>
+<span class="sd">    its first forward pass. Lazy wraps any other nn.Module, and arguments can be passed</span>
+<span class="sd">    that will be used to construct that wrapped Module after the first forward pass.</span>
+<span class="sd">    If any of these arguments are Infer objects, those arguments will be replaced by</span>
+<span class="sd">    calling the callback of the Infer object on the forward pass input.</span>
+
+<span class="sd">    For instance,</span>
+<span class="sd">    &gt;&gt;&gt; Lazy(nn.Linear, Infer(lambda input: input.size(-1)), 4)</span>
+<span class="sd">    Lazy()</span>
+
+<span class="sd">    takes its in_features dimension from the last dimension of the input to its forward</span>
+<span class="sd">    pass. This can be simplified to</span>
+
+<span class="sd">    &gt;&gt;&gt; Lazy(nn.Linear, Infer.dimension(-1), 4)</span>
+
+<span class="sd">    or a partial can be created, for instance</span>
+
+<span class="sd">    &gt;&gt;&gt; LazyLinear = Lazy.partial(nn.Linear, Infer.dimension(-1))</span>
+<span class="sd">    &gt;&gt;&gt; LazyLinear(4)</span>
+<span class="sd">    Lazy()</span>
+
+<span class="sd">    Finally, these Lazy objects explicitly forbid treating themselves normally;</span>
+<span class="sd">    they must instead be replaced by calling `init_lazy_modules`</span>
+<span class="sd">    on your model before training. For instance,</span>
+
+<span class="sd">    &gt;&gt;&gt; ll = lazy.Linear(4)</span>
+<span class="sd">    &gt;&gt;&gt; seq = nn.Sequential(ll)</span>
+<span class="sd">    &gt;&gt;&gt; seq</span>
+<span class="sd">    Sequential(</span>
+<span class="sd">        0: Lazy(),</span>
+<span class="sd">    )</span>
+<span class="sd">    &gt;&gt;&gt; init_lazy_modules(seq, torch.rand(1, 2)</span>
+<span class="sd">    Sequential(</span>
+<span class="sd">        0: Linear(in_features=2, out_features=4, bias=True)</span>
+<span class="sd">    )</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_class</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_class</span> <span class="o">=</span> <span class="n">module_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="Lazy.partial"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.Lazy.partial">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">partial</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">module_class</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">module_class</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">UninitializedLazyModuleError</span><span class="p">(</span>
+            <span class="s2">"Must call init_lazy_modules before getting parameters"</span>
+        <span class="p">)</span>
+
+    <span class="nd">@_parameters.setter</span>
+    <span class="k">def</span> <span class="nf">_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Lazy.forward"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.Lazy.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module</span><span class="p">:</span>
+            <span class="n">constructor_args</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">arg</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Infer</span><span class="p">)</span> <span class="k">else</span> <span class="n">arg</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span>
+            <span class="p">]</span>
+            <span class="n">constructor_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">key</span><span class="p">:</span> <span class="n">arg</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Infer</span><span class="p">)</span> <span class="k">else</span> <span class="n">arg</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_class</span><span class="p">(</span><span class="o">*</span><span class="n">constructor_args</span><span class="p">,</span> <span class="o">**</span><span class="n">constructor_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Lazy.resolve"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.Lazy.resolve">[docs]</a>    <span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Must make a call to forward before calling this function; returns the</span>
+<span class="sd">        full nn.Module object constructed using inferred arguments/dimensions."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">UninitializedLazyModuleError</span><span class="p">(</span>
+                <span class="s2">"Must call forward before calling resolve on a lazy module"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module</span></div></div>
+
+
+<div class="viewcode-block" id="replace_lazy_modules"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.replace_lazy_modules">[docs]</a><span class="k">def</span> <span class="nf">replace_lazy_modules</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">Lazy</span><span class="p">):</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">named_children</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">add_module</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">replace_lazy_modules</span><span class="p">(</span><span class="n">child</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">module</span></div>
+
+
+<div class="viewcode-block" id="init_lazy_modules"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.lazy.init_lazy_modules">[docs]</a><span class="k">def</span> <span class="nf">init_lazy_modules</span><span class="p">(</span>
+    <span class="n">module</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">dummy_input</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="sd">"""Finalize an nn.Module which has Lazy components. This will both mutate internal</span>
+<span class="sd">    modules which have Lazy elements, and return a new non-lazy nn.Module (in case</span>
+<span class="sd">    the top-level module itself is Lazy).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module: An nn.Module which may be lazy or contain Lazy subcomponents</span>
+<span class="sd">        dummy_input: module is called with this input to ensure that Lazy subcomponents</span>
+<span class="sd">            have been able to infer any parameters they need</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The full nn.Module object constructed using inferred arguments/dimensions.</span>
+<span class="sd">    """</span>
+    <span class="n">module</span><span class="p">(</span><span class="o">*</span><span class="n">dummy_input</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">replace_lazy_modules</span><span class="p">(</span><span class="n">module</span><span class="p">)</span></div>
+
+
+<span class="n">Linear</span> <span class="o">=</span> <span class="n">Lazy</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">,</span> <span class="n">Infer</span><span class="o">.</span><span class="n">dimension</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">Lazy</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">,</span> <span class="n">Infer</span><span class="o">.</span><span class="n">dimension</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">Conv1d</span> <span class="o">=</span> <span class="n">Lazy</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">,</span> <span class="n">Infer</span><span class="o">.</span><span class="n">dimension</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

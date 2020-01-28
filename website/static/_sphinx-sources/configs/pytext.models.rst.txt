@@ -1,0 +1,27 @@
+models
+======
+
+
+.. toctree::
+
+  pytext.models.bert_classification_models
+  pytext.models.bert_regression_model
+  pytext.models.decoders
+  pytext.models.disjoint_multitask_model
+  pytext.models.doc_model
+  pytext.models.embeddings
+  pytext.models.ensembles
+  pytext.models.joint_model
+  pytext.models.language_models
+  pytext.models.masked_lm
+  pytext.models.model
+  pytext.models.module
+  pytext.models.output_layers
+  pytext.models.pair_classification_model
+  pytext.models.qna
+  pytext.models.query_document_pairwise_ranking_model
+  pytext.models.representations
+  pytext.models.roberta
+  pytext.models.semantic_parsers
+  pytext.models.seq_models
+  pytext.models.word_model

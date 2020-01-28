@@ -1,0 +1,7 @@
+embedding_list
+==============
+
+
+.. toctree::
+
+  pytext.models.embeddings.embedding_list.EmbeddingList.Config

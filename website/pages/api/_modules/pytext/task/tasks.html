@@ -1,0 +1,321 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.task.tasks</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">doc_classification</span> <span class="k">as</span> <span class="n">DocClassification</span>
+<span class="kn">from</span> <span class="nn">pytext.config.field_config</span> <span class="kn">import</span> <span class="n">WordLabelConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.data.bert_tensorizer</span> <span class="kn">import</span> <span class="n">BERTTensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.data</span> <span class="kn">import</span> <span class="n">Data</span>
+<span class="kn">from</span> <span class="nn">pytext.data.packed_lm_data</span> <span class="kn">import</span> <span class="n">PackedLMData</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.exporters</span> <span class="kn">import</span> <span class="n">DenseFeatureExporter</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ClassificationMetricReporter</span><span class="p">,</span>
+    <span class="n">CompositionalMetricReporter</span><span class="p">,</span>
+    <span class="n">IntentSlotMetricReporter</span><span class="p">,</span>
+    <span class="n">LanguageModelMetricReporter</span><span class="p">,</span>
+    <span class="n">NERMetricReporter</span><span class="p">,</span>
+    <span class="n">PairwiseRankingMetricReporter</span><span class="p">,</span>
+    <span class="n">PureLossMetricReporter</span><span class="p">,</span>
+    <span class="n">RegressionMetricReporter</span><span class="p">,</span>
+    <span class="n">SequenceTaggingMetricReporter</span><span class="p">,</span>
+    <span class="n">SquadMetricReporter</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters.channel</span> <span class="kn">import</span> <span class="n">ConsoleChannel</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters.language_model_metric_reporter</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MaskedLMMetricReporter</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.bert_classification_models</span> <span class="kn">import</span> <span class="n">NewBertModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.bert_regression_model</span> <span class="kn">import</span> <span class="n">NewBertRegressionModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.doc_model</span> <span class="kn">import</span> <span class="n">DocModel</span><span class="p">,</span> <span class="n">DocRegressionModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.ensembles</span> <span class="kn">import</span> <span class="n">BaggingDocEnsembleModel</span><span class="p">,</span> <span class="n">EnsembleModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.joint_model</span> <span class="kn">import</span> <span class="n">IntentSlotModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.language_models.lmlstm</span> <span class="kn">import</span> <span class="n">LMLSTM</span>
+<span class="kn">from</span> <span class="nn">pytext.models.masked_lm</span> <span class="kn">import</span> <span class="n">MaskedLanguageModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.pair_classification_model</span> <span class="kn">import</span> <span class="n">BasePairwiseModel</span><span class="p">,</span> <span class="n">PairwiseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.qna.bert_squad_qa</span> <span class="kn">import</span> <span class="n">BertSquadQAModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.qna.dr_qa</span> <span class="kn">import</span> <span class="n">DrQAModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.query_document_pairwise_ranking_model</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QueryDocPairwiseRankingModel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.sparse_transformer_sentence_encoder</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa f401</span>
+    <span class="n">SparseTransformerSentenceEncoder</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.roberta</span> <span class="kn">import</span> <span class="n">RoBERTaWordTaggingModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.semantic_parsers.rnng.rnng_parser</span> <span class="kn">import</span> <span class="n">RNNGParser</span>
+<span class="kn">from</span> <span class="nn">pytext.models.seq_models.contextual_intent_slot</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+    <span class="n">ContextualIntentSlotModel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.seq_models.seqnn</span> <span class="kn">import</span> <span class="n">SeqNNModel</span><span class="p">,</span> <span class="n">SeqNNModel_Deprecated</span>
+<span class="kn">from</span> <span class="nn">pytext.models.word_model</span> <span class="kn">import</span> <span class="n">WordTaggingModel</span>
+<span class="kn">from</span> <span class="nn">pytext.task</span> <span class="kn">import</span> <span class="n">Task_Deprecated</span>
+<span class="kn">from</span> <span class="nn">pytext.task.new_task</span> <span class="kn">import</span> <span class="n">NewTask</span>
+<span class="kn">from</span> <span class="nn">pytext.trainers</span> <span class="kn">import</span> <span class="n">EnsembleTrainer</span><span class="p">,</span> <span class="n">HogwildTrainer</span><span class="p">,</span> <span class="n">Trainer</span>
+
+
+<div class="viewcode-block" id="QueryDocumentPairwiseRankingTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.QueryDocumentPairwiseRankingTask">[docs]</a><span class="k">class</span> <span class="nc">QueryDocumentPairwiseRankingTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">QueryDocPairwiseRankingModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">QueryDocPairwiseRankingModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">PairwiseRankingMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">PairwiseRankingMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EnsembleTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.EnsembleTask">[docs]</a><span class="k">class</span> <span class="nc">EnsembleTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">EnsembleModel</span><span class="o">.</span><span class="n">Config</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">EnsembleTrainer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">EnsembleTrainer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">IntentSlotMetricReporter</span><span class="o">.</span><span class="n">Config</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="EnsembleTask.train_single_model"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.EnsembleTask.train_single_model">[docs]</a>    <span class="k">def</span> <span class="nf">train_single_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_config</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">real_trainers</span><span class="p">[</span><span class="n">model_id</span><span class="p">]</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">model_id</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+            <span class="n">train_config</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleTask.example_config"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.EnsembleTask.example_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">example_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">BaggingDocEnsembleModel</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()])</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DocumentClassificationTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.DocumentClassificationTask">[docs]</a><span class="k">class</span> <span class="nc">DocumentClassificationTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">DocModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">PureLossMetricReporter</span><span class="o">.</span><span class="n">Config</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">())</span>
+        <span class="c1">#   for multi-label classification task,</span>
+        <span class="c1">#   choose MultiLabelClassificationMetricReporter</span>
+
+<div class="viewcode-block" id="DocumentClassificationTask.format_prediction"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.DocumentClassificationTask.format_prediction">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">format_prediction</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">target_names</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+            <span class="n">score_with_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">s</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">target_names</span><span class="p">,</span> <span class="n">score</span><span class="o">.</span><span class="n">tolist</span><span class="p">())}</span>
+            <span class="k">yield</span> <span class="p">{</span>
+                <span class="s2">"prediction"</span><span class="p">:</span> <span class="n">target_names</span><span class="p">[</span><span class="n">prediction</span><span class="o">.</span><span class="n">data</span><span class="p">],</span>
+                <span class="s2">"score"</span><span class="p">:</span> <span class="n">score_with_name</span><span class="p">,</span>
+            <span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="DocumentRegressionTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.DocumentRegressionTask">[docs]</a><span class="k">class</span> <span class="nc">DocumentRegressionTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">DocRegressionModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">DocRegressionModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">RegressionMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">RegressionMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NewBertClassificationTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.NewBertClassificationTask">[docs]</a><span class="k">class</span> <span class="nc">NewBertClassificationTask</span><span class="p">(</span><span class="n">DocumentClassificationTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DocumentClassificationTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">NewBertModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NewBertModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NewBertPairClassificationTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.NewBertPairClassificationTask">[docs]</a><span class="k">class</span> <span class="nc">NewBertPairClassificationTask</span><span class="p">(</span><span class="n">DocumentClassificationTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DocumentClassificationTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">NewBertModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NewBertModel</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">inputs</span><span class="o">=</span><span class="n">NewBertModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">BertModelInput</span><span class="p">(</span>
+                <span class="n">tokens</span><span class="o">=</span><span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"text1"</span><span class="p">,</span> <span class="s2">"text2"</span><span class="p">],</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">128</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">text_column_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"text1"</span><span class="p">,</span> <span class="s2">"text2"</span><span class="p">])</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BertPairRegressionTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.BertPairRegressionTask">[docs]</a><span class="k">class</span> <span class="nc">BertPairRegressionTask</span><span class="p">(</span><span class="n">DocumentRegressionTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">DocumentRegressionTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">NewBertRegressionModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NewBertRegressionModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="WordTaggingTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.WordTaggingTask">[docs]</a><span class="k">class</span> <span class="nc">WordTaggingTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">WordTaggingModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordTaggingModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">SequenceTaggingMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">SequenceTaggingMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WordTaggingTask.create_metric_reporter"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.WordTaggingTask.create_metric_reporter">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_metric_reporter</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="n">SequenceTaggingMetricReporter</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="IntentSlotTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.IntentSlotTask">[docs]</a><span class="k">class</span> <span class="nc">IntentSlotTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">IntentSlotModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">IntentSlotModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">IntentSlotMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">IntentSlotMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LMTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.LMTask">[docs]</a><span class="k">class</span> <span class="nc">LMTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">LMLSTM</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LMLSTM</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">LanguageModelMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">LanguageModelMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MaskedLMTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.MaskedLMTask">[docs]</a><span class="k">class</span> <span class="nc">MaskedLMTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">PackedLMData</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">MaskedLanguageModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MaskedLanguageModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">MaskedLMMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">MaskedLMMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PairwiseClassificationTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.PairwiseClassificationTask">[docs]</a><span class="k">class</span> <span class="nc">PairwiseClassificationTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">BasePairwiseModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">PairwiseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">text_column_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"text1"</span><span class="p">,</span> <span class="s2">"text2"</span><span class="p">])</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RoBERTaNERTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.RoBERTaNERTask">[docs]</a><span class="k">class</span> <span class="nc">RoBERTaNERTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">RoBERTaWordTaggingModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">RoBERTaWordTaggingModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">NERMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NERMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RoBERTaNERTask.create_metric_reporter"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.RoBERTaNERTask.create_metric_reporter">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_metric_reporter</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="n">NERMetricReporter</span><span class="p">(</span>
+            <span class="n">channels</span><span class="o">=</span><span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">()],</span>
+            <span class="n">label_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">labels_vocab</span><span class="o">.</span><span class="n">_vocab</span><span class="p">),</span>
+            <span class="n">pad_idx</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">labels_pad_idx</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SeqNNTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.SeqNNTask">[docs]</a><span class="k">class</span> <span class="nc">SeqNNTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">SeqNNModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">SeqNNModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ClassificationMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">text_column_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"text_seq"</span><span class="p">])</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SquadQATask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.SquadQATask">[docs]</a><span class="k">class</span> <span class="nc">SquadQATask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">BertSquadQAModel</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">DrQAModel</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="n">DrQAModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">SquadMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">SquadMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SemanticParsingTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.tasks.SemanticParsingTask">[docs]</a><span class="k">class</span> <span class="nc">SemanticParsingTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">RNNGParser</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">RNNGParser</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">HogwildTrainer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">HogwildTrainer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">CompositionalMetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">RNNGParser</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">CompositionalMetricReporter</span><span class="p">,</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">HogwildTrainer</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">,</span> <span class="n">trainer</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">train_batch_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">eval_batch_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">test_batch_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">),</span> <span class="s2">"RNNGParser only supports batch size = 1"</span>
+        <span class="k">assert</span> <span class="n">trainer</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">report_train_metrics</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">"Disable report_train_metrics because trees are not necessarily "</span>
+            <span class="s2">"valid during training"</span>
+        <span class="p">)</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

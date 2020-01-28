@@ -1,0 +1,482 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.data.bert_tensorizer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">fairseq.data.dictionary</span> <span class="kn">import</span> <span class="n">Dictionary</span>
+<span class="kn">from</span> <span class="nn">fairseq.data.legacy.masked_lm_dictionary</span> <span class="kn">import</span> <span class="n">BertDictionary</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">create_component</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span><span class="p">,</span> <span class="n">TensorizerScriptImpl</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">WordPieceTokenizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.utils</span> <span class="kn">import</span> <span class="n">BOS</span><span class="p">,</span> <span class="n">EOS</span><span class="p">,</span> <span class="n">MASK</span><span class="p">,</span> <span class="n">PAD</span><span class="p">,</span> <span class="n">UNK</span><span class="p">,</span> <span class="n">SpecialToken</span><span class="p">,</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.tensorizer.tensorizer</span> <span class="kn">import</span> <span class="n">VocabLookup</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.utils</span> <span class="kn">import</span> <span class="n">pad_2d</span><span class="p">,</span> <span class="n">pad_2d_mask</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.vocab</span> <span class="kn">import</span> <span class="n">ScriptVocabulary</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.lazy</span> <span class="kn">import</span> <span class="n">lazy_property</span>
+
+
+<span class="k">def</span> <span class="nf">build_fairseq_vocab</span><span class="p">(</span>
+    <span class="n">vocab_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">dictionary_class</span><span class="p">:</span> <span class="n">Dictionary</span> <span class="o">=</span> <span class="n">Dictionary</span><span class="p">,</span>
+    <span class="n">special_token_replacements</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SpecialToken</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="n">max_vocab</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">min_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vocabulary</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Function builds a PyText vocabulary for models pre-trained using Fairseq</span>
+<span class="sd">    modules. The dictionary class can take any Fairseq Dictionary class</span>
+<span class="sd">    and is used to load the vocab file.</span>
+<span class="sd">    """</span>
+    <span class="n">dictionary</span> <span class="o">=</span> <span class="n">dictionary_class</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">)</span>
+    <span class="c1"># finalize will sort the dict based on frequency so only do this if</span>
+    <span class="c1"># a min_count or max_vocab size is specified</span>
+    <span class="k">if</span> <span class="n">min_count</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">max_vocab</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">dictionary</span><span class="o">.</span><span class="n">finalize</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">min_count</span><span class="p">,</span> <span class="n">nwords</span><span class="o">=</span><span class="n">max_vocab</span><span class="p">,</span> <span class="n">padding_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Vocabulary</span><span class="p">(</span>
+        <span class="n">dictionary</span><span class="o">.</span><span class="n">symbols</span><span class="p">,</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">replacements</span><span class="o">=</span><span class="n">special_token_replacements</span>
+    <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">BERTTensorizerBaseScriptImpl</span><span class="p">(</span><span class="n">TensorizerScriptImpl</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">vocab</span><span class="p">:</span> <span class="n">Vocabulary</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">ScriptVocabulary</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">vocab</span><span class="p">),</span>
+            <span class="n">pad_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span>
+            <span class="n">bos_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_bos_index</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">eos_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_eos_index</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">unk_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_unk_index</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_lookup</span> <span class="o">=</span> <span class="n">VocabLookup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span> <span class="o">=</span> <span class="n">max_seq_len</span>
+
+    <span class="k">def</span> <span class="nf">_lookup_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">max_seq_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        This function knows how to call lookup_tokens with the correct</span>
+<span class="sd">        settings for this model. The default behavior is to wrap the</span>
+<span class="sd">        numberized text with distinct BOS and EOS tokens. The resulting</span>
+<span class="sd">        vector would look something like this:</span>
+<span class="sd">        [BOS, token1_id, . . . tokenN_id, EOS]</span>
+
+<span class="sd">        The function also takes an optional seq_len parameter which is</span>
+<span class="sd">        used to customize truncation in case we have multiple text fields.</span>
+<span class="sd">        By default max_seq_len is used. It's upto the numberize function of</span>
+<span class="sd">        the class to decide how to use the seq_len param.</span>
+
+<span class="sd">        For example:</span>
+<span class="sd">        - In the case of sentence pair classification, we might want both</span>
+<span class="sd">        pieces of text have the same length which is half of the</span>
+<span class="sd">        max_seq_len supported by the model.</span>
+<span class="sd">        - In the case of QA, we might want to truncate the context by a</span>
+<span class="sd">        seq_len which is longer than what we use for the question.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tokens: a list of tokens represent a sentence, each token represented</span>
+<span class="sd">            by token string, start and end indices.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tokens_ids: List[int], a list of token ids represent a sentence.</span>
+<span class="sd">            start_indices: List[int], each token start indice in the sentence.</span>
+<span class="sd">            end_indices: List[int], each token end indice in the sentence.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">max_seq_len</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">max_seq_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_lookup</span><span class="p">(</span>
+            <span class="n">tokens</span><span class="p">,</span>
+            <span class="n">bos_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">bos_idx</span><span class="p">,</span>
+            <span class="n">eos_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">eos_idx</span><span class="p">,</span>
+            <span class="n">use_eos_token_for_bos</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="n">max_seq_len</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_wrap_numberized_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">numberized_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        If a class has a non-standard way of generating the final numberized text</span>
+<span class="sd">        (eg: BERT) then a class specific version of wrap_numberized_text function</span>
+<span class="sd">        should be implemented. This allows us to share the numberize</span>
+<span class="sd">        function across classes without having to copy paste code. The default</span>
+<span class="sd">        implementation doesnt do anything.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">numberized_tokens</span>
+
+    <span class="k">def</span> <span class="nf">numberize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">per_sentence_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        This function contains logic for converting tokens into ids based on</span>
+<span class="sd">        the specified vocab. It also outputs, for each instance, the vectors</span>
+<span class="sd">        needed to run the actual model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            per_sentence_tokens: list of tokens per sentence level in one row,</span>
+<span class="sd">            each token represented by token string, start and end indices.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tokens: List[int], a list of token ids, concatenate all</span>
+<span class="sd">            sentences token ids.</span>
+<span class="sd">            segment_labels: List[int], denotes each token belong to</span>
+<span class="sd">            which sentence.</span>
+<span class="sd">            seq_len: int, tokens length</span>
+<span class="sd">            positions: List[int], token positions</span>
+<span class="sd">        """</span>
+        <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">segment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">positions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">single_sentence_tokens</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">per_sentence_tokens</span><span class="p">):</span>
+            <span class="n">lookup_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lookup_tokens</span><span class="p">(</span><span class="n">single_sentence_tokens</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">lookup_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_numberized_tokens</span><span class="p">(</span><span class="n">lookup_ids</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+            <span class="n">tokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">lookup_ids</span><span class="p">)</span>
+            <span class="n">segment_labels</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">lookup_ids</span><span class="p">))</span>
+
+        <span class="n">seq_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">positions</span>
+
+    <span class="k">def</span> <span class="nf">tensorize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tokens_2d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">segment_labels_2d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">seq_lens_1d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">positions_2d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Convert instance level vectors into batch level tensors.</span>
+<span class="sd">        """</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">pad_mask</span> <span class="o">=</span> <span class="n">pad_2d_mask</span><span class="p">(</span><span class="n">tokens_2d</span><span class="p">,</span> <span class="n">pad_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">pad_idx</span><span class="p">)</span>
+        <span class="n">segment_labels</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="n">pad_2d</span><span class="p">(</span><span class="n">segment_labels_2d</span><span class="p">,</span> <span class="n">seq_lens</span><span class="o">=</span><span class="n">seq_lens_1d</span><span class="p">,</span> <span class="n">pad_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span>
+        <span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="n">pad_2d</span><span class="p">(</span><span class="n">positions_2d</span><span class="p">,</span> <span class="n">seq_lens</span><span class="o">=</span><span class="n">seq_lens_1d</span><span class="p">,</span> <span class="n">pad_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">pad_mask</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">positions</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">tokens</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+                <span class="n">pad_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+                <span class="n">segment_labels</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+                <span class="n">positions</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">row_text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">row_pre_tokenized</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        This function convert raw inputs into tokens, each token is represented</span>
+<span class="sd">        by token(str), start and end indices in the raw inputs. There are two</span>
+<span class="sd">        possible inputs to this function depends if the tokenized in implemented</span>
+<span class="sd">        in TorchScript or not.</span>
+
+<span class="sd">        Case 1: Tokenizer has a full TorchScript implementation, the input will</span>
+<span class="sd">        be a list of sentences (in most case it is single sentence or a pair).</span>
+
+<span class="sd">        Case 2: Tokenizer have partial or no TorchScript implementation, in most</span>
+<span class="sd">        case, the tokenizer will be host in Yoda, the input will be a list of</span>
+<span class="sd">        pre-processed tokens.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            per_sentence_tokens: tokens per setence level, each token is</span>
+<span class="sd">            represented by token(str), start and end indices.</span>
+<span class="sd">        """</span>
+        <span class="n">per_sentence_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">row_text</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">row_text</span><span class="p">:</span>
+                <span class="n">per_sentence_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">row_pre_tokenized</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">sentence_pre_tokenized</span> <span class="ow">in</span> <span class="n">row_pre_tokenized</span><span class="p">:</span>
+                <span class="n">sentence_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">sentence_pre_tokenized</span><span class="p">:</span>
+                    <span class="n">sentence_tokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">token</span><span class="p">))</span>
+                <span class="n">per_sentence_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sentence_tokens</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">per_sentence_tokens</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">texts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">pre_tokenized</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Wire up tokenize(), numberize() and tensorize() functions for data</span>
+<span class="sd">        processing.</span>
+<span class="sd">        When export to TorchScript, the wrapper module should choose to use</span>
+<span class="sd">        texts or pre_tokenized based on the TorchScript tokenizer</span>
+<span class="sd">        implementation (e.g use external tokenizer such as Yoda or not).</span>
+<span class="sd">        """</span>
+        <span class="n">tokens_2d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">segment_labels_2d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">seq_lens_1d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">positions_2d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">pre_tokenized</span><span class="p">)):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_texts_by_index</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">idx</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_tokens_by_index</span><span class="p">(</span><span class="n">pre_tokenized</span><span class="p">,</span> <span class="n">idx</span><span class="p">),</span>
+            <span class="p">)</span>
+
+            <span class="n">numberized</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numberize</span><span class="p">(</span>
+                <span class="n">tokens</span>
+            <span class="p">)</span>
+            <span class="n">tokens_2d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numberized</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">segment_labels_2d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numberized</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">seq_lens_1d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numberized</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">positions_2d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numberized</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorize</span><span class="p">(</span><span class="n">tokens_2d</span><span class="p">,</span> <span class="n">segment_labels_2d</span><span class="p">,</span> <span class="n">seq_lens_1d</span><span class="p">,</span> <span class="n">positions_2d</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># tokenizer will only be used in Inference, so we hold its torchscriptify</span>
+        <span class="c1"># by end of the training.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">ScriptModule</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">torchscriptify</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">torchscriptify</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">BERTTensorizerBase</span><span class="p">(</span><span class="n">Tensorizer</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Base Tensorizer class for all BERT style models including XLM,</span>
+<span class="sd">    RoBERTa and XLM-R.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="BERTTensorizerBase.Config"><a class="viewcode-back" href="../../../configs/pytext.data.bert_tensorizer.BERTTensorizerBase.Config.html#pytext.data.bert_tensorizer.BERTTensorizerBase.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Tensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="c1"># BERT style models support multiple text inputs</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"text"</span><span class="p">]</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="c1"># base token-level tokenizer for sequence labeling tasks</span>
+        <span class="n">base_tokenizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">vocab_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="n">vocab</span><span class="p">:</span> <span class="n">Vocabulary</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+        <span class="n">base_tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_tokenizer</span> <span class="o">=</span> <span class="n">base_tokenizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span> <span class="o">=</span> <span class="n">max_seq_len</span>
+        <span class="c1"># Needed to ensure that we're not masking special tokens. By default</span>
+        <span class="c1"># we use the BOS token from the vocab. If a class has different</span>
+        <span class="c1"># behavior (eg: XLM), it needs to override this.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">bos_token</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">column_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">column</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+    <span class="nd">@lazy_property</span>
+    <span class="k">def</span> <span class="nf">tensorizer_script_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__TENSORIZER_SCRIPT_IMPL__</span><span class="p">(</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">numberize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        This function contains logic for converting tokens into ids based on</span>
+<span class="sd">        the specified vocab. It also outputs, for each instance, the vectors</span>
+<span class="sd">        needed to run the actual model.</span>
+<span class="sd">        """</span>
+        <span class="n">per_sentence_tokens</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">column</span><span class="p">])</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorizer_script_impl</span><span class="o">.</span><span class="n">numberize</span><span class="p">(</span><span class="n">per_sentence_tokens</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tensorize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="sd">"""</span>
+<span class="sd">        Convert instance level vectors into batch level tensors.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensorizer_script_impl</span><span class="o">.</span><span class="n">tensorize_wrapper</span><span class="p">(</span><span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_builder</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">from_scratch</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c1"># vocab for BERT is already set</span>
+        <span class="k">return</span>
+        <span class="c1"># we need yield here to make this function a generator</span>
+        <span class="k">yield</span>
+
+    <span class="k">def</span> <span class="nf">sort_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">BERTTensorizerScriptImpl</span><span class="p">(</span><span class="n">BERTTensorizerBaseScriptImpl</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_lookup_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">max_seq_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="n">max_seq_len</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">max_seq_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_len</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_lookup</span><span class="p">(</span>
+            <span class="n">tokens</span><span class="p">,</span>
+            <span class="n">bos_idx</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">eos_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">eos_idx</span><span class="p">,</span>
+            <span class="n">use_eos_token_for_bos</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="n">max_seq_len</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_wrap_numberized_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">numberized_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">numberized_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">bos_idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">numberized_tokens</span>
+        <span class="k">return</span> <span class="n">numberized_tokens</span>
+
+
+<span class="k">class</span> <span class="nc">BERTTensorizer</span><span class="p">(</span><span class="n">BERTTensorizerBase</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Tensorizer for BERT tasks.  Works for single sentence, sentence pair, triples etc.</span>
+<span class="sd">    """</span>
+
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">__TENSORIZER_SCRIPT_IMPL__</span> <span class="o">=</span> <span class="n">BERTTensorizerScriptImpl</span>
+
+<div class="viewcode-block" id="BERTTensorizer.Config"><a class="viewcode-back" href="../../../configs/pytext.data.bert_tensorizer.BERTTensorizer.Config.html#pytext.data.bert_tensorizer.BERTTensorizer.Config">[docs]</a>    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BERTTensorizerBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordPieceTokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">vocab_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">WordPieceTokenizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">wordpiece_vocab_path</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        from_config parses the config associated with the tensorizer and</span>
+<span class="sd">        creates both the tokenizer and the Vocabulary object. The extra arguments</span>
+<span class="sd">        passed as kwargs allow us to reuse thie function with variable number</span>
+<span class="sd">        of arguments (eg: for classes which derive from this class).</span>
+<span class="sd">        """</span>
+        <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">TOKENIZER</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">)</span>
+        <span class="n">special_token_replacements</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"[UNK]"</span><span class="p">:</span> <span class="n">UNK</span><span class="p">,</span>
+            <span class="s2">"[PAD]"</span><span class="p">:</span> <span class="n">PAD</span><span class="p">,</span>
+            <span class="s2">"[CLS]"</span><span class="p">:</span> <span class="n">BOS</span><span class="p">,</span>
+            <span class="s2">"[MASK]"</span><span class="p">:</span> <span class="n">MASK</span><span class="p">,</span>
+            <span class="s2">"[SEP]"</span><span class="p">:</span> <span class="n">EOS</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">WordPieceTokenizer</span><span class="p">):</span>
+            <span class="n">vocab</span> <span class="o">=</span> <span class="n">Vocabulary</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span>
+                <span class="n">replacements</span><span class="o">=</span><span class="n">special_token_replacements</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_path</span><span class="p">:</span>
+                <span class="n">vocab</span> <span class="o">=</span> <span class="n">build_fairseq_vocab</span><span class="p">(</span>
+                    <span class="n">dictionary_class</span><span class="o">=</span><span class="n">BertDictionary</span><span class="p">,</span>
+                    <span class="n">vocab_file</span><span class="o">=</span><span class="n">file_path</span><span class="p">,</span>
+                    <span class="n">special_token_replacements</span><span class="o">=</span><span class="n">special_token_replacements</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="n">max_seq_len</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="n">vocab</span><span class="p">:</span> <span class="n">Vocabulary</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">max_seq_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">max_seq_len</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="n">max_seq_len</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

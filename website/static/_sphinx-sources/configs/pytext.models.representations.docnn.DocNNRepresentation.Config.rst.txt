@@ -1,0 +1,61 @@
+DocNNRepresentation.Config
+==========================
+
+
+
+**Component:** :class:`DocNNRepresentation  <pytext.models.representations.docnn.DocNNRepresentation>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.docnn
+.. py:class:: DocNNRepresentation.Config
+  :noindex:
+
+  **Bases:** :class:`RepresentationBase.Config <pytext.models.representations.representation_base.RepresentationBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **dropout**: float = ``0.4``
+    \ 
+
+  **cnn**: :doc:`CNNParams <pytext.config.module_config.CNNParams>` = :doc:`CNNParams <pytext.config.module_config.CNNParams>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "dropout": 0.4,
+      "cnn": {
+          "kernel_num": 100,
+          "kernel_sizes": [
+              3,
+              4
+          ],
+          "weight_norm": false,
+          "dilated": false,
+          "causal": false
+      }
+  }

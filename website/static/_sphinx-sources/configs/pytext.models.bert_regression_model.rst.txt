@@ -1,0 +1,8 @@
+bert_regression_model
+=====================
+
+
+.. toctree::
+
+  pytext.models.bert_regression_model.InputConfig
+  pytext.models.bert_regression_model.NewBertRegressionModel.Config

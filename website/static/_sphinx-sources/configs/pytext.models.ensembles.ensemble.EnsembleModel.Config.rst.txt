@@ -1,0 +1,34 @@
+EnsembleModel.Config
+====================
+
+
+
+**Component:** :class:`EnsembleModel  <pytext.models.ensembles.ensemble.EnsembleModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.ensembles.ensemble
+.. py:class:: EnsembleModel.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **models**: list[Any]
+    \ 
+
+  **sample_rate**: float = ``1.0``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BaggingDocEnsembleModel.Config <pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel.Config>`\ 
+  - :class:`BaggingIntentSlotEnsembleModel.Config <pytext.models.ensembles.bagging_intent_slot_ensemble.BaggingIntentSlotEnsembleModel.Config>`\ 
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

@@ -1,0 +1,9 @@
+word_tagging_metric_reporter
+============================
+
+
+.. toctree::
+
+  pytext.metric_reporters.word_tagging_metric_reporter.NERMetricReporter.Config
+  pytext.metric_reporters.word_tagging_metric_reporter.SequenceTaggingMetricReporter.Config
+  pytext.metric_reporters.word_tagging_metric_reporter.WordTaggingMetricReporter.Config

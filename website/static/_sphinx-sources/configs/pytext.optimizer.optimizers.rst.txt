@@ -1,0 +1,11 @@
+optimizers
+==========
+
+
+.. toctree::
+
+  pytext.optimizer.optimizers.Adagrad.Config
+  pytext.optimizer.optimizers.Adam.Config
+  pytext.optimizer.optimizers.AdamW.Config
+  pytext.optimizer.optimizers.Optimizer.Config
+  pytext.optimizer.optimizers.SGD.Config

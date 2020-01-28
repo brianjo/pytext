@@ -1,0 +1,55 @@
+InputConfig
+===========
+
+
+
+.. py:currentmodule:: pytext.models.roberta
+.. py:class:: InputConfig
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`RoBERTaTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config>` = :doc:`RoBERTaTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config>`\ ()
+    \ 
+
+  **labels**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "columns": [
+              "text"
+          ],
+          "tokenizer": {
+              "GPT2BPETokenizer": {
+                  "bpe_encoder_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json",
+                  "bpe_vocab_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe"
+              }
+          },
+          "base_tokenizer": null,
+          "vocab_file": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/dict.txt",
+          "max_seq_len": 256
+      },
+      "labels": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "label",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      }
+  }

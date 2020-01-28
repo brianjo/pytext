@@ -1,0 +1,348 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="pytext-data-featurizer-package">
+<h1>pytext.data.featurizer package<a class="headerlink" href="#pytext-data-featurizer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pytext.data.featurizer.featurizer">
+<span id="pytext-data-featurizer-featurizer-module"></span><h2>pytext.data.featurizer.featurizer module<a class="headerlink" href="#module-pytext.data.featurizer.featurizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.featurizer.featurizer.Featurizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.featurizer.</code><code class="sig-name descname">Featurizer</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.Featurizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Featurizer is tasked with performing data preprocessing that should be shared
+between training and inference, namely, tokenization and gazetteer features
+alignment.</p>
+<p>This is an interface whose featurize() method must be implemented so that
+the implemented interface can be used with the appropriate data handler.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.Featurizer.featurize">
+<code class="sig-name descname">featurize</code><span class="sig-paren">(</span><em class="sig-param">input_record: pytext.data.featurizer.featurizer.InputRecord</em><span class="sig-paren">)</span> → pytext.data.featurizer.featurizer.OutputRecord<a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.featurize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.Featurizer.featurize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.Featurizer.featurize_batch">
+<code class="sig-name descname">featurize_batch</code><span class="sig-paren">(</span><em class="sig-param">input_record_list: Sequence[pytext.data.featurizer.featurizer.InputRecord]</em><span class="sig-paren">)</span> → Sequence[pytext.data.featurizer.featurizer.OutputRecord]<a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.featurize_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.Featurizer.featurize_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Featurize a batch of instances/examples.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.Featurizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.Featurizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.Featurizer.get_sentence_markers">
+<code class="sig-name descname">get_sentence_markers</code><span class="sig-paren">(</span><em class="sig-param">locale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.get_sentence_markers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.Featurizer.get_sentence_markers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.featurizer.featurizer.InputRecord">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.featurizer.</code><code class="sig-name descname">InputRecord</code><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#InputRecord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.InputRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>Input data contract between Featurizer and DataHandler.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.InputRecord.locale">
+<em class="property">property </em><code class="sig-name descname">locale</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.InputRecord.locale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.InputRecord.raw_gazetteer_feats">
+<em class="property">property </em><code class="sig-name descname">raw_gazetteer_feats</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.InputRecord.raw_gazetteer_feats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.InputRecord.raw_text">
+<em class="property">property </em><code class="sig-name descname">raw_text</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.InputRecord.raw_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.featurizer.</code><code class="sig-name descname">OutputRecord</code><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#OutputRecord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>Output data contract between Featurizer and DataHandler.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.characters">
+<em class="property">property </em><code class="sig-name descname">characters</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.characters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.contextual_token_embedding">
+<em class="property">property </em><code class="sig-name descname">contextual_token_embedding</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.contextual_token_embedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.dense_feats">
+<em class="property">property </em><code class="sig-name descname">dense_feats</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.dense_feats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.gazetteer_feat_lengths">
+<em class="property">property </em><code class="sig-name descname">gazetteer_feat_lengths</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.gazetteer_feat_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.gazetteer_feat_weights">
+<em class="property">property </em><code class="sig-name descname">gazetteer_feat_weights</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.gazetteer_feat_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.gazetteer_feats">
+<em class="property">property </em><code class="sig-name descname">gazetteer_feats</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.gazetteer_feats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.token_ranges">
+<em class="property">property </em><code class="sig-name descname">token_ranges</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.token_ranges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.featurizer.OutputRecord.tokens">
+<em class="property">property </em><code class="sig-name descname">tokens</code><a class="headerlink" href="#pytext.data.featurizer.featurizer.OutputRecord.tokens" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.data.featurizer.simple_featurizer">
+<span id="pytext-data-featurizer-simple-featurizer-module"></span><h2>pytext.data.featurizer.simple_featurizer module<a class="headerlink" href="#module-pytext.data.featurizer.simple_featurizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.simple_featurizer.</code><code class="sig-name descname">SimpleFeaturizer</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.simple_featurizer.SimpleFeaturizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.featurizer.featurizer.Featurizer" title="pytext.data.featurizer.featurizer.Featurizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.featurizer.featurizer.Featurizer</span></code></a></p>
+<p>Simple featurizer for basic tokenization and gazetteer feature alignment.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.featurize">
+<code class="sig-name descname">featurize</code><span class="sig-paren">(</span><em class="sig-param">input_record: pytext.data.featurizer.featurizer.InputRecord</em><span class="sig-paren">)</span> → pytext.data.featurizer.featurizer.OutputRecord<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.featurize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.featurize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Featurize one instance/example only.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.featurize_batch">
+<code class="sig-name descname">featurize_batch</code><span class="sig-paren">(</span><em class="sig-param">input_records: Sequence[pytext.data.featurizer.featurizer.InputRecord]</em><span class="sig-paren">)</span> → Sequence[pytext.data.featurizer.featurizer.OutputRecord]<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.featurize_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.featurize_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Featurize a batch of instances/examples.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.get_sentence_markers">
+<code class="sig-name descname">get_sentence_markers</code><span class="sig-paren">(</span><em class="sig-param">locale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.get_sentence_markers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.get_sentence_markers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_record: pytext.data.featurizer.featurizer.InputRecord</em><span class="sig-paren">)</span> → pytext.data.featurizer.featurizer.OutputRecord<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tokenize one instance/example only.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.tokenize_batch">
+<code class="sig-name descname">tokenize_batch</code><span class="sig-paren">(</span><em class="sig-param">input_records: Sequence[pytext.data.featurizer.featurizer.InputRecord]</em><span class="sig-paren">)</span> → Sequence[pytext.data.featurizer.featurizer.OutputRecord]<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.tokenize_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.tokenize_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-pytext.data.featurizer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pytext.data.featurizer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pytext.data.featurizer.Featurizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.</code><code class="sig-name descname">Featurizer</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.Featurizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="pytext.config.html#pytext.config.component.Component" title="pytext.config.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.config.component.Component</span></code></a></p>
+<p>Featurizer is tasked with performing data preprocessing that should be shared
+between training and inference, namely, tokenization and gazetteer features
+alignment.</p>
+<p>This is an interface whose featurize() method must be implemented so that
+the implemented interface can be used with the appropriate data handler.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.Featurizer.featurize">
+<code class="sig-name descname">featurize</code><span class="sig-paren">(</span><em class="sig-param">input_record: pytext.data.featurizer.featurizer.InputRecord</em><span class="sig-paren">)</span> → pytext.data.featurizer.featurizer.OutputRecord<a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.featurize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.Featurizer.featurize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.Featurizer.featurize_batch">
+<code class="sig-name descname">featurize_batch</code><span class="sig-paren">(</span><em class="sig-param">input_record_list: Sequence[pytext.data.featurizer.featurizer.InputRecord]</em><span class="sig-paren">)</span> → Sequence[pytext.data.featurizer.featurizer.OutputRecord]<a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.featurize_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.Featurizer.featurize_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Featurize a batch of instances/examples.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.Featurizer.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.Featurizer.from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.Featurizer.get_sentence_markers">
+<code class="sig-name descname">get_sentence_markers</code><span class="sig-paren">(</span><em class="sig-param">locale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#Featurizer.get_sentence_markers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.Featurizer.get_sentence_markers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.featurizer.InputRecord">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.</code><code class="sig-name descname">InputRecord</code><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#InputRecord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.InputRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>Input data contract between Featurizer and DataHandler.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.InputRecord.locale">
+<em class="property">property </em><code class="sig-name descname">locale</code><a class="headerlink" href="#pytext.data.featurizer.InputRecord.locale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.InputRecord.raw_gazetteer_feats">
+<em class="property">property </em><code class="sig-name descname">raw_gazetteer_feats</code><a class="headerlink" href="#pytext.data.featurizer.InputRecord.raw_gazetteer_feats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.InputRecord.raw_text">
+<em class="property">property </em><code class="sig-name descname">raw_text</code><a class="headerlink" href="#pytext.data.featurizer.InputRecord.raw_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.featurizer.OutputRecord">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.</code><code class="sig-name descname">OutputRecord</code><a class="reference internal" href="../_modules/pytext/data/featurizer/featurizer.html#OutputRecord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.OutputRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>Output data contract between Featurizer and DataHandler.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.characters">
+<em class="property">property </em><code class="sig-name descname">characters</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.characters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.contextual_token_embedding">
+<em class="property">property </em><code class="sig-name descname">contextual_token_embedding</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.contextual_token_embedding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.dense_feats">
+<em class="property">property </em><code class="sig-name descname">dense_feats</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.dense_feats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.gazetteer_feat_lengths">
+<em class="property">property </em><code class="sig-name descname">gazetteer_feat_lengths</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.gazetteer_feat_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.gazetteer_feat_weights">
+<em class="property">property </em><code class="sig-name descname">gazetteer_feat_weights</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.gazetteer_feat_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.gazetteer_feats">
+<em class="property">property </em><code class="sig-name descname">gazetteer_feats</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.gazetteer_feats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.token_ranges">
+<em class="property">property </em><code class="sig-name descname">token_ranges</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.token_ranges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.OutputRecord.tokens">
+<em class="property">property </em><code class="sig-name descname">tokens</code><a class="headerlink" href="#pytext.data.featurizer.OutputRecord.tokens" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="pytext.data.featurizer.SimpleFeaturizer">
+<em class="property">class </em><code class="sig-prename descclassname">pytext.data.featurizer.</code><code class="sig-name descname">SimpleFeaturizer</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">feature_config: pytext.config.field_config.FeatureConfig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.SimpleFeaturizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pytext.data.featurizer.featurizer.Featurizer" title="pytext.data.featurizer.featurizer.Featurizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">pytext.data.featurizer.featurizer.Featurizer</span></code></a></p>
+<p>Simple featurizer for basic tokenization and gazetteer feature alignment.</p>
+<dl class="method">
+<dt id="pytext.data.featurizer.SimpleFeaturizer.featurize">
+<code class="sig-name descname">featurize</code><span class="sig-paren">(</span><em class="sig-param">input_record: pytext.data.featurizer.featurizer.InputRecord</em><span class="sig-paren">)</span> → pytext.data.featurizer.featurizer.OutputRecord<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.featurize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.SimpleFeaturizer.featurize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Featurize one instance/example only.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.SimpleFeaturizer.featurize_batch">
+<code class="sig-name descname">featurize_batch</code><span class="sig-paren">(</span><em class="sig-param">input_records: Sequence[pytext.data.featurizer.featurizer.InputRecord]</em><span class="sig-paren">)</span> → Sequence[pytext.data.featurizer.featurizer.OutputRecord]<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.featurize_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.SimpleFeaturizer.featurize_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Featurize a batch of instances/examples.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.SimpleFeaturizer.get_sentence_markers">
+<code class="sig-name descname">get_sentence_markers</code><span class="sig-paren">(</span><em class="sig-param">locale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.get_sentence_markers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.SimpleFeaturizer.get_sentence_markers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.SimpleFeaturizer.tokenize">
+<code class="sig-name descname">tokenize</code><span class="sig-paren">(</span><em class="sig-param">input_record: pytext.data.featurizer.featurizer.InputRecord</em><span class="sig-paren">)</span> → pytext.data.featurizer.featurizer.OutputRecord<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.tokenize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.SimpleFeaturizer.tokenize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tokenize one instance/example only.</p>
+</dd></dl>
+<dl class="method">
+<dt id="pytext.data.featurizer.SimpleFeaturizer.tokenize_batch">
+<code class="sig-name descname">tokenize_batch</code><span class="sig-paren">(</span><em class="sig-param">input_records: Sequence[pytext.data.featurizer.featurizer.InputRecord]</em><span class="sig-paren">)</span> → Sequence[pytext.data.featurizer.featurizer.OutputRecord]<a class="reference internal" href="../_modules/pytext/data/featurizer/simple_featurizer.html#SimpleFeaturizer.tokenize_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytext.data.featurizer.SimpleFeaturizer.tokenize_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.builtin_task">pytext.builtin_task module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.main">pytext.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext.workflow">pytext.workflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.html#module-pytext">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext package</a><ul>
+<li><a href="pytext.data.html">pytext.data package</a><ul>
+<li>Previous: <a href="pytext.data.data_structures.html" title="previous chapter">pytext.data.data_structures package</a></li>
+<li>Next: <a href="pytext.data.sources.html" title="next chapter">pytext.data.sources package</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

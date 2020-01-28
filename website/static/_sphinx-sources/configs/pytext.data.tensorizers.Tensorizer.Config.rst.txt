@@ -1,0 +1,62 @@
+Tensorizer.Config
+=================
+
+
+
+**Component:** :class:`Tensorizer  <pytext.data.tensorizers.Tensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.tensorizers
+.. py:class:: Tensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>`\ 
+  - :class:`BERTTensorizerBase.Config <pytext.data.bert_tensorizer.BERTTensorizerBase.Config>`\ 
+  - :class:`RoBERTaTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config>`\ 
+  - :class:`RoBERTaTokenLevelTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config>`\ 
+  - :class:`SquadForBERTTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizer.Config>`\ 
+  - :class:`SquadForBERTTensorizerForKD.Config <pytext.data.squad_for_bert_tensorizer.SquadForBERTTensorizerForKD.Config>`\ 
+  - :class:`SquadForRoBERTaTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForRoBERTaTensorizer.Config>`\ 
+  - :class:`SquadTensorizer.Config <pytext.data.squad_tensorizer.SquadTensorizer.Config>`\ 
+  - :class:`SquadTensorizerForKD.Config <pytext.data.squad_tensorizer.SquadTensorizerForKD.Config>`\ 
+  - :class:`AnnotationNumberizer.Config <pytext.data.tensorizers.AnnotationNumberizer.Config>`\ 
+  - :class:`ByteTensorizer.Config <pytext.data.tensorizers.ByteTensorizer.Config>`\ 
+  - :class:`ByteTokenTensorizer.Config <pytext.data.tensorizers.ByteTokenTensorizer.Config>`\ 
+  - :class:`CharacterTokenTensorizer.Config <pytext.data.tensorizers.CharacterTokenTensorizer.Config>`\ 
+  - :class:`FloatListTensorizer.Config <pytext.data.tensorizers.FloatListTensorizer.Config>`\ 
+  - :class:`FloatTensorizer.Config <pytext.data.tensorizers.FloatTensorizer.Config>`\ 
+  - :class:`GazetteerTensorizer.Config <pytext.data.tensorizers.GazetteerTensorizer.Config>`\ 
+  - :class:`LabelListTensorizer.Config <pytext.data.tensorizers.LabelListTensorizer.Config>`\ 
+  - :class:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ 
+  - :class:`MetricTensorizer.Config <pytext.data.tensorizers.MetricTensorizer.Config>`\ 
+  - :class:`NtokensTensorizer.Config <pytext.data.tensorizers.NtokensTensorizer.Config>`\ 
+  - :class:`NumericLabelTensorizer.Config <pytext.data.tensorizers.NumericLabelTensorizer.Config>`\ 
+  - :class:`SeqTokenTensorizer.Config <pytext.data.tensorizers.SeqTokenTensorizer.Config>`\ 
+  - :class:`SlotLabelTensorizer.Config <pytext.data.tensorizers.SlotLabelTensorizer.Config>`\ 
+  - :class:`SlotLabelTensorizerExpansible.Config <pytext.data.tensorizers.SlotLabelTensorizerExpansible.Config>`\ 
+  - :class:`SoftLabelTensorizer.Config <pytext.data.tensorizers.SoftLabelTensorizer.Config>`\ 
+  - :class:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ 
+  - :class:`UidTensorizer.Config <pytext.data.tensorizers.UidTensorizer.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true
+  }

@@ -1,0 +1,10 @@
+fp16_optimizer
+==============
+
+
+.. toctree::
+
+  pytext.optimizer.fp16_optimizer.FP16Optimizer.Config
+  pytext.optimizer.fp16_optimizer.FP16OptimizerApex.Config
+  pytext.optimizer.fp16_optimizer.FP16OptimizerFairseq.Config
+  pytext.optimizer.fp16_optimizer.MemoryEfficientFP16OptimizerFairseq.Config

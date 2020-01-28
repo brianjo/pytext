@@ -1,0 +1,64 @@
+RoBERTaTensorizer.Config
+========================
+
+
+
+**Component:** :class:`RoBERTaTensorizer  <pytext.data.roberta_tensorizer.RoBERTaTensorizer>`\ 
+
+
+.. py:currentmodule:: pytext.data.roberta_tensorizer
+.. py:class:: RoBERTaTensorizer.Config
+  :noindex:
+
+  **Bases:** :class:`BERTTensorizerBase.Config <pytext.data.bert_tensorizer.BERTTensorizerBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **is_input**: bool = ``True``
+    \ 
+
+  **columns**: list[str] = ``['text']``
+    \ 
+
+  **tokenizer**: :doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>` = :doc:`GPT2BPETokenizer.Config <pytext.data.tokenizers.tokenizer.GPT2BPETokenizer.Config>`\ ()
+    \ 
+
+  **base_tokenizer**: Optional[:doc:`Tokenizer.Config <pytext.data.tokenizers.tokenizer.Tokenizer.Config>`] = ``None``
+    \ 
+
+  **vocab_file**: str = ``'manifold://pytext_training/tree/static/vocabs/bpe/gpt2/dict.txt'``
+    \ 
+
+  **max_seq_len**: int = ``256``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`RoBERTaTokenLevelTensorizer.Config <pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config>`\ 
+  - :class:`SquadForRoBERTaTensorizer.Config <pytext.data.squad_for_bert_tensorizer.SquadForRoBERTaTensorizer.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "is_input": true,
+      "columns": [
+          "text"
+      ],
+      "tokenizer": {
+          "GPT2BPETokenizer": {
+              "bpe_encoder_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/encoder.json",
+              "bpe_vocab_path": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/vocab.bpe"
+          }
+      },
+      "base_tokenizer": null,
+      "vocab_file": "manifold://pytext_training/tree/static/vocabs/bpe/gpt2/dict.txt",
+      "max_seq_len": 256
+  }

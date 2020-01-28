@@ -1,0 +1,36 @@
+Adagrad.Config
+==============
+
+
+
+**Component:** :class:`Adagrad  <pytext.optimizer.optimizers.Adagrad>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.optimizers
+.. py:class:: Adagrad.Config
+  :noindex:
+
+  **Bases:** :class:`Optimizer.Config <pytext.optimizer.optimizers.Optimizer.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **lr**: float = ``0.01``
+    \ 
+
+  **weight_decay**: float = ``1e-05``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "lr": 0.01,
+      "weight_decay": 1e-05
+  }

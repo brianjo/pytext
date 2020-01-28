@@ -1,0 +1,178 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="wordembedding-config">
+<h1>WordEmbedding.Config<a class="headerlink" href="#wordembedding-config" title="Permalink to this headline">¶</a></h1>
+<p><strong>Component:</strong> <a class="reference internal" href="../modules/pytext.models.embeddings.html#pytext.models.embeddings.word_embedding.WordEmbedding" title="pytext.models.embeddings.word_embedding.WordEmbedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">WordEmbedding</span></code></a></p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="sig-prename descclassname">WordEmbedding.</code><code class="sig-name descname">Config</code></dt>
+<dd><p><strong>Bases:</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">Module.Config</span></code></p>
+</dd></dl>
+<p><strong>All Attributes (including base classes)</strong></p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>load_path</strong>: Optional[str] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>save_path</strong>: Optional[str] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>freeze</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>shared_module_key</strong>: Optional[str] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>embed_dim</strong>: int = <code class="docutils literal notranslate"><span class="pre">100</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>embedding_init_strategy</strong>: EmbedInitStrategy = <code class="docutils literal notranslate"><span class="pre">&lt;EmbedInitStrategy.RANDOM:</span> <span class="pre">'random'&gt;</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>embedding_init_range</strong>: Optional[list[float]] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>export_input_names</strong>: list[str] = <code class="docutils literal notranslate"><span class="pre">['tokens_vals']</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>pretrained_embeddings_path</strong>: str = <code class="docutils literal notranslate"><span class="pre">''</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>vocab_file</strong>: str = <code class="docutils literal notranslate"><span class="pre">''</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>vocab_size</strong>: int = <code class="docutils literal notranslate"><span class="pre">0</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>vocab_from_train_data</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>vocab_from_all_data</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>vocab_from_pretrained_embeddings</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>lowercase_tokens</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>min_freq</strong>: int = <code class="docutils literal notranslate"><span class="pre">1</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>mlp_layer_dims</strong>: Optional[list[int]] = <code class="docutils literal notranslate"><span class="pre">[]</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>padding_idx</strong>: Optional[int] = <code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>cpu_only</strong>: bool = <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>skip_header</strong>: bool = <code class="docutils literal notranslate"><span class="pre">True</span></code></dt><dd><p></p>
+</dd>
+<dt><strong>delimiter</strong>: str = <code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">'</span></code></dt><dd><p></p>
+</dd>
+</dl>
+</div></blockquote>
+<p><strong>Default JSON</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">"load_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">"save_path"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">"freeze"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"shared_module_key"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">"embed_dim"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="nt">"embedding_init_strategy"</span><span class="p">:</span> <span class="s2">"random"</span><span class="p">,</span>
+    <span class="nt">"embedding_init_range"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">"export_input_names"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"tokens_vals"</span>
+    <span class="p">],</span>
+    <span class="nt">"pretrained_embeddings_path"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="nt">"vocab_file"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="nt">"vocab_size"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="nt">"vocab_from_train_data"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"vocab_from_all_data"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"vocab_from_pretrained_embeddings"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"lowercase_tokens"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"min_freq"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">"mlp_layer_dims"</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="nt">"padding_idx"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">"cpu_only"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"skip_header"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"delimiter"</span><span class="p">:</span> <span class="s2">" "</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pytext.html">pytext</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pytext.config.html">config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.data.html">data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.exporters.html">exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.loss.html">loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.metric_reporters.html">metric_reporters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pytext.models.html">models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.task.html">task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytext.trainers.html">trainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../index.html">Documentation overview</a><ul>
+<li><a href="pytext.html">pytext</a><ul>
+<li><a href="pytext.models.html">models</a><ul>
+<li><a href="pytext.models.embeddings.html">embeddings</a><ul>
+<li><a href="pytext.models.embeddings.word_embedding.html">word_embedding</a><ul>
+<li>Previous: <a href="pytext.models.embeddings.word_embedding.html" title="previous chapter">word_embedding</a></li>
+<li>Next: <a href="pytext.models.ensembles.html" title="next chapter">ensembles</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

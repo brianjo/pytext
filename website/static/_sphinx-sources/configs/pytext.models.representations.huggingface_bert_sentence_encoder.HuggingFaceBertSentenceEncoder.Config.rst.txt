@@ -1,0 +1,68 @@
+HuggingFaceBertSentenceEncoder.Config
+=====================================
+
+
+
+**Component:** :class:`HuggingFaceBertSentenceEncoder  <pytext.models.representations.huggingface_bert_sentence_encoder.HuggingFaceBertSentenceEncoder>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.huggingface_bert_sentence_encoder
+.. py:class:: HuggingFaceBertSentenceEncoder.Config
+  :noindex:
+
+  **Bases:** :class:`TransformerSentenceEncoderBase.Config <pytext.models.representations.transformer_sentence_encoder_base.TransformerSentenceEncoderBase.Config>`\ , :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **load_path**: Optional[str] = ``None``
+    \ 
+
+  **save_path**: Optional[str] = ``None``
+    \ 
+
+  **freeze**: bool = ``False``
+    \ 
+
+  **shared_module_key**: Optional[str] = ``None``
+    \ 
+
+  **output_dropout**: float = ``0.4``
+    \ 
+
+  **embedding_dim**: int = ``768``
+    \ 
+
+  **pooling**: PoolingMethod = ``<PoolingMethod.CLS_TOKEN: 'cls_token'>``
+    \ 
+
+  **export**: bool = ``False``
+    \ 
+
+  **bert_cpt_dir**: str = ``'/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/'``
+    \ 
+
+  **load_weights**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "load_path": null,
+      "save_path": null,
+      "freeze": false,
+      "shared_module_key": null,
+      "output_dropout": 0.4,
+      "embedding_dim": 768,
+      "pooling": "cls_token",
+      "export": false,
+      "bert_cpt_dir": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/",
+      "load_weights": true
+  }

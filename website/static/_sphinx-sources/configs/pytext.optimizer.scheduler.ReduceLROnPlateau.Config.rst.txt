@@ -1,0 +1,72 @@
+ReduceLROnPlateau.Config
+========================
+
+
+
+**Component:** :class:`ReduceLROnPlateau  <pytext.optimizer.scheduler.ReduceLROnPlateau>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: ReduceLROnPlateau.Config
+  :noindex:
+
+  **Bases:** :class:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **lower_is_better**: bool = ``True``
+    This indicates the desirable direction in which we would like the
+    training to proceed. If set to true, learning rate will be reduce
+    when quantity being monitored stops going down
+    
+
+  **factor**: float = ``0.1``
+    Factor by which the learning rate will be reduced. new_lr = lr * factor
+    
+
+  **patience**: int = ``5``
+    Number of epochs with no improvement after which learning rate will
+    be reduced
+    
+
+  **min_lr**: float = ``0``
+    Lower bound on the learning rate of all param groups
+    
+
+  **threshold**: float = ``0.0001``
+    Threshold for measuring the new optimum, to only focus on significant
+    changes.
+    
+
+  **threshold_is_absolute**: bool = ``True``
+    One of rel, abs.
+    In rel mode, dynamic_threshold = best * ( 1 + threshold ) in ‘max’ mode
+    or best * ( 1 - threshold ) in min mode.
+    In abs mode, dynamic_threshold = best + threshold in max mode or
+    best - threshold in min mode.
+    
+
+  **cooldown**: int = ``0``
+    Number of epochs to wait before resuming normal operation after
+    lr has been reduced.
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "lower_is_better": true,
+      "factor": 0.1,
+      "patience": 5,
+      "min_lr": 0,
+      "threshold": 0.0001,
+      "threshold_is_absolute": true,
+      "cooldown": 0
+  }

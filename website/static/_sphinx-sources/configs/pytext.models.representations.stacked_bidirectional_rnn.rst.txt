@@ -1,0 +1,7 @@
+stacked_bidirectional_rnn
+=========================
+
+
+.. toctree::
+
+  pytext.models.representations.stacked_bidirectional_rnn.StackedBidirectionalRNN.Config

@@ -1,0 +1,147 @@
+BertPairwiseModel.Config
+========================
+
+
+
+**Component:** :class:`BertPairwiseModel  <pytext.models.bert_classification_models.BertPairwiseModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.bert_classification_models
+.. py:class:: BertPairwiseModel.Config
+  :noindex:
+
+  **Bases:** :class:`BasePairwiseModel.Config <pytext.models.pair_classification_model.BasePairwiseModel.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.bert_classification_models.ModelInput>` = :doc:`ModelInput <pytext.models.bert_classification_models.ModelInput>`\ ()
+    \ 
+
+  **decoder**: Optional[:doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`] = :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`\ ()
+    \ 
+
+  **output_layer**: Union[:doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`, :doc:`PairwiseCosineDistanceOutputLayer.Config <pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.Config>`] = :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`\ ()
+    \ 
+
+  **encode_relations**: bool = ``True``
+    \ 
+
+  **encoder**: :doc:`TransformerSentenceEncoderBase.Config <pytext.models.representations.transformer_sentence_encoder_base.TransformerSentenceEncoderBase.Config>` = :doc:`HuggingFaceBertSentenceEncoder.Config <pytext.models.representations.huggingface_bert_sentence_encoder.HuggingFaceBertSentenceEncoder.Config>`\ ()
+    \ 
+
+  **shared_encoder**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {
+          "tokens1": {
+              "BERTTensorizer": {
+                  "is_input": true,
+                  "columns": [
+                      "text1"
+                  ],
+                  "tokenizer": {
+                      "WordPieceTokenizer": {
+                          "basic_tokenizer": {
+                              "split_regex": "\\s+",
+                              "lowercase": true
+                          },
+                          "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                      }
+                  },
+                  "base_tokenizer": null,
+                  "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+                  "max_seq_len": 128
+              }
+          },
+          "tokens2": {
+              "BERTTensorizer": {
+                  "is_input": true,
+                  "columns": [
+                      "text2"
+                  ],
+                  "tokenizer": {
+                      "WordPieceTokenizer": {
+                          "basic_tokenizer": {
+                              "split_regex": "\\s+",
+                              "lowercase": true
+                          },
+                          "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                      }
+                  },
+                  "base_tokenizer": null,
+                  "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+                  "max_seq_len": 128
+              }
+          },
+          "labels": {
+              "LabelTensorizer": {
+                  "is_input": false,
+                  "column": "label",
+                  "allow_unknown": false,
+                  "pad_in_vocab": false,
+                  "label_vocab": null
+              }
+          },
+          "num_tokens": {
+              "is_input": false,
+              "names": [
+                  "tokens1",
+                  "tokens2"
+              ],
+              "indexes": [
+                  2,
+                  2
+              ]
+          }
+      },
+      "decoder": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_dims": [],
+          "out_dim": null,
+          "layer_norm": false,
+          "dropout": 0.0,
+          "activation": "relu"
+      },
+      "output_layer": {
+          "ClassificationOutputLayer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {
+                  "CrossEntropyLoss": {}
+              },
+              "label_weights": null
+          }
+      },
+      "encode_relations": true,
+      "encoder": {
+          "HuggingFaceBertSentenceEncoder": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "output_dropout": 0.4,
+              "embedding_dim": 768,
+              "pooling": "cls_token",
+              "export": false,
+              "bert_cpt_dir": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/",
+              "load_weights": true
+          }
+      },
+      "shared_encoder": true
+  }

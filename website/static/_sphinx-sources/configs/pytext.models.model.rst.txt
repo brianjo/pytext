@@ -1,0 +1,9 @@
+model
+=====
+
+
+.. toctree::
+
+  pytext.models.model.BaseModel.Config
+  pytext.models.model.Model.Config
+  pytext.models.model.ModelInput

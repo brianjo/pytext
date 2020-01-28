@@ -1,0 +1,26 @@
+RandomizedBatchSampler.Config
+=============================
+
+
+
+**Component:** :class:`RandomizedBatchSampler  <pytext.data.batch_sampler.RandomizedBatchSampler>`\ 
+
+
+.. py:currentmodule:: pytext.data.batch_sampler
+.. py:class:: RandomizedBatchSampler.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **unnormalized_iterator_probs**: dict[str, float]
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

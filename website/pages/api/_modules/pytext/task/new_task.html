@@ -1,0 +1,375 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.task.new_task</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span><span class="p">,</span> <span class="n">PyTextConfig</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">create_component</span><span class="p">,</span> <span class="n">create_trainer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.data</span> <span class="kn">import</span> <span class="n">Data</span><span class="p">,</span> <span class="n">pad_and_tensorize_batches</span>
+<span class="kn">from</span> <span class="nn">pytext.data.sources.data_source</span> <span class="kn">import</span> <span class="n">Schema</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.metric_reporters</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.trainers</span> <span class="kn">import</span> <span class="n">TaskTrainer</span><span class="p">,</span> <span class="n">TrainingState</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">jit</span>
+
+<span class="kn">from</span> <span class="nn">.task</span> <span class="kn">import</span> <span class="n">TaskBase</span>
+
+
+<div class="viewcode-block" id="create_schema"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.new_task.create_schema">[docs]</a><span class="k">def</span> <span class="nf">create_schema</span><span class="p">(</span>
+    <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">],</span> <span class="n">extra_schema</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Schema</span><span class="p">:</span>
+    <span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">add_to_schema</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span> <span class="o">!=</span> <span class="n">Any</span> <span class="ow">and</span> <span class="nb">type</span> <span class="o">!=</span> <span class="n">schema</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s2">"Unexpected different types for column {name}: "</span>
+                    <span class="n">f</span><span class="s2">"{type} != {schema[name]}"</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">schema</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">type</span>
+
+    <span class="k">for</span> <span class="n">tensorizer</span> <span class="ow">in</span> <span class="n">tensorizers</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="nb">type</span> <span class="ow">in</span> <span class="n">tensorizer</span><span class="o">.</span><span class="n">column_schema</span><span class="p">:</span>
+            <span class="n">add_to_schema</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="nb">type</span> <span class="ow">in</span> <span class="p">(</span><span class="n">extra_schema</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Schema type check is not needed, ClassificationMetricReporter</span>
+        <span class="c1"># automatically casts data to string.</span>
+        <span class="n">add_to_schema</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">schema</span></div>
+
+
+<div class="viewcode-block" id="create_tensorizers"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.new_task.create_tensorizers">[docs]</a><span class="k">def</span> <span class="nf">create_tensorizers</span><span class="p">(</span>
+    <span class="n">model_inputs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">model_inputs</span> <span class="o">=</span> <span class="n">model_inputs</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+
+    <span class="n">tensorizers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">TENSORIZER</span><span class="p">,</span> <span class="n">tensorizer_config</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tensorizer_config</span> <span class="ow">in</span> <span class="n">model_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">tensorizer_config</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">tensorizers</span></div>
+
+
+<span class="k">class</span> <span class="nc">_NewTask</span><span class="p">(</span><span class="n">TaskBase</span><span class="p">):</span>
+    <span class="sd">"""This task abstraction separates the concerns into three main components,</span>
+<span class="sd">    `pytext.data.Data`, `pytext.models.new_model.NewModel` (names and paths</span>
+<span class="sd">    will change as these become the primary abstractions), and `pytext.trainers.Trainer`</span>
+
+<span class="sd">    At its simplest, this abstraction is as follows:</span>
+<span class="sd">    - `Task` defines a `DataSchema` which describes the python types which are</span>
+<span class="sd">    accessible in each row of the input data. This should be a common data schema</span>
+<span class="sd">    which describes a single NLP task, each of which has the same or sufficiently</span>
+<span class="sd">    similar inputs/outputs (think document classification, optionally including</span>
+<span class="sd">    dense features).</span>
+<span class="sd">    - `Model` defines an input signature (called `tensorizers`) which describes the</span>
+<span class="sd">    tensors that it wants to execute each batch for training or prediction.</span>
+<span class="sd">    - `Data` takes the `DataSchema` and `tensorizers` and exposes `train`, `test`, and</span>
+<span class="sd">    `eval` attributes. Iterating over these attributes yields a batch, which is a</span>
+<span class="sd">    dictionary with the same keys as the `tensorizers` input signature, and whose</span>
+<span class="sd">    values are tensors.</span>
+<span class="sd">    - `Model` can train or predict using these input batch dictionaries directly,</span>
+<span class="sd">    and interally is responsible for defining how to arrange the tensors for passing</span>
+<span class="sd">    to its forward functions and loss generation. Its train_batch function returns</span>
+<span class="sd">    a tuple of `(loss, metrics)`, where `loss` is a `torch.loss.Loss` instance, and</span>
+<span class="sd">    `metrics` can be passed directly into a compatible metric reporter.</span>
+<span class="sd">    - `Trainer` contains the core training logic, iterating through batches created by</span>
+<span class="sd">    `Data`, passing them to `Model` for training, aggregating and reporting metrics,</span>
+<span class="sd">    running `loss.backward()` and `optimizer.step()`, and managing the scheduler.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">TaskTrainer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TaskTrainer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span>
+        <span class="n">unused_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">model_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Creating task: {cls.__name__}..."</span><span class="p">)</span>
+        <span class="n">tensorizers</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_init_tensorizers</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">)</span>
+
+        <span class="c1"># Initialized tensorizers can be used to create the model</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_init_model</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">model_state</span><span class="p">)</span>
+
+        <span class="c1"># This is the only place right now that the task actually cares about which</span>
+        <span class="c1"># features and tensors are being used. This is a strong tie between</span>
+        <span class="c1"># the implementation of the model and the metric reporter.</span>
+        <span class="n">metric_reporter</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_metric_reporter</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">trainer</span> <span class="o">=</span> <span class="n">create_trainer</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metric_reporter</span><span class="p">,</span> <span class="n">trainer</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_metric_reporter</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+            <span class="n">ComponentType</span><span class="o">.</span><span class="n">METRIC_REPORTER</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+            <span class="n">tensorizers</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_init_tensorizers</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">world_size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Pull extra columns from the metric reporter config to pass into</span>
+        <span class="c1"># the data source schema.</span>
+        <span class="n">extra_columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span> <span class="s2">"text_column_names"</span><span class="p">,</span> <span class="p">())</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span> <span class="s2">"additional_column_names"</span><span class="p">,</span> <span class="p">()))</span>
+        <span class="n">extra_schema</span> <span class="o">=</span> <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">Any</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">extra_columns</span><span class="p">}</span>
+
+        <span class="n">init_tensorizers</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">tensorizers</span>
+        <span class="k">if</span> <span class="n">init_tensorizers</span><span class="p">:</span>
+            <span class="n">tensorizers</span> <span class="o">=</span> <span class="n">create_tensorizers</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">extra_schema</span><span class="p">)</span>
+
+        <span class="c1"># This initializes the tensorizers</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+            <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_HANDLER</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">schema</span><span class="p">,</span>
+            <span class="n">tensorizers</span><span class="p">,</span>
+            <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+            <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span>
+            <span class="n">init_tensorizers</span><span class="o">=</span><span class="n">init_tensorizers</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">data</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_init_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model_config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">model_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">model_config</span><span class="o">.</span><span class="n">init_from_saved_state</span> <span class="o">=</span> <span class="n">model_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">create_component</span><span class="p">(</span>
+            <span class="n">ComponentType</span><span class="o">.</span><span class="n">MODEL</span><span class="p">,</span> <span class="n">model_config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="o">=</span><span class="n">tensorizers</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_state</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"Loading model from model state dict..."</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_state</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"Loaded!"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span>
+        <span class="n">metric_reporter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MetricReporter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TaskTrainer</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="c1"># Attempt to build a default metric reporter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span> <span class="o">=</span> <span class="n">metric_reporter</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_metric_reporter</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span> <span class="n">model</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span> <span class="o">=</span> <span class="n">trainer</span> <span class="ow">or</span> <span class="n">TaskTrainer</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">PyTextConfig</span><span class="p">,</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">training_state</span><span class="p">:</span> <span class="n">TrainingState</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># next to move dist_init back to prepare_task in pytext/workflow.py</span>
+        <span class="c1"># when processing time between dist_init and first loss.backward() is short</span>
+        <span class="k">if</span> <span class="n">training_state</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">train_from_state</span><span class="p">(</span>
+                <span class="n">training_state</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+                <span class="n">config</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">EVAL</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+            <span class="n">config</span><span class="p">,</span>
+            <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@torch.no_grad</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_source</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">test</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,</span> <span class="n">data_source</span><span class="o">=</span><span class="n">data_source</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metric_reporter</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">examples</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generates predictions using PyTorch model. The difference with `test()` is</span>
+<span class="sd">        that this should be used when the the examples do not have any true</span>
+<span class="sd">        label/target.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            examples: json format examples, input names should match the names specified</span>
+<span class="sd">                in this task's features config</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">:</span>
+            <span class="n">numberized_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">numberize_rows</span><span class="p">([</span><span class="n">row</span><span class="p">])</span>
+            <span class="n">batches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batcher</span><span class="o">.</span><span class="n">batchify</span><span class="p">(</span><span class="n">numberized_rows</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">inputs</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">pad_and_tensorize_batches</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">batches</span><span class="p">))</span>
+            <span class="n">model_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+            <span class="n">model_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">arrange_model_context</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+            <span class="n">predictions</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_pred</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">*</span><span class="n">model_inputs</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">model_context</span>
+            <span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"prediction"</span><span class="p">:</span> <span class="n">predictions</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">:</span> <span class="n">scores</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">metric_channels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># Make sure to put the model on CPU and disable CUDA before exporting to</span>
+        <span class="c1"># ONNX to disable any data_parallel pieces</span>
+        <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">pre_export</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+        <span class="n">unused_raw_batch</span><span class="p">,</span> <span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">,</span> <span class="n">load_early</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">metric_channels</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">"Exporting metrics"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">mc</span> <span class="ow">in</span> <span class="n">metric_channels</span><span class="p">:</span>
+                <span class="n">mc</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">caffe2_export</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="n">export_onnx_path</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">torchscript_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">export_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">quantize</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="c1"># Make sure to put the model on CPU and disable CUDA before exporting to</span>
+        <span class="c1"># ONNX to disable any data_parallel pieces</span>
+        <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">pre_export</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+        <span class="c1"># Trace needs eval mode, to disable dropout etc</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">prepare_for_onnx_export_</span><span class="p">()</span>
+
+        <span class="n">unused_raw_batch</span><span class="p">,</span> <span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">batches</span><span class="p">(</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">,</span> <span class="n">load_early</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">arrange_model_inputs</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+        <span class="c1"># call model forward to set correct device types</span>
+        <span class="n">model</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">quantize</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">quantize</span><span class="p">()</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="n">jit</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">"torchscriptify"</span><span class="p">):</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tensorizers</span><span class="p">,</span> <span class="n">trace</span><span class="p">)</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">_pack</span><span class="p">()</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">_c</span><span class="o">.</span><span class="n">_has_method</span><span class="p">(</span><span class="s2">"_pack"</span><span class="p">)</span> <span class="k">else</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"Saving torchscript model to: {export_path}"</span><span class="p">)</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">export_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">trace</span>
+
+
+<div class="viewcode-block" id="NewTask"><a class="viewcode-back" href="../../../modules/pytext.task.html#pytext.task.new_task.NewTask">[docs]</a><span class="k">class</span> <span class="nc">NewTask</span><span class="p">(</span><span class="n">_NewTask</span><span class="p">):</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">_NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

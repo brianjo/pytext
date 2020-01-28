@@ -1,0 +1,290 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.bert_classification_models</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">create_loss</span>
+<span class="kn">from</span> <span class="nn">pytext.data.bert_tensorizer</span> <span class="kn">import</span> <span class="n">BERTTensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FloatListTensorizer</span><span class="p">,</span>
+    <span class="n">LabelTensorizer</span><span class="p">,</span>
+    <span class="n">NtokensTensorizer</span><span class="p">,</span>
+    <span class="n">Tensorizer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.loss</span> <span class="kn">import</span> <span class="n">BinaryCrossEntropyLoss</span><span class="p">,</span> <span class="n">MultiLabelSoftMarginLoss</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders.mlp_decoder</span> <span class="kn">import</span> <span class="n">MLPDecoder</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">ModelInputBase</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers</span> <span class="kn">import</span> <span class="n">ClassificationOutputLayer</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers.doc_classification_output_layer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BinaryClassificationOutputLayer</span><span class="p">,</span>
+    <span class="n">MulticlassOutputLayer</span><span class="p">,</span>
+    <span class="n">MultiLabelOutputLayer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.pair_classification_model</span> <span class="kn">import</span> <span class="n">BasePairwiseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.huggingface_bert_sentence_encoder</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HuggingFaceBertSentenceEncoder</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.transformer_sentence_encoder_base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransformerSentenceEncoderBase</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.label</span> <span class="kn">import</span> <span class="n">get_label_weights</span>
+
+
+<div class="viewcode-block" id="NewBertModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.NewBertModel">[docs]</a><span class="k">class</span> <span class="nc">NewBertModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">"""BERT single sentence classification."""</span>
+
+    <span class="n">SUPPORT_FP16_OPTIMIZER</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">BertModelInput</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">max_seq_len</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+            <span class="n">dense</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FloatListTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="c1"># for metric reporter</span>
+            <span class="n">num_tokens</span><span class="p">:</span> <span class="n">NtokensTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NtokensTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">],</span> <span class="n">indexes</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">BertModelInput</span> <span class="o">=</span> <span class="n">BertModelInput</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">TransformerSentenceEncoderBase</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">HuggingFaceBertSentenceEncoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">ClassificationOutputLayer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ClassificationOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="NewBertModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.NewBertModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">model_inputs</span> <span class="o">=</span> <span class="p">(</span><span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">],)</span>
+        <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensor_dict</span><span class="p">:</span>
+            <span class="n">model_inputs</span> <span class="o">+=</span> <span class="p">(</span><span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"dense"</span><span class="p">],)</span>
+        <span class="k">return</span> <span class="n">model_inputs</span></div>
+
+<div class="viewcode-block" id="NewBertModel.arrange_targets"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.NewBertModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="NewBertModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.NewBertModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">encoder_inputs</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">output_encoded_layers</span><span class="p">:</span>
+            <span class="c1"># if encoded layers are returned, discard them</span>
+            <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">encoder_inputs</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">encoder_inputs</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">representation</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NewBertModel.caffe2_export"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.NewBertModel.caffe2_export">[docs]</a>    <span class="k">def</span> <span class="nf">caffe2_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">export_onnx_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="NewBertModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.NewBertModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span> <span class="n">vocab_size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">dense_dim</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"dense"</span><span class="p">]</span><span class="o">.</span><span class="n">dim</span> <span class="k">if</span> <span class="s2">"dense"</span> <span class="ow">in</span> <span class="n">tensorizers</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span>
+            <span class="n">in_dim</span><span class="o">=</span><span class="n">encoder</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">+</span> <span class="n">dense_dim</span><span class="p">,</span>
+            <span class="n">out_dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">label_weights</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">get_label_weights</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">idx</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">label_weights</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">label_weights</span>
+            <span class="k">else</span> <span class="bp">None</span>
+        <span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">create_loss</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">label_weights</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">BinaryCrossEntropyLoss</span><span class="p">):</span>
+            <span class="n">output_layer_cls</span> <span class="o">=</span> <span class="n">BinaryClassificationOutputLayer</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">MultiLabelSoftMarginLoss</span><span class="p">):</span>
+            <span class="n">output_layer_cls</span> <span class="o">=</span> <span class="n">MultiLabelOutputLayer</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_layer_cls</span> <span class="o">=</span> <span class="n">MulticlassOutputLayer</span>
+
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer_cls</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">loss</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="BertPairwiseModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel">[docs]</a><span class="k">class</span> <span class="nc">BertPairwiseModel</span><span class="p">(</span><span class="n">BasePairwiseModel</span><span class="p">):</span>
+    <span class="sd">"""Bert Pairwise classification model</span>
+
+<span class="sd">    The model takes two sets of tokens (left and right), calculates their</span>
+<span class="sd">    representations separately using shared BERT encoder and passes them to</span>
+<span class="sd">    the decoder along with their absolute difference and elementwise product,</span>
+<span class="sd">    all concatenated. Used for e.g. natural language inference.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BasePairwiseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">ModelInputBase</span><span class="p">):</span>
+            <span class="n">tokens1</span><span class="p">:</span> <span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"text1"</span><span class="p">],</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">128</span>
+            <span class="p">)</span>
+            <span class="n">tokens2</span><span class="p">:</span> <span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">BERTTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"text2"</span><span class="p">],</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">128</span>
+            <span class="p">)</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="c1"># for metric reporter</span>
+            <span class="n">num_tokens</span><span class="p">:</span> <span class="n">NtokensTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">NtokensTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+                <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">"tokens1"</span><span class="p">,</span> <span class="s2">"tokens2"</span><span class="p">],</span> <span class="n">indexes</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">TransformerSentenceEncoderBase</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">HuggingFaceBertSentenceEncoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="c1"># Decoder is a fully connected layer that expects concatenated encodings.</span>
+        <span class="c1"># So, if decoder is provided we will concatenate the encodings from the</span>
+        <span class="c1"># encoders and then pass to the decoder.</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">shared_encoder</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">encoder1</span><span class="p">,</span> <span class="n">encoder2</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">encode_relations</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">encode_relations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder1</span> <span class="o">=</span> <span class="n">encoder1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder2</span> <span class="o">=</span> <span class="n">encoder2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span> <span class="o">=</span> <span class="p">[</span><span class="n">encoder1</span><span class="p">,</span> <span class="n">encoder2</span><span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_create_encoder</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">:</span>
+        <span class="n">encoder1</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span>
+            <span class="n">padding_idx</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens1"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens1"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">shared_encoder</span><span class="p">:</span>
+            <span class="n">encoder2</span> <span class="o">=</span> <span class="n">encoder1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">encoder2</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span>
+                <span class="n">padding_idx</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens2"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span>
+                <span class="n">vocab_size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens2"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">encoder1</span><span class="p">,</span> <span class="n">encoder2</span>
+
+<div class="viewcode-block" id="BertPairwiseModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">encoder1</span><span class="p">,</span> <span class="n">encoder2</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_encoder</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_decoder</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="p">[</span><span class="n">encoder1</span><span class="p">,</span> <span class="n">encoder2</span><span class="p">],</span> <span class="n">tensorizers</span><span class="p">)</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">encoder1</span><span class="p">,</span> <span class="n">encoder2</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">encode_relations</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BertPairwiseModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens1"</span><span class="p">],</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens2"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BertPairwiseModel.arrange_targets"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BertPairwiseModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_tuple1</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">input_tuple2</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">encodings</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder1</span><span class="p">(</span><span class="n">input_tuple1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder2</span><span class="p">(</span><span class="n">input_tuple2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode_relations</span><span class="p">:</span>
+            <span class="n">encodings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode_relations</span><span class="p">(</span><span class="n">encodings</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">encodings</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="k">else</span> <span class="n">encodings</span></div>
+
+<div class="viewcode-block" id="BertPairwiseModel.save_modules"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.bert_classification_models.BertPairwiseModel.save_modules">[docs]</a>    <span class="k">def</span> <span class="nf">save_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_modules</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="p">,</span> <span class="n">base_path</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

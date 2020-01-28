@@ -1,0 +1,40 @@
+DisjointMultitaskData.Config
+============================
+
+
+
+**Component:** :class:`DisjointMultitaskData  <pytext.data.disjoint_multitask_data.DisjointMultitaskData>`\ 
+
+
+.. py:currentmodule:: pytext.data.disjoint_multitask_data
+.. py:class:: DisjointMultitaskData.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **sampler**: :doc:`BaseBatchSampler.Config <pytext.data.batch_sampler.BaseBatchSampler.Config>` = :doc:`RoundRobinBatchSampler.Config <pytext.data.batch_sampler.RoundRobinBatchSampler.Config>`\ ()
+    \ 
+
+  **test_key**: Optional[str] = ``None``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "sampler": {
+          "RoundRobinBatchSampler": {
+              "iter_to_set_epoch": ""
+          }
+      },
+      "test_key": null
+  }

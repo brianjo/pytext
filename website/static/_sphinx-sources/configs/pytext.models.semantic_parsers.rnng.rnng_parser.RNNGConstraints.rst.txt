@@ -1,0 +1,62 @@
+RNNGConstraints
+===============
+
+
+
+.. py:currentmodule:: pytext.models.semantic_parsers.rnng.rnng_parser
+.. py:class:: RNNGConstraints
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  Constraints when computing valid actions.
+  
+  .. attribute:: intent_slot_nesting
+  
+     for the intent slot models, the top level
+     non-terminal has to be an intent, an intent can only have slot
+     non-terminals as children and vice-versa.
+  
+     :type: bool
+  
+  .. attribute:: ignore_loss_for_unsupported
+  
+     if the data has "unsupported" label,
+     that is if the label has a substring "unsupported" in it, do not
+     compute loss
+  
+     :type: bool
+  
+  .. attribute:: no_slots_inside_unsupported
+  
+     if the data has "unsupported" label,
+     that is if the label has a substring "unsupported" in it, do not
+     predict slots inside this label.
+  
+     :type: bool
+  
+
+**All Attributes (including base classes)**
+
+  **intent_slot_nesting**: bool = ``True``
+    \ 
+
+  **ignore_loss_for_unsupported**: bool = ``False``
+    \ 
+
+  **no_slots_inside_unsupported**: bool = ``True``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "intent_slot_nesting": true,
+      "ignore_loss_for_unsupported": false,
+      "no_slots_inside_unsupported": true
+  }

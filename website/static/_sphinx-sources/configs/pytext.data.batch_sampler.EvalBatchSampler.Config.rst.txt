@@ -1,0 +1,27 @@
+EvalBatchSampler.Config
+=======================
+
+
+
+**Component:** :class:`EvalBatchSampler  <pytext.data.batch_sampler.EvalBatchSampler>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: EvalBatchSampler.Config
+  :noindex:
+
+  **Bases:** :class:`BaseBatchSampler.Config <pytext.data.batch_sampler.BaseBatchSampler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

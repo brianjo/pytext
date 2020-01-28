@@ -1,0 +1,35 @@
+Sparsifier.Config
+=================
+
+
+
+**Component:** :class:`Sparsifier  <pytext.optimizer.sparsifiers.sparsifier.Sparsifier>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.sparsifiers.sparsifier
+.. py:class:: Sparsifier.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`BlockwiseMagnitudeSparsifier.Config <pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.Config>`\ 
+  - :class:`CRF_L1_SoftThresholding.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_L1_SoftThresholding.Config>`\ 
+  - :class:`CRF_MagnitudeThresholding.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding.Config>`\ 
+  - :class:`CRF_SparsifierBase.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.Config>`\ 
+  - :class:`L0_projection_sparsifier.Config <pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

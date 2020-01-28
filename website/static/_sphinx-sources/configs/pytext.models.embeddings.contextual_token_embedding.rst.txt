@@ -1,0 +1,7 @@
+contextual_token_embedding
+==========================
+
+
+.. toctree::
+
+  pytext.models.embeddings.contextual_token_embedding.ContextualTokenEmbedding.Config

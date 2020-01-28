@@ -1,0 +1,10 @@
+bert_classification_models
+==========================
+
+
+.. toctree::
+
+  pytext.models.bert_classification_models.BertModelInput
+  pytext.models.bert_classification_models.BertPairwiseModel.Config
+  pytext.models.bert_classification_models.ModelInput
+  pytext.models.bert_classification_models.NewBertModel.Config

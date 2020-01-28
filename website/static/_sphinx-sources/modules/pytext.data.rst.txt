@@ -1,0 +1,153 @@
+pytext.data package
+===================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pytext.data.data_structures
+   pytext.data.featurizer
+   pytext.data.sources
+   pytext.data.test
+   pytext.data.tokenizers
+
+Submodules
+----------
+
+pytext.data.batch\_sampler module
+---------------------------------
+
+.. automodule:: pytext.data.batch_sampler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.bert\_tensorizer module
+-----------------------------------
+
+.. automodule:: pytext.data.bert_tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.data module
+-----------------------
+
+.. automodule:: pytext.data.data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.data\_handler module
+--------------------------------
+
+.. automodule:: pytext.data.data_handler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.disjoint\_multitask\_data module
+--------------------------------------------
+
+.. automodule:: pytext.data.disjoint_multitask_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.disjoint\_multitask\_data\_handler module
+-----------------------------------------------------
+
+.. automodule:: pytext.data.disjoint_multitask_data_handler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.dynamic\_pooling\_batcher module
+--------------------------------------------
+
+.. automodule:: pytext.data.dynamic_pooling_batcher
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.packed\_lm\_data module
+-----------------------------------
+
+.. automodule:: pytext.data.packed_lm_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.roberta\_tensorizer module
+--------------------------------------
+
+.. automodule:: pytext.data.roberta_tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.squad\_for\_bert\_tensorizer module
+-----------------------------------------------
+
+.. automodule:: pytext.data.squad_for_bert_tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.squad\_tensorizer module
+------------------------------------
+
+.. automodule:: pytext.data.squad_tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.tensorizers module
+------------------------------
+
+.. automodule:: pytext.data.tensorizers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.utils module
+------------------------
+
+.. automodule:: pytext.data.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.xlm\_constants module
+---------------------------------
+
+.. automodule:: pytext.data.xlm_constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.xlm\_dictionary module
+----------------------------------
+
+.. automodule:: pytext.data.xlm_dictionary
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.data.xlm\_tensorizer module
+----------------------------------
+
+.. automodule:: pytext.data.xlm_tensorizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.data
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,278 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.utils.documentation</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">getmembers</span><span class="p">,</span> <span class="n">isclass</span><span class="p">,</span> <span class="n">isfunction</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">modules</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.config.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">get_component_name</span>
+<span class="kn">from</span> <span class="nn">pytext.config.pytext_config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">Module</span>
+
+
+<span class="n">ROOT_CONFIG</span> <span class="o">=</span> <span class="s2">"PyTextConfig"</span>
+
+
+<div class="viewcode-block" id="get_class_members_recursive"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.documentation.get_class_members_recursive">[docs]</a><span class="k">def</span> <span class="nf">get_class_members_recursive</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">"""Find all the field names for a given class and their default value."""</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">Config</span> <span class="k">if</span> <span class="s2">"Config"</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">else</span> <span class="n">obj</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"__bases__"</span><span class="p">,</span> <span class="p">[]):</span>
+        <span class="c1"># Only pytext configs.</span>
+        <span class="c1"># Exclude Module because it adds load_path and save_path.</span>
+        <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"pytext"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">b</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Module</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">get_class_members_recursive</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># Add missing members, don't override subclass with super</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="get_config_fields"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.documentation.get_config_fields">[docs]</a><span class="k">def</span> <span class="nf">get_config_fields</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Return a dict of config help for this object, where:</span>
+<span class="sd">        - key: config name</span>
+<span class="sd">        - value: (default, type, options)</span>
+
+<span class="sd">            - default: default value for this key if not specified</span>
+<span class="sd">            - type: type for this config value, as a string</span>
+<span class="sd">            - options: possible values for this config, only if type = Union</span>
+
+<span class="sd">        If the type is "Union", the options give the lists of class names that</span>
+<span class="sd">        are possible, and the default is one of those class names.</span>
+<span class="sd">    """</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">members</span> <span class="o">=</span> <span class="n">get_class_members_recursive</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="c1"># Add fields with type by no default value</span>
+    <span class="n">typed_members</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">members</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"__annotations__"</span><span class="p">,</span> <span class="p">{})]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">typed_members</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">members</span><span class="p">:</span>
+            <span class="n">members</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+        <span class="n">opt</span> <span class="o">=</span> <span class="n">members</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"_member_names_"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">opt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">typing</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">typing</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">opt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">typing</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="n">opt</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"_"</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">typing</span> <span class="o">=</span> <span class="n">members</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"__annotations__"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">Enum</span><span class="p">):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">_name_</span><span class="p">,</span> <span class="n">typing</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">_member_names_</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">typing</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">isfunction</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="c1"># type(Union) changed from Py3.6 to 3.7</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">typing</span><span class="p">,</span> <span class="s2">"__origin__"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">typing</span><span class="o">.</span><span class="n">__origin__</span> <span class="o">==</span> <span class="n">Union</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">typing</span><span class="o">.</span><span class="n">__args__</span><span class="p">:</span>
+                <span class="n">options</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">get_component_name</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">get_component_name</span><span class="p">(</span><span class="n">typing</span><span class="p">),</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="pretty_print_config_class"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.documentation.pretty_print_config_class">[docs]</a><span class="k">def</span> <span class="nf">pretty_print_config_class</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">"""Pretty-print the fields of one object."""</span>
+    <span class="n">parent_class_name</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"__bases__"</span><span class="p">):</span>
+        <span class="n">parent_classes</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__bases__</span><span class="p">)</span>
+        <span class="n">parent_class_name</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_classes</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"=== {obj.__module__}.{obj.__name__} ({parent_class_name}) ==="</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"=== {obj.__module__}.{obj.__name__} ==="</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s1">'"""</span><span class="se">\n</span><span class="s1">{obj.__doc__.strip()}</span><span class="se">\n</span><span class="s1">"""'</span><span class="p">)</span>
+
+    <span class="n">config_help</span> <span class="o">=</span> <span class="n">get_config_fields</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">config_help</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">default</span><span class="p">,</span> <span class="n">typing</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k}: ({typing})"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"         {o}"</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">config_help</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">default</span><span class="p">,</span> <span class="n">typing</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="s2">"__module__"</span><span class="p">):</span>
+            <span class="n">default_value</span> <span class="o">=</span> <span class="n">get_component_name</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">default_value</span> <span class="o">=</span> <span class="n">default</span>
+
+        <span class="k">if</span> <span class="n">typing</span> <span class="ow">and</span> <span class="n">options</span><span class="p">:</span>  <span class="c1"># Enum</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k}: ({typing.__name__})"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">o</span> <span class="o">==</span> <span class="n">default_value</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"         {o} (default)"</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"         {o}"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">options</span><span class="p">:</span>  <span class="c1"># Union</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k}: (one of)"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">o</span> <span class="o">==</span> <span class="n">default_value</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"         {o} (default)"</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"         {o}"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">default</span> <span class="ow">and</span> <span class="n">typing</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k}: {typing} = {default_value}"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">default</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k} = {default_value}"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">typing</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k}: {typing}"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"    {k} = null"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_subclasses"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.documentation.get_subclasses">[docs]</a><span class="k">def</span> <span class="nf">get_subclasses</span><span class="p">(</span>
+    <span class="n">klass</span><span class="p">,</span> <span class="n">stop_classes</span><span class="o">=</span><span class="p">(</span><span class="n">Module</span><span class="p">,</span> <span class="n">Component</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span>
+<span class="p">):</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">add_subclasses</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="vm">__bases__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">b</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stop_classes</span><span class="p">:</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                <span class="n">add_subclasses</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="n">add_subclasses</span><span class="p">(</span><span class="n">klass</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="find_config_class"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.documentation.find_config_class">[docs]</a><span class="k">def</span> <span class="nf">find_config_class</span><span class="p">(</span><span class="n">class_name</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Return the set of PyText classes matching that name.</span>
+<span class="sd">        Handles fully-qualified `class_name` including module.</span>
+<span class="sd">    """</span>
+    <span class="n">module_part</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="s2">"."</span> <span class="ow">in</span> <span class="n">class_name</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">class_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">module_part</span> <span class="o">=</span> <span class="s2">"."</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">m</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">mod</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">modules</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">getmembers</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">isclass</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">class_name</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+                    <span class="n">base</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"pytext."</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">object</span><span class="p">,))</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module_part</span> <span class="ow">or</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">==</span> <span class="n">module_part</span><span class="p">:</span>
+                        <span class="n">ret</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ModuleNotFoundError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">continue</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="replace_components"><a class="viewcode-back" href="../../../modules/pytext.utils.html#pytext.utils.documentation.replace_components">[docs]</a><span class="k">def</span> <span class="nf">replace_components</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">base_class</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Recursively look at all fields in config to find where `component` would fit.</span>
+<span class="sd">        This is used to change configs so that they don't use default values.</span>
+<span class="sd">        Return the chain of field names, from child to parent.</span>
+<span class="sd">    """</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">get_config_fields</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">default</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">and</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">v_comp_name</span> <span class="o">=</span> <span class="n">get_component_name</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+            <span class="n">v_comp_obj</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">find_config_class</span><span class="p">(</span><span class="n">v_comp_name</span><span class="p">)),</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v_comp_obj</span><span class="p">:</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="n">replace_components</span><span class="p">(</span><span class="n">v_comp_obj</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">base_class</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                    <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">found</span>
+
+                <span class="c1"># Not found in options, try to match base classes</span>
+                <span class="n">bases</span> <span class="o">=</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">v_comp_obj</span><span class="p">)</span>
+                <span class="n">bases</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">v_comp_obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">base_class</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">bases</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">[</span><span class="n">k</span><span class="p">]</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+<li><a href="../utils.html">pytext.utils</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

@@ -1,0 +1,94 @@
+PyTextConfig
+============
+
+
+
+.. py:currentmodule:: pytext.config.pytext_config
+.. py:class:: PyTextConfig
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **task**: Union[:doc:`TaskBase.Config <pytext.task.task.TaskBase.Config>`, :doc:`Task_Deprecated.Config <pytext.task.task.Task_Deprecated.Config>`, :doc:`_NewTask.Config <pytext.task.new_task._NewTask.Config>`, :doc:`NewTask.Config <pytext.task.new_task.NewTask.Config>`, :doc:`DisjointMultitask.Config <pytext.task.disjoint_multitask.DisjointMultitask.Config>`, :doc:`NewDisjointMultitask.Config <pytext.task.disjoint_multitask.NewDisjointMultitask.Config>`, :doc:`QueryDocumentPairwiseRankingTask.Config <pytext.task.tasks.QueryDocumentPairwiseRankingTask.Config>`, :doc:`EnsembleTask.Config <pytext.task.tasks.EnsembleTask.Config>`, :doc:`DocumentClassificationTask.Config <pytext.task.tasks.DocumentClassificationTask.Config>`, :doc:`DocumentRegressionTask.Config <pytext.task.tasks.DocumentRegressionTask.Config>`, :doc:`NewBertClassificationTask.Config <pytext.task.tasks.NewBertClassificationTask.Config>`, :doc:`NewBertPairClassificationTask.Config <pytext.task.tasks.NewBertPairClassificationTask.Config>`, :doc:`BertPairRegressionTask.Config <pytext.task.tasks.BertPairRegressionTask.Config>`, :doc:`WordTaggingTask.Config <pytext.task.tasks.WordTaggingTask.Config>`, :doc:`IntentSlotTask.Config <pytext.task.tasks.IntentSlotTask.Config>`, :doc:`LMTask.Config <pytext.task.tasks.LMTask.Config>`, :doc:`MaskedLMTask.Config <pytext.task.tasks.MaskedLMTask.Config>`, :doc:`PairwiseClassificationTask.Config <pytext.task.tasks.PairwiseClassificationTask.Config>`, :doc:`RoBERTaNERTask.Config <pytext.task.tasks.RoBERTaNERTask.Config>`, :doc:`SeqNNTask.Config <pytext.task.tasks.SeqNNTask.Config>`, :doc:`SquadQATask.Config <pytext.task.tasks.SquadQATask.Config>`, :doc:`SemanticParsingTask.Config <pytext.task.tasks.SemanticParsingTask.Config>`]
+    \ 
+
+  **use_cuda_if_available**: bool = ``True``
+    \ 
+
+  **use_fp16**: bool = ``False``
+    \ 
+
+  **distributed_world_size**: int = ``1``
+    \ 
+
+  **gpu_streams_for_distributed_training**: int = ``1``
+    \ 
+
+  **load_snapshot_path**: str = ``''``
+    \ 
+
+  **save_snapshot_path**: str = ``'/tmp/model.pt'``
+    \ 
+
+  **use_config_from_snapshot**: bool = ``True``
+    \ 
+
+  **auto_resume_from_snapshot**: bool = ``False``
+    \ 
+
+  **export_caffe2_path**: Optional[str] = ``None``
+    \ 
+
+  **export_onnx_path**: str = ``'/tmp/model.onnx'``
+    \ 
+
+  **export_torchscript_path**: Optional[str] = ``None``
+    \ 
+
+  **torchscript_quantize**: Optional[bool] = ``False``
+    \ 
+
+  **modules_save_dir**: str = ``''``
+    \ 
+
+  **save_module_checkpoints**: bool = ``False``
+    \ 
+
+  **save_all_checkpoints**: bool = ``False``
+    \ 
+
+  **use_tensorboard**: bool = ``True``
+    \ 
+
+  **random_seed**: Optional[int] = ``None``
+    Seed value to seed torch, python, and numpy random generators.
+    
+
+  **use_deterministic_cudnn**: bool = ``False``
+    Whether to allow CuDNN to behave deterministically.
+    
+
+  **report_eval_results**: bool = ``False``
+    \ 
+
+  **include_dirs**: Optional[list[str]] = ``None``
+    \ 
+
+  **version**: int
+    \ 
+
+  **test_out_path**: str = ``'/tmp/test_out.txt'``
+    \ 
+
+  **debug_path**: str = ``'/tmp/model.debug'``
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

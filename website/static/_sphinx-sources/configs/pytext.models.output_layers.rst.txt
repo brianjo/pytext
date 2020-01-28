@@ -1,0 +1,15 @@
+output_layers
+=============
+
+
+.. toctree::
+
+  pytext.models.output_layers.distance_output_layer
+  pytext.models.output_layers.doc_classification_output_layer
+  pytext.models.output_layers.doc_regression_output_layer
+  pytext.models.output_layers.intent_slot_output_layer
+  pytext.models.output_layers.lm_output_layer
+  pytext.models.output_layers.output_layer_base
+  pytext.models.output_layers.pairwise_ranking_output_layer
+  pytext.models.output_layers.squad_output_layer
+  pytext.models.output_layers.word_tagging_output_layer

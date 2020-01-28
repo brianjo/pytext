@@ -1,0 +1,33 @@
+Loss.Config
+===========
+
+
+
+**Component:** :class:`Loss  <pytext.loss.loss.Loss>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: Loss.Config
+  :noindex:
+
+  **Bases:** :class:`Component.Config <pytext.config.component.Component.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`CrossEntropyLoss.Config <pytext.loss.loss.CrossEntropyLoss.Config>`\ 
+  - :class:`MultiLabelSoftMarginLoss.Config <pytext.loss.loss.MultiLabelSoftMarginLoss.Config>`\ 
+  - :class:`NLLLoss.Config <pytext.loss.loss.NLLLoss.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

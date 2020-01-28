@@ -1,0 +1,8 @@
+roberta_tensorizer
+==================
+
+
+.. toctree::
+
+  pytext.data.roberta_tensorizer.RoBERTaTensorizer.Config
+  pytext.data.roberta_tensorizer.RoBERTaTokenLevelTensorizer.Config

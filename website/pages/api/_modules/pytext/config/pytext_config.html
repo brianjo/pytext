@@ -1,0 +1,238 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.config.pytext_config</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+
+<span class="k">class</span> <span class="nc">ConfigBaseMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">annotations_and_defaults</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">annotations</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">defaults</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__bases__</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">base</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">annotations</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"__annotations__"</span><span class="p">,</span> <span class="p">{}))</span>
+            <span class="n">defaults</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"_field_defaults"</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="n">annotations</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"__annotations__"</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="n">defaults</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">annotations</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">k</span><span class="p">)})</span>
+        <span class="k">return</span> <span class="n">annotations</span><span class="p">,</span> <span class="n">defaults</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__annotations__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">annotations</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">annotations_and_defaults</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">annotations</span>
+
+    <span class="n">_field_types</span> <span class="o">=</span> <span class="n">__annotations__</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_fields</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__annotations__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_field_defaults</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">defaults</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">annotations_and_defaults</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">defaults</span>
+
+
+<span class="k">class</span> <span class="nc">ConfigBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ConfigBaseMeta</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__annotations__</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""Configs can be constructed by specifying values by keyword.</span>
+<span class="sd">        If a keyword is supplied that isn't in the config, or if a config requires</span>
+<span class="sd">        a value that isn't specified and doesn't have a default, a TypeError will be</span>
+<span class="sd">        raised."""</span>
+        <span class="n">specified</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_field_defaults</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__annotations__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="c1"># Unspecified fields have no default and weren't provided by the caller</span>
+        <span class="n">unspecified_fields</span> <span class="o">=</span> <span class="n">required</span> <span class="o">-</span> <span class="n">specified</span>
+        <span class="k">if</span> <span class="n">unspecified_fields</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">"Failed to specify {unspecified_fields} for {type(self)}"</span><span class="p">)</span>
+
+        <span class="c1"># Overspecified fields are fields that were provided but that the config</span>
+        <span class="c1"># doesn't know what to do with, ie. was never specified anywhere.</span>
+        <span class="n">overspecified_fields</span> <span class="o">=</span> <span class="n">specified</span> <span class="o">-</span> <span class="n">required</span>
+        <span class="k">if</span> <span class="n">overspecified_fields</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"Specified non-existent fields {overspecified_fields} for {type(self)}"</span>
+            <span class="p">)</span>
+
+        <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">":"</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">lines</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">"{key}: {val}"</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">    "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">"""Mainly a convenience utility for unit testing."""</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">PlaceHolder</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="PyTextConfig"><a class="viewcode-back" href="../../../configs/pytext.config.pytext_config.PyTextConfig.html#pytext.config.pytext_config.PyTextConfig">[docs]</a><span class="k">class</span> <span class="nc">PyTextConfig</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+    <span class="c1"># the actual task union types will be generated in runtime</span>
+    <span class="n">task</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PlaceHolder</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">use_cuda_if_available</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c1"># Enable mixed precision training. WARNING: under develoment</span>
+    <span class="n">use_fp16</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># Total Number of GPUs to run the training on (for CPU jobs this has to be 1)</span>
+    <span class="n">distributed_world_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="c1"># Total number of GPU streams for gradient sync in distributed training</span>
+    <span class="n">gpu_streams_for_distributed_training</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="c1"># load either model or checkpoint(model + config + training_state etc)</span>
+    <span class="c1"># load model file for inference only, load checkpont file to continue training</span>
+    <span class="n">load_snapshot_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="c1"># Where to save the trained pytorch model and checkpoints</span>
+    <span class="n">save_snapshot_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/tmp/model.pt"</span>
+    <span class="c1"># True: use the config saved in snapshot. False: use config from current task</span>
+    <span class="n">use_config_from_snapshot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c1"># if there are existing snapshots in parent directory of save_snapshot_path</span>
+    <span class="c1"># resume training from the latest snapshot automatically</span>
+    <span class="n">auto_resume_from_snapshot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># Exported caffe model will be stored here</span>
+    <span class="n">export_caffe2_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c1"># Exported onnx model will be stored here</span>
+    <span class="n">export_onnx_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/tmp/model.onnx"</span>
+    <span class="c1"># Exported torchscript model will be stored here</span>
+    <span class="n">export_torchscript_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c1"># Export quantized torchscript model</span>
+    <span class="n">torchscript_quantize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># Base directory where modules are saved</span>
+    <span class="n">modules_save_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="c1"># Whether to save intermediate checkpoints for modules if they are best yet</span>
+    <span class="n">save_module_checkpoints</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># Whether to save ALL intermediate checkpoints for modules</span>
+    <span class="n">save_all_checkpoints</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># Whether to use TensorBoard</span>
+    <span class="n">use_tensorboard</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c1">#: Seed value to seed torch, python, and numpy random generators.</span>
+    <span class="n">random_seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c1">#: Whether to allow CuDNN to behave deterministically.</span>
+    <span class="n">use_deterministic_cudnn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># Run eval set after model has been trained - for hyperparameter search</span>
+    <span class="n">report_eval_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c1"># include components from custom directories</span>
+    <span class="n">include_dirs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c1"># config version</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="c1"># TODO these two configs are only kept only to be backward comptible with</span>
+    <span class="c1"># RNNG, should be removed once RNNG refactoring is done</span>
+    <span class="n">test_out_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/tmp/test_out.txt"</span>
+    <span class="n">debug_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/tmp/model.debug"</span></div>
+
+
+<span class="k">class</span> <span class="nc">TestConfig</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+    <span class="c1"># Snapshot of a trained model to test</span>
+    <span class="n">load_snapshot_path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="c1"># Test data path</span>
+    <span class="n">test_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"test.tsv"</span>
+    <span class="c1">#: Field names for the TSV. If this is not set, the first line of each file</span>
+    <span class="c1">#: will be assumed to be a header containing the field names.</span>
+    <span class="n">field_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">use_cuda_if_available</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c1"># Whether to use TensorBoard</span>
+    <span class="n">use_tensorboard</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c1"># Output path where metric reporter writes to.</span>
+    <span class="n">test_out_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+
+<span class="k">class</span> <span class="nc">LogitsConfig</span><span class="p">(</span><span class="n">TestConfig</span><span class="p">):</span>
+    <span class="c1"># Whether to dump the raw input to output file.</span>
+    <span class="n">dump_raw_input</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+<span class="n">LATEST_VERSION</span> <span class="o">=</span> <span class="mi">19</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

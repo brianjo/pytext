@@ -1,0 +1,215 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="architecture-overview">
+<h1>Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permalink to this headline">¶</a></h1>
+<p>PyText is designed to help users build end to end pipelines for training and inference. A number of default pipelines are implemented for popular tasks which can be used as-is. Users are free to extend or replace one or more of the pipelines’s components.</p>
+<p>The following figure describes the relationship between the major components of PyText:</p>
+<img alt="_images/pytext.png" src="_images/pytext.png"/>
+<p>Note: some models might implement a single “encoder_decoder” component while others implement two components: a representation and a decoder.</p>
+<div class="section" id="model">
+<h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<p>The Model class is the central concept in PyText. It defines the neural network architecture. PyText provides models for common NLP jobs. Users can implement their custom model in two ways:</p>
+<ul class="simple">
+<li><p>subclassing <code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code> will give you most of the functions for the common architecture <cite>embedding -&gt; representation -&gt; decoder -&gt; output_layer</cite>.</p></li>
+<li><p>if you need more flexibility, you can subclass the more basic <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code> which makes no assumptions about architectures, allowing you to implement any model.</p></li>
+</ul>
+<p>Most PyText models implement <code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code> and use the following architecture:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">- model</span>
+<span class="go">  - model_input</span>
+<span class="go">    - tensorizers</span>
+<span class="go">  - embeddings</span>
+<span class="go">  - encoder+decoder</span>
+<span class="go">  - output_layer</span>
+<span class="go">    - loss</span>
+<span class="go">    - prediction</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>model_input</strong>: defines how the input strings will be transformed into tensors. This is done by input-specific “Tensorizers”. For example, the <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenTensorizer</span></code> takes a sentence, tokenize it and looks up in its vocabulary to create the corresponding tensor. (The vocabulary is created during initialization by doing a first pass on the inputs.) In addition to the inputs, we also define here how to handle other data that can be found in the input files, such as the “labels” (arguably an output, but true labels are used an input during training).</p></li>
+<li><p><strong>embeddings</strong>: this step transforms the tensors created by model_input into embeddings. Each model_input (tensorizer) will be associated to a compatible embedding class (for example: <code class="xref py py-class docutils literal notranslate"><span class="pre">WordEmbedding</span></code>, or <code class="xref py py-class docutils literal notranslate"><span class="pre">CharacterEmbedding</span></code>). (see <cite>pytext/models/embeddings/</cite>)</p></li>
+<li><p><strong>representation</strong>: also called “encoder”, this can be one of the provided classes, such as those using a CNN (for example <code class="xref py py-class docutils literal notranslate"><span class="pre">DocNNRepresentation</span></code>), those using an LSTM (for example <code class="xref py py-class docutils literal notranslate"><span class="pre">BiLSTMDocAttention</span></code>), or any other type of representation. The parameters will depend on the representation selected. (see <cite>pytext/models/representations/</cite>)</p></li>
+<li><p><strong>decoder</strong>: this is typically an MLP (Multi-Layer Perceptron). If you use the default <code class="xref py py-class docutils literal notranslate"><span class="pre">MLPDecoder</span></code>, <cite>hidden_dims</cite> is the most useful parameter, which is an array containing the number of nodes in each hidden layer. (see <cite>pytext/models/decoders/</cite>)</p></li>
+<li><p><strong>output_layer</strong>: this is where the human-understandable output of the model is defined. For example, a document classification can automatically use the “labels” vocabulary defined in model_input as outputs. output_layer also defines the loss function to use during training. (see <cite>pytext/models/output_layers/</cite>)</p></li>
+</ul>
+</div>
+<div class="section" id="task-training-definition">
+<h2>Task: training definition<a class="headerlink" href="#task-training-definition" title="Permalink to this headline">¶</a></h2>
+<p>To train the model, we define a <code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code>, which will tell PyText how to load the data, which model to use, how to train it, as well as the how to measure metrics.</p>
+<p>The Task is defined with the following information:</p>
+<ul class="simple">
+<li><p><strong>data</strong>: defines where to find and how to handle the data: see <strong>data_source</strong> and <strong>batcher</strong>.</p></li>
+<li><p><strong>data -&gt; data_source</strong>: The format of the input data (training, eval and testing) can differ a lot depending on the source. PyText provides <code class="xref py py-class docutils literal notranslate"><span class="pre">TSVDataSource</span></code> to read from the common tab-separated files. Users can easily write their own custom implementation if their files have a different format.</p></li>
+<li><p><strong>data -&gt; batcher</strong>: The batcher is responsible for grouping the input data into batches that will be processed one at a time. <cite>train_batch_size</cite>, <cite>eval_batch_size</cite> and <cite>test_batch_size</cite> can be changed to reduce the running time (while increasing the memory requirements). The default <code class="xref py py-class docutils literal notranslate"><span class="pre">Batcher</span></code> takes the input sequentially, which is adequat in most cases. Alternatively, <cite>PoolingBatcher</cite> shuffles the inputs to make sure the data is not in order, which could introduce a biais in the results.</p></li>
+<li><p><strong>trainer</strong>: This defines a number of useful options for the training runs, like number of <cite>epochs</cite>, whether to <cite>report_train_metrics</cite> only during eval, and the <cite>random_seed</cite> to use.</p></li>
+<li><p><strong>metric_reporter</strong>: different models will need to report different metrics. (For example, common metrics for document classification are precision, recall, f1 score.) Each PyText task can use a corresponding default metric reporter class, but users might want to use alternatives or implement their own.</p></li>
+<li><p><strong>exporter</strong>: defines how to export the model so it can be used in production. PyText currently exports to caffe2 via onnx or torchscript.</p></li>
+<li><p><strong>model</strong>: (see above)</p></li>
+</ul>
+</div>
+<div class="section" id="how-data-is-consumed">
+<h2>How Data is Consumed<a class="headerlink" href="#how-data-is-consumed" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>data_source</strong>: Defines where the data can be found (for example: one training file, one eval file, and one test file) and the schema (field names). The data_source class will read each entry one by one (for example: each line in a TSV file) and convert each one into a <strong>row</strong>, which is a python dict of field name to entry value. Values are converted automatically if their type is specified.</p></li>
+<li><p><strong>tensorizer</strong>: Defines how <strong>rows</strong> are transformed into tensors. Tensorizers listed in the model will use one or more fields in the <strong>row</strong> to create a tensor or a tuple of tensors. To do that, some tensorizers will split the field values using a tokenizer that can be overridden in the config. Tensorizers typically have a vocabulary that allows them to map words or labels to numbers, and it’s built during the initialization phase by scanning the data once. (Alternatively, it can be loaded from file.)</p></li>
+<li><p><strong>model -&gt; arrange_model_inputs()</strong>: At this point, we have a python dict of tensorizer name to tensor or a tuple of tensors. Model has the method arrange_model_inputs() which flattens this python dict into a list tensors or tuple of tensors in the right order for the Model’s forward method.</p></li>
+<li><p><strong>model -&gt; forward()</strong>: This is where the magic happens. Input tensors are passed to the embbedings forward methods, then the results are passed to the encoder/decoder forward methods, and finally the ouput layer produces a prediction.</p></li>
+</ol>
+</div>
+<div class="section" id="config-example">
+<h2>Config Example<a class="headerlink" href="#config-example" title="Permalink to this headline">¶</a></h2>
+<p>We only specify the options we want to override. Everything else will use the default values. A typical config might look like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">{</span>
+<span class="go">  "task": {</span>
+<span class="go">    "MyTask": {</span>
+<span class="go">      "data": {</span>
+<span class="go">        "source": {</span>
+<span class="go">          "TSVDataSource": {</span>
+<span class="go">            "field_names": ["label", "slots", "text"],</span>
+<span class="go">            "train_filename": "data/my_train_data.tsv",</span>
+<span class="go">            "test_filename": "data/my_test_data.tsv",</span>
+<span class="go">            "eval_filename": "data/my_eval_data.tsv"</span>
+<span class="go">          }</span>
+<span class="go">        }</span>
+<span class="go">      }</span>
+<span class="go">    }</span>
+<span class="go">  }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="code-example">
+<h2>Code Example<a class="headerlink" href="#code-example" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyTask</span><span class="p">(</span><span class="n">NewTask</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewTask</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">MyModel</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MyModel</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">ModelInput</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">ModelInput</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">TokenTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">SlotLabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">SlotLabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">ModelInput</span> <span class="o">=</span> <span class="n">ModelInput</span><span class="p">()</span>
+        <span class="n">embedding</span><span class="p">:</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordEmbedding</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">representation</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">BiLSTMSlotAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">BSeqCNNRepresentation</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+            <span class="n">PassThroughRepresentation</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">BiLSTMSlotAttention</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">WordTaggingOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">CRFOutputLayer</span><span class="o">.</span><span class="n">Config</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">WordTaggingOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">):</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="n">embedding</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">embedding</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">)</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">representation</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="n">embedding</span><span class="o">.</span><span class="n">embedding_dim</span>
+        <span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span>
+            <span class="n">in_dim</span><span class="o">=</span><span class="n">representation</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span>
+            <span class="n">out_dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">seq_lens</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token_embedding</span><span class="p">(</span><span class="n">tokens</span><span class="p">)]</span>
+
+        <span class="n">final_embedding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">representation</span><span class="p">(</span><span class="n">final_embedding</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">representation</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="xlm_r.html" title="previous chapter">XLM-RoBERTa</a></li>
+<li>Next: <a href="datasource_tutorial.html" title="next chapter">Custom Data Format</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

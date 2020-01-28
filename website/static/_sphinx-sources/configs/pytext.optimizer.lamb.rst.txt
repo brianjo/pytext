@@ -1,0 +1,7 @@
+lamb
+====
+
+
+.. toctree::
+
+  pytext.optimizer.lamb.Lamb.Config

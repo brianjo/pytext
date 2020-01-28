@@ -1,0 +1,59 @@
+ByteModelInput
+==============
+
+
+
+.. py:currentmodule:: pytext.models.word_model
+.. py:class:: ByteModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **token_bytes**: :doc:`ByteTokenTensorizer.Config <pytext.data.tensorizers.ByteTokenTensorizer.Config>` = :doc:`ByteTokenTensorizer.Config <pytext.data.tensorizers.ByteTokenTensorizer.Config>`\ ()
+    \ 
+
+  **labels**: :doc:`SlotLabelTensorizer.Config <pytext.data.tensorizers.SlotLabelTensorizer.Config>` = :doc:`SlotLabelTensorizer.Config <pytext.data.tensorizers.SlotLabelTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "token_bytes": {
+          "is_input": true,
+          "column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "max_seq_len": null,
+          "max_byte_len": 15,
+          "offset_for_non_padding": 0,
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false
+      },
+      "labels": {
+          "is_input": false,
+          "slot_column": "slots",
+          "text_column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "allow_unknown": false
+      }
+  }

@@ -1,0 +1,289 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.metric_reporters.classification_metric_reporter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.data</span> <span class="kn">import</span> <span class="n">CommonMetadata</span>
+<span class="kn">from</span> <span class="nn">pytext.metrics</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RECALL_AT_PRECISION_THRESHOLDS</span><span class="p">,</span>
+    <span class="n">LabelListPrediction</span><span class="p">,</span>
+    <span class="n">LabelPrediction</span><span class="p">,</span>
+    <span class="n">compute_classification_metrics</span><span class="p">,</span>
+    <span class="n">compute_multi_label_classification_metrics</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.channel</span> <span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">ConsoleChannel</span><span class="p">,</span> <span class="n">FileChannel</span>
+<span class="kn">from</span> <span class="nn">.metric_reporter</span> <span class="kn">import</span> <span class="n">MetricReporter</span>
+
+
+<span class="n">META_LABEL_NAMES</span> <span class="o">=</span> <span class="s2">"label_names"</span>
+
+
+<div class="viewcode-block" id="ComparableClassificationMetric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ComparableClassificationMetric">[docs]</a><span class="k">class</span> <span class="nc">ComparableClassificationMetric</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">ACCURACY</span> <span class="o">=</span> <span class="s2">"accuracy"</span>
+    <span class="n">ROC_AUC</span> <span class="o">=</span> <span class="s2">"roc_auc"</span>
+    <span class="n">MCC</span> <span class="o">=</span> <span class="s2">"mcc"</span>
+    <span class="n">MACRO_F1</span> <span class="o">=</span> <span class="s2">"macro_f1"</span>
+    <span class="n">LABEL_F1</span> <span class="o">=</span> <span class="s2">"label_f1"</span>
+    <span class="n">LABEL_AVG_PRECISION</span> <span class="o">=</span> <span class="s2">"label_avg_precision"</span>
+    <span class="n">LABEL_ROC_AUC</span> <span class="o">=</span> <span class="s2">"label_roc_auc"</span>
+    <span class="c1"># use negative because the reporter's lower_is_better value is False</span>
+    <span class="n">NEGATIVE_LOSS</span> <span class="o">=</span> <span class="s2">"negative_loss"</span></div>
+
+
+<div class="viewcode-block" id="ClassificationMetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter">[docs]</a><span class="k">class</span> <span class="nc">ClassificationMetricReporter</span><span class="p">(</span><span class="n">MetricReporter</span><span class="p">):</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">MetricReporter</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">model_select_metric</span><span class="p">:</span> <span class="n">ComparableClassificationMetric</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">ACCURACY</span>
+        <span class="p">)</span>
+        <span class="n">target_label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1">#: These column names correspond to raw input data columns. Text in these</span>
+        <span class="c1">#: columns (usually just 1 column) will be concatenated and output in</span>
+        <span class="c1">#: the IntentModelChannel as an evaluation tsv.</span>
+        <span class="n">text_column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"text"</span><span class="p">]</span>
+        <span class="c1">#: These column names correspond to raw input data columns, that</span>
+        <span class="c1">#: will be read by data_source into context, and included in the</span>
+        <span class="c1">#: run_model output file along with other saving results.</span>
+        <span class="n">additional_column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">recall_at_precision_thresholds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">RECALL_AT_PRECISION_THRESHOLDS</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">channels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Channel</span><span class="p">],</span>
+        <span class="n">model_select_metric</span><span class="p">:</span> <span class="n">ComparableClassificationMetric</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">ACCURACY</span>
+        <span class="p">),</span>
+        <span class="n">target_label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="n">text_column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">text_column_names</span><span class="p">,</span>
+        <span class="n">additional_column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">additional_column_names</span><span class="p">,</span>
+        <span class="n">recall_at_precision_thresholds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">Config</span><span class="o">.</span><span class="n">recall_at_precision_thresholds</span>
+        <span class="p">),</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span> <span class="o">=</span> <span class="n">label_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">=</span> <span class="n">model_select_metric</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_label</span> <span class="o">=</span> <span class="n">target_label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_column_names</span> <span class="o">=</span> <span class="n">text_column_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">additional_column_names</span> <span class="o">=</span> <span class="n">additional_column_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recall_at_precision_thresholds</span> <span class="o">=</span> <span class="n">recall_at_precision_thresholds</span>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.from_config"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">CommonMetadata</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">tensorizers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># TODO: refactor metric reporting and remove this hack</span>
+        <span class="k">if</span> <span class="n">tensorizers</span><span class="p">:</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tensorizers</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">itos</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">text_column_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_and_label_names</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.from_config_and_label_names"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.from_config_and_label_names">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config_and_label_names</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">label_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">LABEL_F1</span><span class="p">,</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">LABEL_AVG_PRECISION</span><span class="p">,</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">LABEL_ROC_AUC</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">target_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+            <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">target_label</span> <span class="ow">in</span> <span class="n">label_names</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">ROC_AUC</span><span class="p">,</span>
+            <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">MCC</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">label_names</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">ConsoleChannel</span><span class="p">(),</span> <span class="n">FileChannel</span><span class="p">((</span><span class="n">Stage</span><span class="o">.</span><span class="n">TEST</span><span class="p">,),</span> <span class="n">config</span><span class="o">.</span><span class="n">output_path</span><span class="p">)],</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">model_select_metric</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">target_label</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">text_column_names</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">additional_column_names</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">recall_at_precision_thresholds</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.batch_context"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.batch_context">[docs]</a>    <span class="k">def</span> <span class="nf">batch_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">batch_context</span><span class="p">(</span><span class="n">raw_batch</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+        <span class="n">context</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">" | "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">column_name</span><span class="p">])</span> <span class="k">for</span> <span class="n">column_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_column_names</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+        <span class="p">]</span>
+        <span class="c1"># if there are additional colnames, read their contexts into batch</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">additional_column_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">additional_colname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">additional_column_names</span><span class="p">:</span>
+                <span class="n">context</span><span class="p">[</span><span class="n">additional_colname</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">row</span><span class="p">[</span><span class="n">additional_colname</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">raw_batch</span>
+                <span class="p">]</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">compute_classification_metrics</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">LabelPrediction</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">expect</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">scores</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">expect</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span>
+                <span class="p">)</span>
+            <span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">(),</span>
+            <span class="n">recall_at_precision_thresholds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">recall_at_precision_thresholds</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.predictions_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.predictions_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">predictions_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable predictions</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">[</span><span class="n">pred</span><span class="p">]</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.targets_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.targets_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">targets_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable targets</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.get_meta"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.get_meta">[docs]</a>    <span class="k">def</span> <span class="nf">get_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">META_LABEL_NAMES</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="ClassificationMetricReporter.get_model_select_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.get_model_select_metric">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_select_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">ACCURACY</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">accuracy</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">ROC_AUC</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">roc_auc</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">MCC</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mcc</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">MACRO_F1</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">macro_prf1_metrics</span><span class="o">.</span><span class="n">macro_scores</span><span class="o">.</span><span class="n">f1</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">LABEL_F1</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">macro_prf1_metrics</span><span class="o">.</span><span class="n">per_label_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_label</span><span class="p">]</span><span class="o">.</span><span class="n">f1</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span>
+            <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">LABEL_AVG_PRECISION</span>
+        <span class="p">):</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_label</span><span class="p">]</span><span class="o">.</span><span class="n">average_precision</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">LABEL_ROC_AUC</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">per_label_soft_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_label</span><span class="p">]</span><span class="o">.</span><span class="n">roc_auc</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_select_metric</span> <span class="o">==</span> <span class="n">ComparableClassificationMetric</span><span class="o">.</span><span class="n">NEGATIVE_LOSS</span><span class="p">:</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="o">-</span><span class="n">metrics</span><span class="o">.</span><span class="n">loss</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s2">"unknown metric: {self.model_select_metric}"</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">metric</span></div></div>
+
+
+<div class="viewcode-block" id="MultiLabelClassificationMetricReporter"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter">[docs]</a><span class="k">class</span> <span class="nc">MultiLabelClassificationMetricReporter</span><span class="p">(</span><span class="n">ClassificationMetricReporter</span><span class="p">):</span>
+<div class="viewcode-block" id="MultiLabelClassificationMetricReporter.calculate_metric"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.calculate_metric">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">compute_multi_label_classification_metrics</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">LabelListPrediction</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">expect</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">scores</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">expect</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span>
+                <span class="p">)</span>
+            <span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">(),</span>
+            <span class="n">recall_at_precision_thresholds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">recall_at_precision_thresholds</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="MultiLabelClassificationMetricReporter.predictions_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.predictions_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">predictions_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable predictions</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">[</span><span class="n">pred</span><span class="p">]</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">predictions</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_preds</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="MultiLabelClassificationMetricReporter.targets_to_report"><a class="viewcode-back" href="../../../modules/pytext.metric_reporters.html#pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.targets_to_report">[docs]</a>    <span class="k">def</span> <span class="nf">targets_to_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Generate human readable targets</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">targets</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_targets</span>
+        <span class="p">]</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

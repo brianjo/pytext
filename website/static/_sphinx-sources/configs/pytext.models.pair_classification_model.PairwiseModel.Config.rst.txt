@@ -1,0 +1,195 @@
+PairwiseModel.Config
+====================
+
+
+
+**Component:** :class:`PairwiseModel  <pytext.models.pair_classification_model.PairwiseModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.pair_classification_model
+.. py:class:: PairwiseModel.Config
+  :noindex:
+
+  **Bases:** :class:`BasePairwiseModel.Config <pytext.models.pair_classification_model.BasePairwiseModel.Config>`\ 
+
+  
+  .. attribute:: encode_relations
+  
+     if `false`, return the concatenation of the two
+     representations; if `true`, also concatenate their pairwise absolute
+     difference and pairwise elementwise product (à la arXiv:1705.02364).
+     Default: `true`.
+  
+     :type: bool
+  
+  .. attribute:: tied_representation
+  
+     whether to use the same representation, with
+     tied weights, for all the input subrepresentations. Default: `true`.
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.pair_classification_model.ModelInput>` = :doc:`ModelInput <pytext.models.pair_classification_model.ModelInput>`\ ()
+    \ 
+
+  **decoder**: :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>` = :doc:`MLPDecoder.Config <pytext.models.decoders.mlp_decoder.MLPDecoder.Config>`\ ()
+    \ 
+
+  **output_layer**: Union[:doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`, :doc:`PairwiseCosineDistanceOutputLayer.Config <pytext.models.output_layers.distance_output_layer.PairwiseCosineDistanceOutputLayer.Config>`] = :doc:`ClassificationOutputLayer.Config <pytext.models.output_layers.doc_classification_output_layer.ClassificationOutputLayer.Config>`\ ()
+    \ 
+
+  **encode_relations**: bool = ``True``
+    \ 
+
+  **embedding**: :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>` = :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>`\ ()
+    \ 
+
+  **representation**: Union[:doc:`BiLSTMDocAttention.Config <pytext.models.representations.bilstm_doc_attention.BiLSTMDocAttention.Config>`, :doc:`DocNNRepresentation.Config <pytext.models.representations.docnn.DocNNRepresentation.Config>`] = :doc:`BiLSTMDocAttention.Config <pytext.models.representations.bilstm_doc_attention.BiLSTMDocAttention.Config>`\ ()
+    \ 
+
+  **shared_representations**: bool = ``True``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`QueryDocPairwiseRankingModel.Config <pytext.models.query_document_pairwise_ranking_model.QueryDocPairwiseRankingModel.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {
+          "tokens1": {
+              "is_input": true,
+              "column": "text1",
+              "tokenizer": {
+                  "Tokenizer": {
+                      "split_regex": "\\s+",
+                      "lowercase": true
+                  }
+              },
+              "add_bos_token": false,
+              "add_eos_token": false,
+              "use_eos_token_for_bos": false,
+              "max_seq_len": null,
+              "vocab": {
+                  "build_from_data": true,
+                  "size_from_data": 0,
+                  "vocab_files": []
+              },
+              "vocab_file_delimiter": " "
+          },
+          "tokens2": {
+              "is_input": true,
+              "column": "text2",
+              "tokenizer": {
+                  "Tokenizer": {
+                      "split_regex": "\\s+",
+                      "lowercase": true
+                  }
+              },
+              "add_bos_token": false,
+              "add_eos_token": false,
+              "use_eos_token_for_bos": false,
+              "max_seq_len": null,
+              "vocab": {
+                  "build_from_data": true,
+                  "size_from_data": 0,
+                  "vocab_files": []
+              },
+              "vocab_file_delimiter": " "
+          },
+          "labels": {
+              "LabelTensorizer": {
+                  "is_input": false,
+                  "column": "label",
+                  "allow_unknown": false,
+                  "pad_in_vocab": false,
+                  "label_vocab": null
+              }
+          }
+      },
+      "decoder": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_dims": [],
+          "out_dim": null,
+          "layer_norm": false,
+          "dropout": 0.0,
+          "activation": "relu"
+      },
+      "output_layer": {
+          "ClassificationOutputLayer": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "loss": {
+                  "CrossEntropyLoss": {}
+              },
+              "label_weights": null
+          }
+      },
+      "encode_relations": true,
+      "embedding": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "embed_dim": 100,
+          "embedding_init_strategy": "random",
+          "embedding_init_range": null,
+          "export_input_names": [
+              "tokens_vals"
+          ],
+          "pretrained_embeddings_path": "",
+          "vocab_file": "",
+          "vocab_size": 0,
+          "vocab_from_train_data": true,
+          "vocab_from_all_data": false,
+          "vocab_from_pretrained_embeddings": false,
+          "lowercase_tokens": true,
+          "min_freq": 1,
+          "mlp_layer_dims": [],
+          "padding_idx": null,
+          "cpu_only": false,
+          "skip_header": true,
+          "delimiter": " "
+      },
+      "representation": {
+          "BiLSTMDocAttention": {
+              "load_path": null,
+              "save_path": null,
+              "freeze": false,
+              "shared_module_key": null,
+              "dropout": 0.4,
+              "lstm": {
+                  "load_path": null,
+                  "save_path": null,
+                  "freeze": false,
+                  "shared_module_key": null,
+                  "dropout": 0.4,
+                  "lstm_dim": 32,
+                  "num_layers": 1,
+                  "bidirectional": true,
+                  "pack_sequence": true
+              },
+              "pooling": {
+                  "SelfAttention": {
+                      "attn_dimension": 64,
+                      "dropout": 0.4
+                  }
+              },
+              "mlp_decoder": null
+          }
+      },
+      "shared_representations": true
+  }

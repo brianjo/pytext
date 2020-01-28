@@ -1,0 +1,298 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.roberta</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytext.common.constants</span> <span class="kn">import</span> <span class="n">Stage</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.data.roberta_tensorizer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RoBERTaTensorizer</span><span class="p">,</span>
+    <span class="n">RoBERTaTokenLevelTensorizer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.data.tensorizers</span> <span class="kn">import</span> <span class="n">LabelTensorizer</span><span class="p">,</span> <span class="n">Tensorizer</span>
+<span class="kn">from</span> <span class="nn">pytext.models.bert_classification_models</span> <span class="kn">import</span> <span class="n">NewBertModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.decoders.mlp_decoder</span> <span class="kn">import</span> <span class="n">MLPDecoder</span>
+<span class="kn">from</span> <span class="nn">pytext.models.model</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">Module</span><span class="p">,</span> <span class="n">create_module</span>
+<span class="kn">from</span> <span class="nn">pytext.models.output_layers</span> <span class="kn">import</span> <span class="n">WordTaggingOutputLayer</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.transformer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MultiheadSelfAttention</span><span class="p">,</span>
+    <span class="n">SentenceEncoder</span><span class="p">,</span>
+    <span class="n">Transformer</span><span class="p">,</span>
+    <span class="n">TransformerLayer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.models.representations.transformer_sentence_encoder_base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransformerSentenceEncoderBase</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pytext.torchscript.module</span> <span class="kn">import</span> <span class="n">get_script_module_cls</span>
+<span class="kn">from</span> <span class="nn">pytext.utils.file_io</span> <span class="kn">import</span> <span class="n">PathManager</span>
+<span class="kn">from</span> <span class="nn">torch.serialization</span> <span class="kn">import</span> <span class="n">default_restore_location</span>
+
+
+<div class="viewcode-block" id="init_params"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.init_params">[docs]</a><span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">"""Initialize the RoBERTa weights for pre-training from scratch."""</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">):</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">padding_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">module</span><span class="o">.</span><span class="n">padding_idx</span><span class="p">]</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RoBERTaEncoderBase"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaEncoderBase">[docs]</a><span class="k">class</span> <span class="nc">RoBERTaEncoderBase</span><span class="p">(</span><span class="n">TransformerSentenceEncoderBase</span><span class="p">):</span>
+    <span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">TransformerSentenceEncoderBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="c1"># NewBertModel expects the output as a tuple and grabs the first element</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">inputs</span>
+        <span class="n">full_representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="n">sentence_rep</span> <span class="o">=</span> <span class="n">full_representation</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">full_representation</span><span class="p">],</span> <span class="n">sentence_rep</span></div>
+
+
+<div class="viewcode-block" id="RoBERTaEncoderJit"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaEncoderJit">[docs]</a><span class="k">class</span> <span class="nc">RoBERTaEncoderJit</span><span class="p">(</span><span class="n">RoBERTaEncoderBase</span><span class="p">):</span>
+    <span class="sd">"""A TorchScript RoBERTa implementation"""</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RoBERTaEncoderBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">pretrained_encoder</span><span class="p">:</span> <span class="n">Module</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">Module</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+            <span class="n">load_path</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"manifold://pytext_training/tree/static/models/roberta_public.pt1"</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">output_encoded_layers</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="o">**</span><span class="n">kwarg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">output_encoded_layers</span><span class="o">=</span><span class="n">output_encoded_layers</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">pretrained_encoder</span><span class="o">.</span><span class="n">load_path</span><span class="p">,</span> <span class="s2">"Load path cannot be empty."</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">pretrained_encoder</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">token_embedding</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_embedding</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># used to tie weights in MaskedLM model</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">token_embedding</span></div>
+
+
+<div class="viewcode-block" id="RoBERTaEncoder"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaEncoder">[docs]</a><span class="k">class</span> <span class="nc">RoBERTaEncoder</span><span class="p">(</span><span class="n">RoBERTaEncoderBase</span><span class="p">):</span>
+    <span class="sd">"""A PyTorch RoBERTa implementation"""</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RoBERTaEncoderBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">embedding_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">768</span>
+        <span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50265</span>
+        <span class="n">num_encoder_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span>
+        <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span>
+        <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"manifold://pytext_training/tree/static/models/roberta_base_torch.pt"</span>
+        <span class="p">)</span>
+        <span class="c1"># Loading the state dict of the model depends on whether the model was</span>
+        <span class="c1"># previously finetuned in PyText or not. If it was finetuned then we</span>
+        <span class="c1"># dont need to translate the state dict and can just load it`</span>
+        <span class="c1"># directly.</span>
+        <span class="n">is_finetuned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">output_encoded_layers</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="o">**</span><span class="n">kwarg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">output_encoded_layers</span><span class="o">=</span><span class="n">output_encoded_layers</span><span class="p">)</span>
+        <span class="c1"># assert config.pretrained_encoder.load_path, "Load path cannot be empty."</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">SentenceEncoder</span><span class="p">(</span>
+            <span class="n">transformer</span><span class="o">=</span><span class="n">Transformer</span><span class="p">(</span>
+                <span class="n">vocab_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span>
+                <span class="n">embedding_dim</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">embedding_dim</span><span class="p">,</span>
+                <span class="n">layers</span><span class="o">=</span><span class="p">[</span>
+                    <span class="n">TransformerLayer</span><span class="p">(</span>
+                        <span class="n">embedding_dim</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">embedding_dim</span><span class="p">,</span>
+                        <span class="n">attention</span><span class="o">=</span><span class="n">MultiheadSelfAttention</span><span class="p">(</span>
+                            <span class="n">config</span><span class="o">.</span><span class="n">embedding_dim</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">num_attention_heads</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">num_encoder_layers</span><span class="p">)</span>
+                <span class="p">],</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">init_params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">PathManager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">roberta_state</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+                    <span class="n">f</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="n">default_restore_location</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="c1"># In case the model has previously been loaded in PyText and finetuned,</span>
+            <span class="c1"># then we dont need to do the special state dict translation. Load</span>
+            <span class="c1"># it directly</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">is_finetuned</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">load_roberta_state_dict</span><span class="p">(</span><span class="n">roberta_state</span><span class="p">[</span><span class="s2">"model"</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">roberta_state</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embedding</span><span class="p">()</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_embedding</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># used to tie weights in MaskedLM model</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">token_embedding</span></div>
+
+
+<div class="viewcode-block" id="RoBERTa"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTa">[docs]</a><span class="k">class</span> <span class="nc">RoBERTa</span><span class="p">(</span><span class="n">NewBertModel</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">NewBertModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">InputConfig</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">RoBERTaTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">RoBERTaTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="n">labels</span><span class="p">:</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">LabelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">InputConfig</span> <span class="o">=</span> <span class="n">InputConfig</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">RoBERTaEncoderBase</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">RoBERTaEncoderJit</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RoBERTa.torchscriptify"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTa.torchscriptify">[docs]</a>    <span class="k">def</span> <span class="nf">torchscriptify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">,</span> <span class="n">traced_model</span><span class="p">):</span>
+        <span class="sd">"""Using the traced model, create a ScriptModule which has a nicer API that</span>
+<span class="sd">        includes generating tensors from simple data types, and returns classified</span>
+<span class="sd">        values according to the output layer (eg. as a dict mapping class name to score)</span>
+<span class="sd">        """</span>
+        <span class="n">script_tensorizer</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">torchscriptify</span><span class="p">()</span>
+        <span class="n">script_module_cls</span> <span class="o">=</span> <span class="n">get_script_module_cls</span><span class="p">(</span>
+            <span class="n">script_tensorizer</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">input_type</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">script_module_cls</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">traced_model</span><span class="p">,</span>
+            <span class="n">output_layer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">torchscript_predictions</span><span class="p">(),</span>
+            <span class="n">tensorizer</span><span class="o">=</span><span class="n">script_tensorizer</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RoBERTaWordTaggingModel"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaWordTaggingModel">[docs]</a><span class="k">class</span> <span class="nc">RoBERTaWordTaggingModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Single Sentence Token-level Classification Model using XLM.</span>
+<span class="sd">    """</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="k">class</span> <span class="nc">WordTaggingInputConfig</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="n">tokens</span><span class="p">:</span> <span class="n">RoBERTaTokenLevelTensorizer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">RoBERTaTokenLevelTensorizer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">WordTaggingInputConfig</span> <span class="o">=</span> <span class="n">WordTaggingInputConfig</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">RoBERTaEncoderBase</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">RoBERTaEncoderJit</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">decoder</span><span class="p">:</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">MLPDecoder</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+        <span class="n">output_layer</span><span class="p">:</span> <span class="n">WordTaggingOutputLayer</span><span class="o">.</span><span class="n">Config</span> <span class="o">=</span> <span class="n">WordTaggingOutputLayer</span><span class="o">.</span><span class="n">Config</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RoBERTaWordTaggingModel.from_config"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaWordTaggingModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">tensorizers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensorizer</span><span class="p">]):</span>
+        <span class="n">label_vocab</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">labels_vocab</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="n">tensorizers</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span>
+            <span class="n">output_encoded_layers</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">padding_idx</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_pad_index</span><span class="p">(),</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab</span><span class="o">.</span><span class="fm">__len__</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="n">in_dim</span><span class="o">=</span><span class="n">encoder</span><span class="o">.</span><span class="n">representation_dim</span><span class="p">,</span> <span class="n">out_dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">label_vocab</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">output_layer</span> <span class="o">=</span> <span class="n">create_module</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output_layer</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">label_vocab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">Stage</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span>
+
+<div class="viewcode-block" id="RoBERTaWordTaggingModel.arrange_model_inputs"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaWordTaggingModel.arrange_model_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_model_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">pad_mask</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="n">model_inputs</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">pad_mask</span><span class="p">,</span> <span class="n">segment_labels</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">model_inputs</span><span class="p">,)</span></div>
+
+<div class="viewcode-block" id="RoBERTaWordTaggingModel.arrange_targets"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaWordTaggingModel.arrange_targets">[docs]</a>    <span class="k">def</span> <span class="nf">arrange_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor_dict</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">labels</span></div>
+
+<div class="viewcode-block" id="RoBERTaWordTaggingModel.forward"><a class="viewcode-back" href="../../../modules/pytext.models.html#pytext.models.roberta.RoBERTaWordTaggingModel.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder_inputs</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="c1"># The encoder outputs a list of representations for each token where</span>
+        <span class="c1"># every element of the list corresponds to a layer in the transformer.</span>
+        <span class="c1"># We extract and pass the representations associated with the last layer</span>
+        <span class="c1"># of the transformer.</span>
+        <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">encoder_inputs</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">representation</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

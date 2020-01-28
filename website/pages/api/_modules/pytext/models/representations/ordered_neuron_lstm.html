@@ -1,0 +1,255 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.models.representations.ordered_neuron_lstm</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="kn">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="kn">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">pytext.config</span> <span class="kn">import</span> <span class="n">ConfigBase</span>
+<span class="kn">from</span> <span class="nn">pytext.models.module</span> <span class="kn">import</span> <span class="n">Module</span>
+<span class="kn">from</span> <span class="nn">pytext.utils</span> <span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span> <span class="nn">.representation_base</span> <span class="kn">import</span> <span class="n">RepresentationBase</span>
+
+
+<span class="c1"># A single layer of an Ordered Neuron LSTM</span>
+<div class="viewcode-block" id="OrderedNeuronLSTMLayer"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTMLayer">[docs]</a><span class="k">class</span> <span class="nc">OrderedNeuronLSTMLayer</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">padding_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_dim</span> <span class="o">=</span> <span class="n">lstm_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding_value</span> <span class="o">=</span> <span class="n">padding_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+
+        <span class="n">total_size</span> <span class="o">=</span> <span class="n">embed_dim</span> <span class="o">+</span> <span class="n">lstm_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">total_size</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">total_size</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">o_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">total_size</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_hat_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">total_size</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">master_forget_no_cumax_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">total_size</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">master_input_no_cumax_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">total_size</span><span class="p">,</span> <span class="n">lstm_dim</span><span class="p">)</span>
+
+    <span class="c1"># embedded_tokens has shape (seq length, batch size, embed size)</span>
+    <span class="c1"># states = (hidden, context), where both hidden and context have</span>
+    <span class="c1">#          shape (batch size, hidden size)</span>
+<div class="viewcode-block" id="OrderedNeuronLSTMLayer.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTMLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embedded_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">states</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+        <span class="n">seq_lengths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+        <span class="n">hidden</span><span class="p">,</span> <span class="n">context</span> <span class="o">=</span> <span class="n">states</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">hidden</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">all_context</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">all_hidden</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="o">.</span><span class="n">p</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">embedded_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">embedded_tokens</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">embedded_tokens</span><span class="p">:</span>
+            <span class="c1"># Compute the normal LSTM gates</span>
+            <span class="n">combined</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">batch</span><span class="p">,</span> <span class="n">hidden</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_gate</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">()</span>
+            <span class="n">it</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_gate</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">()</span>
+            <span class="n">ot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">o_gate</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">()</span>
+            <span class="n">c_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_hat_gate</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span><span class="o">.</span><span class="n">tanh</span><span class="p">()</span>
+
+            <span class="c1"># Compute the master gates</span>
+            <span class="n">master_forget_no_cumax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">master_forget_no_cumax_gate</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span>
+            <span class="n">master_forget</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span>
+                <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">master_forget_no_cumax</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">master_input_no_cumax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">master_input_no_cumax_gate</span><span class="p">(</span><span class="n">combined</span><span class="p">)</span>
+            <span class="n">master_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">master_input_no_cumax</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Combine master gates with normal LSTM gates</span>
+            <span class="n">wt</span> <span class="o">=</span> <span class="n">master_forget</span> <span class="o">*</span> <span class="n">master_input</span>
+            <span class="n">f_hat_t</span> <span class="o">=</span> <span class="n">ft</span> <span class="o">*</span> <span class="n">wt</span> <span class="o">+</span> <span class="p">(</span><span class="n">master_forget</span> <span class="o">-</span> <span class="n">wt</span><span class="p">)</span>
+            <span class="n">i_hat_t</span> <span class="o">=</span> <span class="n">it</span> <span class="o">*</span> <span class="n">wt</span> <span class="o">+</span> <span class="p">(</span><span class="n">master_input</span> <span class="o">-</span> <span class="n">wt</span><span class="p">)</span>
+
+            <span class="c1"># Compute new context and hidden using final combined gates</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="n">f_hat_t</span> <span class="o">*</span> <span class="n">context</span> <span class="o">+</span> <span class="n">i_hat_t</span> <span class="o">*</span> <span class="n">c_hat</span>
+            <span class="n">hidden</span> <span class="o">=</span> <span class="n">ot</span> <span class="o">*</span> <span class="n">context</span>
+            <span class="n">all_context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+            <span class="n">all_hidden</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hidden</span><span class="p">)</span>
+
+        <span class="c1"># Compute what the final state (hidden and context for each element</span>
+        <span class="c1"># in the batch) should be based on seq_lengths</span>
+        <span class="n">state_hidden</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">state_context</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">seq_length</span> <span class="o">=</span> <span class="n">seq_lengths</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">state_hidden</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_hidden</span><span class="p">[</span><span class="n">seq_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">state_context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_context</span><span class="p">[</span><span class="n">seq_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Return hidden states across all time steps, and return a tuple</span>
+        <span class="c1"># containing the hidden and context for the last time step (might</span>
+        <span class="c1"># be different based on seq_lengths)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">all_hidden</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">state_hidden</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">state_context</span><span class="p">)),</span>
+        <span class="p">)</span></div></div>
+
+
+<span class="c1"># Ordered Neuron LSTM with any number of layers</span>
+<div class="viewcode-block" id="OrderedNeuronLSTM"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTM">[docs]</a><span class="k">class</span> <span class="nc">OrderedNeuronLSTM</span><span class="p">(</span><span class="n">RepresentationBase</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">RepresentationBase</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>
+        <span class="n">lstm_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">padding_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">lstm_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding_value</span> <span class="o">=</span> <span class="n">padding_value</span>
+        <span class="n">lstms</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="p">[</span><span class="n">embed_dim</span><span class="p">]</span> <span class="o">+</span> <span class="p">([</span><span class="n">config</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">]</span> <span class="o">*</span> <span class="n">config</span><span class="o">.</span><span class="n">num_layers</span><span class="p">)</span>
+
+        <span class="c1"># Create an ONLstm for each hidden size, and chain them together</span>
+        <span class="c1"># using lstms</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">lstm</span> <span class="o">=</span> <span class="n">OrderedNeuronLSTMLayer</span><span class="p">(</span>
+                <span class="n">sizes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sizes</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">padding_value</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">dropout</span>
+            <span class="p">)</span>
+            <span class="n">lstms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lstm</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstms</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="n">lstms</span><span class="p">)</span>
+
+    <span class="c1"># rep has shape (batch size, seq length, embed dim)</span>
+    <span class="c1"># seq_lengths has sequence lengths for each case in the batch, used to</span>
+    <span class="c1">#   pick the last hidden and context</span>
+    <span class="c1"># states is a tuple for initial hidden and context</span>
+<div class="viewcode-block" id="OrderedNeuronLSTM.forward"><a class="viewcode-back" href="../../../../modules/pytext.models.representations.html#pytext.models.representations.ordered_neuron_lstm.OrderedNeuronLSTM.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">rep</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">seq_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="n">states</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c1"># Transpose states so hidden and context both have shape</span>
+            <span class="c1"># (num layers, batch size, lstm dim)</span>
+            <span class="n">states</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span>
+                <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># state has shape (num layers, batch size, lstm dim)</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+                <span class="n">rep</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lstm_dim</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">()</span> <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">CUDA_ENABLED</span> <span class="k">else</span> <span class="bp">None</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">states</span> <span class="o">=</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+
+        <span class="c1"># hidden_by_layer is a list of hidden states for each layer of the</span>
+        <span class="c1"># network, and similarly for context_by_layer</span>
+        <span class="n">hidden_by_layer</span><span class="p">,</span> <span class="n">context_by_layer</span> <span class="o">=</span> <span class="n">states</span>
+
+        <span class="c1"># Collect the last hidden and context for each layer</span>
+        <span class="n">last_hidden_by_layer</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">last_context_by_layer</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rep</span> <span class="o">=</span> <span class="n">rep</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">lstm</span><span class="p">,</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">context</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lstms</span><span class="p">,</span> <span class="n">hidden_by_layer</span><span class="p">,</span> <span class="n">context_by_layer</span><span class="p">):</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+            <span class="c1"># We purposefully throw away new_state until we reach the top layer</span>
+            <span class="c1"># since we only care about passing on the final hidden state</span>
+            <span class="n">rep</span><span class="p">,</span> <span class="p">(</span><span class="n">last_hidden</span><span class="p">,</span> <span class="n">last_context</span><span class="p">)</span> <span class="o">=</span> <span class="n">lstm</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">seq_lengths</span><span class="p">)</span>
+            <span class="n">last_hidden_by_layer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_hidden</span><span class="p">)</span>
+            <span class="n">last_context_by_layer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_context</span><span class="p">)</span>
+
+        <span class="c1"># Make rep have shape (batch size, num layers, hidden size)</span>
+        <span class="n">rep</span> <span class="o">=</span> <span class="n">rep</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+
+        <span class="c1"># Make last_hidden and last_context have shape</span>
+        <span class="c1"># (batch size, num layers, hidden size)</span>
+        <span class="n">last_hidden</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">last_hidden_by_layer</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">last_context</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">last_context_by_layer</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rep</span><span class="p">,</span> <span class="p">(</span><span class="n">last_hidden</span><span class="p">,</span> <span class="n">last_context</span><span class="p">)</span></div></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../../index.html">Documentation overview</a><ul>
+<li><a href="../../../index.html">Module code</a><ul>
+<li><a href="../../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

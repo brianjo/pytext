@@ -1,0 +1,8 @@
+classification_metric_reporter
+==============================
+
+
+.. toctree::
+
+  pytext.metric_reporters.classification_metric_reporter.ClassificationMetricReporter.Config
+  pytext.metric_reporters.classification_metric_reporter.MultiLabelClassificationMetricReporter.Config

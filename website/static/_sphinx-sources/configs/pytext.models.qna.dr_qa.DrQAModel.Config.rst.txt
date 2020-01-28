@@ -1,0 +1,154 @@
+DrQAModel.Config
+================
+
+
+
+**Component:** :class:`DrQAModel  <pytext.models.qna.dr_qa.DrQAModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.qna.dr_qa
+.. py:class:: DrQAModel.Config
+  :noindex:
+
+  **Bases:** :class:`BaseModel.Config <pytext.models.model.BaseModel.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **inputs**: :doc:`ModelInput <pytext.models.qna.dr_qa.ModelInput>` = :doc:`ModelInput <pytext.models.qna.dr_qa.ModelInput>`\ ()
+    \ 
+
+  **dropout**: float = ``0.4``
+    \ 
+
+  **embedding**: :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>` = :doc:`WordEmbedding.Config <pytext.models.embeddings.word_embedding.WordEmbedding.Config>`\ (embed_dim=\ ``300``\ , pretrained_embeddings_path=\ ``'/mnt/vol/pytext/users/kushall/pretrained/glove.840B.300d.txt'``\ , vocab_from_pretrained_embeddings=\ ``True``\ )
+    \ 
+
+  **ques_rnn**: :doc:`StackedBidirectionalRNN.Config <pytext.models.representations.stacked_bidirectional_rnn.StackedBidirectionalRNN.Config>` = :doc:`StackedBidirectionalRNN.Config <pytext.models.representations.stacked_bidirectional_rnn.StackedBidirectionalRNN.Config>`\ (dropout=\ ``0.4``\ )
+    \ 
+
+  **doc_rnn**: :doc:`StackedBidirectionalRNN.Config <pytext.models.representations.stacked_bidirectional_rnn.StackedBidirectionalRNN.Config>` = :doc:`StackedBidirectionalRNN.Config <pytext.models.representations.stacked_bidirectional_rnn.StackedBidirectionalRNN.Config>`\ (dropout=\ ``0.4``\ )
+    \ 
+
+  **output_layer**: :doc:`SquadOutputLayer.Config <pytext.models.output_layers.squad_output_layer.SquadOutputLayer.Config>` = :doc:`SquadOutputLayer.Config <pytext.models.output_layers.squad_output_layer.SquadOutputLayer.Config>`\ ()
+    \ 
+
+  **is_kd**: bool = ``False``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "inputs": {
+          "squad_input": {
+              "SquadTensorizer": {
+                  "is_input": true,
+                  "column": "text",
+                  "tokenizer": {
+                      "Tokenizer": {
+                          "split_regex": "\\W+",
+                          "lowercase": true
+                      }
+                  },
+                  "add_bos_token": false,
+                  "add_eos_token": false,
+                  "use_eos_token_for_bos": false,
+                  "max_seq_len": null,
+                  "vocab": {
+                      "build_from_data": true,
+                      "size_from_data": 0,
+                      "vocab_files": []
+                  },
+                  "vocab_file_delimiter": " ",
+                  "doc_column": "doc",
+                  "ques_column": "question",
+                  "answers_column": "answers",
+                  "answer_starts_column": "answer_starts",
+                  "max_ques_seq_len": 64,
+                  "max_doc_seq_len": 256
+              }
+          },
+          "has_answer": {
+              "LabelTensorizer": {
+                  "is_input": false,
+                  "column": "has_answer",
+                  "allow_unknown": false,
+                  "pad_in_vocab": false,
+                  "label_vocab": null
+              }
+          }
+      },
+      "dropout": 0.4,
+      "embedding": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "embed_dim": 300,
+          "embedding_init_strategy": "random",
+          "embedding_init_range": null,
+          "export_input_names": [
+              "tokens_vals"
+          ],
+          "pretrained_embeddings_path": "/mnt/vol/pytext/users/kushall/pretrained/glove.840B.300d.txt",
+          "vocab_file": "",
+          "vocab_size": 0,
+          "vocab_from_train_data": true,
+          "vocab_from_all_data": false,
+          "vocab_from_pretrained_embeddings": true,
+          "lowercase_tokens": true,
+          "min_freq": 1,
+          "mlp_layer_dims": [],
+          "padding_idx": null,
+          "cpu_only": false,
+          "skip_header": true,
+          "delimiter": " "
+      },
+      "ques_rnn": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_size": 32,
+          "num_layers": 1,
+          "dropout": 0.4,
+          "bidirectional": true,
+          "rnn_type": "lstm",
+          "concat_layers": true
+      },
+      "doc_rnn": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "hidden_size": 32,
+          "num_layers": 1,
+          "dropout": 0.4,
+          "bidirectional": true,
+          "rnn_type": "lstm",
+          "concat_layers": true
+      },
+      "output_layer": {
+          "load_path": null,
+          "save_path": null,
+          "freeze": false,
+          "shared_module_key": null,
+          "loss": {
+              "CrossEntropyLoss": {}
+          },
+          "ignore_impossible": true,
+          "pos_loss_weight": 0.5,
+          "has_answer_loss_weight": 0.5,
+          "false_label": "False",
+          "max_answer_len": 30,
+          "hard_weight": 0.0
+      },
+      "is_kd": false
+  }

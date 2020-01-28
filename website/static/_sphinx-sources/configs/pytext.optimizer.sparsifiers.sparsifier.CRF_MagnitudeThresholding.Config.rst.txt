@@ -1,0 +1,44 @@
+CRF_MagnitudeThresholding.Config
+================================
+
+
+
+**Component:** :class:`CRF_MagnitudeThresholding  <pytext.optimizer.sparsifiers.sparsifier.CRF_MagnitudeThresholding>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.sparsifiers.sparsifier
+.. py:class:: CRF_MagnitudeThresholding.Config
+  :noindex:
+
+  **Bases:** :class:`CRF_SparsifierBase.Config <pytext.optimizer.sparsifiers.sparsifier.CRF_SparsifierBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **starting_epoch**: int = ``1``
+    \ 
+
+  **frequency**: int = ``1``
+    \ 
+
+  **sparsity**: float = ``0.9``
+    \ 
+
+  **grouping**: str = ``'row'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "starting_epoch": 1,
+      "frequency": 1,
+      "sparsity": 0.9,
+      "grouping": "row"
+  }

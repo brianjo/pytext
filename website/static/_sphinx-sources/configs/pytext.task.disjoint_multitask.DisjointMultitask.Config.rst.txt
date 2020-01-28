@@ -1,0 +1,50 @@
+DisjointMultitask.Config
+========================
+
+
+
+**Component:** :class:`DisjointMultitask  <pytext.task.disjoint_multitask.DisjointMultitask>`\ 
+
+
+.. py:currentmodule:: pytext.task.disjoint_multitask
+.. py:class:: DisjointMultitask.Config
+  :noindex:
+
+  **Bases:** :class:`TaskBase.Config <pytext.task.task.TaskBase.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **features**: :doc:`FeatureConfig <pytext.config.field_config.FeatureConfig>` = :doc:`FeatureConfig <pytext.config.field_config.FeatureConfig>`\ ()
+    \ 
+
+  **featurizer**: :doc:`Featurizer.Config <pytext.data.featurizer.featurizer.Featurizer.Config>` = :doc:`SimpleFeaturizer.Config <pytext.data.featurizer.simple_featurizer.SimpleFeaturizer.Config>`\ ()
+    \ 
+
+  **data_handler**: :doc:`DisjointMultitaskDataHandler.Config <pytext.data.disjoint_multitask_data_handler.DisjointMultitaskDataHandler.Config>` = :doc:`DisjointMultitaskDataHandler.Config <pytext.data.disjoint_multitask_data_handler.DisjointMultitaskDataHandler.Config>`\ ()
+    \ 
+
+  **trainer**: :doc:`Trainer.Config <pytext.trainers.trainer.Trainer.Config>` = :doc:`Trainer.Config <pytext.trainers.trainer.Trainer.Config>`\ ()
+    \ 
+
+  **exporter**: Optional[:doc:`ModelExporter.Config <pytext.exporters.exporter.ModelExporter.Config>`] = ``None``
+    \ 
+
+  **tasks**: dict[str, :doc:`Task_Deprecated.Config <pytext.task.task.Task_Deprecated.Config>`]
+    \ 
+
+  **task_weights**: dict[str, float] = ``{}``
+    \ 
+
+  **target_task_name**: Optional[str] = ``None``
+    \ 
+
+  **metric_reporter**: :doc:`DisjointMultitaskMetricReporter.Config <pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config>` = :doc:`DisjointMultitaskMetricReporter.Config <pytext.metric_reporters.disjoint_multitask_metric_reporter.DisjointMultitaskMetricReporter.Config>`\ ()
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

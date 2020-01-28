@@ -1,0 +1,31 @@
+ShardedDataSource.Config
+========================
+
+
+
+**Component:** :class:`ShardedDataSource  <pytext.data.sources.data_source.ShardedDataSource>`\ 
+
+
+.. py:currentmodule:: pytext.config.component
+.. py:class:: ShardedDataSource.Config
+  :noindex:
+
+  **Bases:** :class:`DataSource.Config <pytext.data.sources.data_source.DataSource.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+
+
+**Subclasses**
+  - :class:`RowShardedDataSource.Config <pytext.data.sources.data_source.RowShardedDataSource.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {}

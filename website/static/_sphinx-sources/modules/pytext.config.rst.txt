@@ -1,0 +1,102 @@
+pytext.config package
+=====================
+
+Submodules
+----------
+
+pytext.config.component module
+------------------------------
+
+.. automodule:: pytext.config.component
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.config\_adapter module
+------------------------------------
+
+.. automodule:: pytext.config.config_adapter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.contextual\_intent\_slot module
+---------------------------------------------
+
+.. automodule:: pytext.config.contextual_intent_slot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.doc\_classification module
+----------------------------------------
+
+.. automodule:: pytext.config.doc_classification
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.field\_config module
+----------------------------------
+
+.. automodule:: pytext.config.field_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.module\_config module
+-----------------------------------
+
+.. automodule:: pytext.config.module_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.pair\_classification module
+-----------------------------------------
+
+.. automodule:: pytext.config.pair_classification
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.pytext\_config module
+-----------------------------------
+
+.. automodule:: pytext.config.pytext_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.query\_document\_pairwise\_ranking module
+-------------------------------------------------------
+
+.. automodule:: pytext.config.query_document_pairwise_ranking
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.serialize module
+------------------------------
+
+.. automodule:: pytext.config.serialize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pytext.config.utils module
+--------------------------
+
+.. automodule:: pytext.config.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pytext.config
+   :members:
+   :undoc-members:
+   :show-inheritance:

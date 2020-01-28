@@ -1,0 +1,76 @@
+BertModelInput
+==============
+
+
+
+.. py:currentmodule:: pytext.models.bert_classification_models
+.. py:class:: BertModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>` = :doc:`BERTTensorizer.Config <pytext.data.bert_tensorizer.BERTTensorizer.Config>`\ (max_seq_len=\ ``128``\ )
+    \ 
+
+  **dense**: Optional[:doc:`FloatListTensorizer.Config <pytext.data.tensorizers.FloatListTensorizer.Config>`] = ``None``
+    \ 
+
+  **labels**: :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>` = :doc:`LabelTensorizer.Config <pytext.data.tensorizers.LabelTensorizer.Config>`\ ()
+    \ 
+
+  **num_tokens**: :doc:`NtokensTensorizer.Config <pytext.data.tensorizers.NtokensTensorizer.Config>` = :doc:`NtokensTensorizer.Config <pytext.data.tensorizers.NtokensTensorizer.Config>`\ (names=\ ``['tokens']``\ , indexes=\ ``[2]``\ )
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "BERTTensorizer": {
+              "is_input": true,
+              "columns": [
+                  "text"
+              ],
+              "tokenizer": {
+                  "WordPieceTokenizer": {
+                      "basic_tokenizer": {
+                          "split_regex": "\\s+",
+                          "lowercase": true
+                      },
+                      "wordpiece_vocab_path": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt"
+                  }
+              },
+              "base_tokenizer": null,
+              "vocab_file": "/mnt/vol/nlp_technologies/bert/uncased_L-12_H-768_A-12/vocab.txt",
+              "max_seq_len": 128
+          }
+      },
+      "dense": null,
+      "labels": {
+          "LabelTensorizer": {
+              "is_input": false,
+              "column": "label",
+              "allow_unknown": false,
+              "pad_in_vocab": false,
+              "label_vocab": null
+          }
+      },
+      "num_tokens": {
+          "is_input": false,
+          "names": [
+              "tokens"
+          ],
+          "indexes": [
+              2
+          ]
+      }
+  }

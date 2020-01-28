@@ -1,0 +1,52 @@
+L0_projection_sparsifier.Config
+===============================
+
+
+
+**Component:** :class:`L0_projection_sparsifier  <pytext.optimizer.sparsifiers.sparsifier.L0_projection_sparsifier>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.sparsifiers.sparsifier
+.. py:class:: L0_projection_sparsifier.Config
+  :noindex:
+
+  **Bases:** :class:`Sparsifier.Config <pytext.optimizer.sparsifiers.sparsifier.Sparsifier.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **sparsity**: float = ``0.9``
+    \ 
+
+  **starting_epoch**: int = ``2``
+    \ 
+
+  **frequency**: int = ``1``
+    \ 
+
+  **layerwise_pruning**: bool = ``True``
+    \ 
+
+  **accumulate_mask**: bool = ``False``
+    \ 
+
+
+
+**Subclasses**
+  - :class:`BlockwiseMagnitudeSparsifier.Config <pytext.optimizer.sparsifiers.blockwise_sparsifier.BlockwiseMagnitudeSparsifier.Config>`\ 
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "sparsity": 0.9,
+      "starting_epoch": 2,
+      "frequency": 1,
+      "layerwise_pruning": true,
+      "accumulate_mask": false
+  }

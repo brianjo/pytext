@@ -1,0 +1,32 @@
+PairwiseRankingLoss.Config
+==========================
+
+
+
+**Component:** :class:`PairwiseRankingLoss  <pytext.loss.loss.PairwiseRankingLoss>`\ 
+
+
+.. py:currentmodule:: pytext.loss.loss
+.. py:class:: PairwiseRankingLoss.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **margin**: float = ``1.0``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "margin": 1.0
+  }

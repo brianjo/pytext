@@ -1,0 +1,60 @@
+RegressionModelInput
+====================
+
+
+
+.. py:currentmodule:: pytext.models.doc_model
+.. py:class:: RegressionModelInput
+  :noindex:
+
+  **Bases:** :class:`ModelInput <pytext.models.doc_model.ModelInput>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>` = :doc:`TokenTensorizer.Config <pytext.data.tensorizers.TokenTensorizer.Config>`\ ()
+    \ 
+
+  **dense**: Optional[:doc:`FloatListTensorizer.Config <pytext.data.tensorizers.FloatListTensorizer.Config>`] = ``None``
+    \ 
+
+  **labels**: :doc:`NumericLabelTensorizer.Config <pytext.data.tensorizers.NumericLabelTensorizer.Config>` = :doc:`NumericLabelTensorizer.Config <pytext.data.tensorizers.NumericLabelTensorizer.Config>`\ ()
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "is_input": true,
+          "column": "text",
+          "tokenizer": {
+              "Tokenizer": {
+                  "split_regex": "\\s+",
+                  "lowercase": true
+              }
+          },
+          "add_bos_token": false,
+          "add_eos_token": false,
+          "use_eos_token_for_bos": false,
+          "max_seq_len": null,
+          "vocab": {
+              "build_from_data": true,
+              "size_from_data": 0,
+              "vocab_files": []
+          },
+          "vocab_file_delimiter": " "
+      },
+      "dense": null,
+      "labels": {
+          "is_input": false,
+          "column": "label",
+          "rescale_range": null
+      }
+  }

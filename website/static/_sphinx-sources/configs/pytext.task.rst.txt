@@ -1,0 +1,10 @@
+task
+====
+
+
+.. toctree::
+
+  pytext.task.disjoint_multitask
+  pytext.task.new_task
+  pytext.task.task
+  pytext.task.tasks

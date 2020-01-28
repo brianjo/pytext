@@ -1,0 +1,15 @@
+pytext
+======
+
+
+.. toctree::
+
+  pytext.config
+  pytext.data
+  pytext.exporters
+  pytext.loss
+  pytext.metric_reporters
+  pytext.models
+  pytext.optimizer
+  pytext.task
+  pytext.trainers

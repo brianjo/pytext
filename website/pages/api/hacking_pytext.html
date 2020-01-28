@@ -1,0 +1,197 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="hacking-pytext">
+<h1>Hacking PyText<a class="headerlink" href="#hacking-pytext" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="using-your-own-classes-in-pytext">
+<h2>Using your own classes in PyText<a class="headerlink" href="#using-your-own-classes-in-pytext" title="Permalink to this headline">¶</a></h2>
+<p>Most people just want to create their own components and use them to load their
+data, train models, etc. In this case, you just need to put all your <cite>.py</cite> files in a directory and include it with the option <cite>–include &lt;my directory&gt;</cite>. PyText will be able to find your code and import your classes. This works with PyText from <cite>pip install</cite> or from github sources.</p>
+<p><a class="reference external" href="datasource_tutorial.html">Example with Custom Data Source</a></p>
+</div>
+<div class="section" id="changing-pytext">
+<h2>Changing PyText<a class="headerlink" href="#changing-pytext" title="Permalink to this headline">¶</a></h2>
+<p>Why would you want to change PyText? Maybe you want to fix one of the <a class="reference external" href="https://github.com/facebookresearch/pytext/issues">github issues</a>, or you want to experiment with your own changes that you can’t simply include and you would like to see included in PyText’s future releases. In this case you need to download the sources and submit them back to github. Since getting your changes ready and integrated can take some time, you might need to keep your sources up to date. Here’s how to do it.</p>
+<div class="section" id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<p>First, make a copy of the PyText repo into your github account. For that (you need a github account), go to the <a class="reference external" href="https://github.com/facebookresearch/pytext">PyText repo</a> and click the Fork button at top-right of the page.</p>
+<p>Once the fork is complete, clone your fork onto your computer by clicking the “Clone or download” button and copying the URL. Then, in a terminal, use the <cite>git clone</cite> command to clone the repo in the directory of your choice.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone https://github.com/&lt;your_account&gt;/pytext.git
+</pre></div>
+</div>
+<p>To be able to update your github fork with the latest changes from Facebook’s PyText sources, you need to add it as a “remote” with this command. (This can be done later.) The name “upstream” is what’s typically used, but you can use any name you want for your remotes.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git remote add upstream https://github.com/facebookresearch/pytext.git
+</pre></div>
+</div>
+<p>Now you should have 2 remotes: <cite>origin</cite> is your own github fork, and <cite>upstream</cite> is facebook’s github repo.</p>
+<p>Now you can install the PyText dependencies in a virtual environment. (This means the dependencies will be installed inside the directory <cite>pytext_venv</cite> under <cite>pytext/</cite>, not in your machine’s system directory.) Notice the <cite>(pytext_venv)</cite> in the terminal prompt when it’s active.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> pytext
+<span class="gp">$</span> <span class="nb">source</span> activation_venv
+<span class="gp">(pytext_venv) $</span> ./install_deps
+</pre></div>
+</div>
+<p>To exit the virtual environment:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(pytext_venv) $</span> deactivate
+</pre></div>
+</div>
+</div>
+<div class="section" id="writing-code">
+<h3>Writing Code<a class="headerlink" href="#writing-code" title="Permalink to this headline">¶</a></h3>
+<p>After you’ve made some code changes, you need to create a branch to commit your code. Do not commit your code in your <cite>master</cite> branch! Give your branch a name that represents what your experiment is about. Then add your changes and commit them.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git checkout -b &lt;my_experiment&gt;
+<span class="gp">$</span> git status -sb
+<span class="go">... # list of files you changed</span>
+<span class="gp">$</span> git add &lt;file1&gt; &lt;file2&gt;
+<span class="gp">$</span> git diff --cached  <span class="c1"># see the code changes you added</span>
+<span class="gp">#</span> ... maybe keep changing and run git add again
+<span class="gp">$</span> git commit  <span class="c1"># save your changes</span>
+<span class="gp">$</span> git show <span class="c1"># optional, look at the code changes</span>
+<span class="gp">$</span> git push --set-upstream origin &lt;my_experiment&gt;  <span class="c1"># send your branch to your github fork</span>
+</pre></div>
+</div>
+<p>At this point you should be able to see your branch in your github repo and create a Pull Request to Facebook’s github if you want to submit it for review and later be integrated.</p>
+</div>
+<div class="section" id="keeping-up-to-date">
+<h3>Keeping Up-to-Date<a class="headerlink" href="#keeping-up-to-date" title="Permalink to this headline">¶</a></h3>
+<p>To resume development in an already cloned repo, you might need re-activate the virtual environment:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> pytext
+<span class="gp">$</span> <span class="nb">source</span> activation_venv
+</pre></div>
+</div>
+<p>If you need to update your github repo with the latest changes in the Facebook upstream repo, fetch the changes with this command, merge your master with those changes, and push the changes to your github forks. In order to do that, you can’t have any pending changes, so make sure you commit your current work to a branch.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git fetch upstream
+<span class="gp">$</span> git checkout master
+<span class="gp">$</span> git merge upstream/master
+<span class="gp">$</span> git push
+</pre></div>
+</div>
+<p>Important: never commit changes in your master. Doing this would prevent further updates. Instead, always commit changes to a branch. (See below for more on this.)</p>
+<p>Finally, you might need to rebase your branches to the latest master. Check out the branch, rebase it, and (optionally) push it again to your github fork.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git checkout &lt;my_experiment&gt;
+<span class="gp">$</span> git rebase master
+<span class="gp">$</span> git push  <span class="c1"># optional</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="modifying-your-pull-request">
+<h3>Modifying your Pull Request<a class="headerlink" href="#modifying-your-pull-request" title="Permalink to this headline">¶</a></h3>
+<p>Many times you will need to modify your code and submit your pull request again. Maybe you found a bug that you need to fix, or you want to integrate some feedback you got in the pull request, or after you rebased your branch you had to solve a conflict.</p>
+<p>If you’re going to change your pull request, it’s always a good idea to start by rebasing your branch on the lastest upstream/master (see above.)</p>
+<p>After making your changes, amend to your existing commit rather than creating a new commit on top of it. This is to ensure your changes are in a single clean commit that does not contain your failed experiments. At this point, you will have a branch <cite>&lt;my_experiment&gt;</cite>, and the branch you pushed to your github forked <cite>origin/&lt;my_experiment&gt;</cite>. Then you will need to force the push to replace the github branch with your changes. The pull request will be automatically updated upstream.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git commit --amend
+<span class="gp">$</span> git push --force
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="addendum">
+<h2>Addendum<a class="headerlink" href="#addendum" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="one-commit-or-multiple-commits">
+<h3>One commit or multiple commits?<a class="headerlink" href="#one-commit-or-multiple-commits" title="Permalink to this headline">¶</a></h3>
+<p>For most contributions, you will want to keep your pull request as a single, clean commit. It’s better to amend the same commit rather than keeping the entire history of intermediate edits.</p>
+<p>If your change is more involved, it might be better to create multiple commits, as long as each commit does one thing and is self contained.</p>
+</div>
+<div class="section" id="code-quality">
+<h3>Code Quality<a class="headerlink" href="#code-quality" title="Permalink to this headline">¶</a></h3>
+<p>In order to get your pull request integrated with PyText, it needs to pass the tests and be reviewed. The pull requests will automatically run the circleci tests, and they must be all green for your pull request to be accepted. These tests include building the documentation, run the unit tests under python 3.6 and 3.7, and run the linter <cite>black</cite> to verify code formatting. You can run the linter yourself after installing it with <cite>pip install black</cite>.</p>
+<p>If all the tests are green, people will start reviewing your changes. (You too can review <a class="reference external" href="https://github.com/facebookresearch/pytext/pulls">other pull requests</a> and make comments and suggestions.) If reviewers ask questions or make suggestions, try your best to answer them with comments or code changes.</p>
+<p>A very common reason to reject a pull request is lack of unit testing. Make sure your code is covered by unit tests (add your own tests) to make sure they work now and also in the future when other people make changes to your code!</p>
+</div>
+<div class="section" id="creating-documentation">
+<h3>Creating Documentation<a class="headerlink" href="#creating-documentation" title="Permalink to this headline">¶</a></h3>
+<p>Whether you want to add documentation for your feature in code, or just change the existing the documentation, you will need to test it locally. First install extra dependencies needed to build the documentation:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install --upgrade -r docs_requirements.txt
+<span class="gp">$</span> pip install --upgrade -r pytext/docs/requirements.txt
+</pre></div>
+</div>
+<p>Then you can build the documentation</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> pytext/docs
+<span class="gp">$</span> make html
+</pre></div>
+</div>
+<p>Finally you can look at the documentation produced with a URL like this <cite>file:///&lt;path_to_pytext_sources&gt;/pytext/docs/build/html/hacking_pytext.html</cite></p>
+</div>
+<div class="section" id="useful-git-alias">
+<h3>Useful git alias<a class="headerlink" href="#useful-git-alias" title="Permalink to this headline">¶</a></h3>
+<p>One of the most useful command for git is one where you print the commits and branches like a tree. This is a complex command most useful when stored as an alias, so we’re giving it here.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git config --global alias.lg <span class="s2">"log --pretty=tformat:'%C(yellow)%h %Cgreen(%ad)%Cred%d %Creset%s %C(bold blue)&lt;%cn&gt;%Creset' --decorate --date=short --date=local --graph --all"</span>
+
+<span class="gp">$</span> <span class="c1"># try it</span>
+<span class="gp">$</span> git lg
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="index.html">Documentation overview</a><ul>
+<li>Previous: <a href="create_new_model.html" title="previous chapter">Creating A New Model</a></li>
+<li>Next: <a href="configs/pytext.html" title="next chapter">pytext</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

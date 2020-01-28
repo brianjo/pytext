@@ -1,0 +1,32 @@
+BoundaryPool.Config
+===================
+
+
+
+**Component:** :class:`BoundaryPool  <pytext.models.representations.pooling.BoundaryPool>`\ 
+
+
+.. py:currentmodule:: pytext.models.representations.pooling
+.. py:class:: BoundaryPool.Config
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **boundary_type**: str = ``'first'``
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "boundary_type": "first"
+  }

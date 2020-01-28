@@ -1,0 +1,45 @@
+InputConfig
+===========
+
+
+
+.. py:currentmodule:: pytext.models.masked_lm
+.. py:class:: InputConfig
+  :noindex:
+
+  **Bases:** :class:`ConfigBase <pytext.config.pytext_config.ConfigBase>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **tokens**: :doc:`BERTTensorizerBase.Config <pytext.data.bert_tensorizer.BERTTensorizerBase.Config>` = :doc:`BERTTensorizerBase.Config <pytext.data.bert_tensorizer.BERTTensorizerBase.Config>`\ (max_seq_len=\ ``128``\ )
+    \ 
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "tokens": {
+          "BERTTensorizerBase": {
+              "is_input": true,
+              "columns": [
+                  "text"
+              ],
+              "tokenizer": {
+                  "Tokenizer": {
+                      "split_regex": "\\s+",
+                      "lowercase": true
+                  }
+              },
+              "base_tokenizer": null,
+              "vocab_file": "",
+              "max_seq_len": 128
+          }
+      }
+  }

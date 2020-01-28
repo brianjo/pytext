@@ -1,0 +1,39 @@
+BaggingDocEnsembleModel.Config
+==============================
+
+
+
+**Component:** :class:`BaggingDocEnsembleModel  <pytext.models.ensembles.bagging_doc_ensemble.BaggingDocEnsembleModel>`\ 
+
+
+.. py:currentmodule:: pytext.models.ensembles.bagging_doc_ensemble
+.. py:class:: BaggingDocEnsembleModel.Config
+  :noindex:
+
+  **Bases:** :class:`EnsembleModel.Config <pytext.models.ensembles.ensemble.EnsembleModel.Config>`\ 
+
+  Configuration class for `NewBaggingDocEnsemble`. These attributes are
+  used by `Ensemble.from_config()` to construct instance of
+  `NewBaggingDocEnsemble`.
+  
+  .. attribute:: models
+  
+     List of document classification
+     model configurations.
+  
+     :type: List[NewDocModel.Config]
+  
+
+**All Attributes (including base classes)**
+
+  **models**: list[:doc:`DocModel.Config <pytext.models.doc_model.DocModel.Config>`]
+    \ 
+
+  **sample_rate**: float = ``1.0``
+    \ 
+
+
+
+.. warning::
+  This config has parameters with no default values.
+  We aren't yet able to generate functional JSON for it.

@@ -1,0 +1,366 @@
+
+<script type="text/javascript" id="documentation_options" data-url_root="./"
+  src="/js/documentation_options.js"></script>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/underscore.js"></script>
+<script type="text/javascript" src="/js/doctools.js"></script>
+<script type="text/javascript" src="/js/language_data.js"></script>
+<script type="text/javascript" src="/js/searchtools.js"></script>
+<div class="sphinx"><div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<h1>Source code for pytext.config.component</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">.pytext_config</span> <span class="kn">import</span> <span class="n">ConfigBase</span><span class="p">,</span> <span class="n">PyTextConfig</span>
+
+
+<div class="viewcode-block" id="ComponentType"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.ComponentType">[docs]</a><span class="k">class</span> <span class="nc">ComponentType</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">TASK</span> <span class="o">=</span> <span class="s2">"task"</span>
+    <span class="n">COLUMN</span> <span class="o">=</span> <span class="s2">"column"</span>
+    <span class="n">DATA_TYPE</span> <span class="o">=</span> <span class="s2">"data_type"</span>
+    <span class="n">DATA_HANDLER</span> <span class="o">=</span> <span class="s2">"data_handler"</span>
+    <span class="n">DATA_SOURCE</span> <span class="o">=</span> <span class="s2">"data_source"</span>
+    <span class="n">TOKENIZER</span> <span class="o">=</span> <span class="s2">"tokenizer"</span>
+    <span class="n">TENSORIZER</span> <span class="o">=</span> <span class="s2">"tensorizer"</span>
+    <span class="n">BATCHER</span> <span class="o">=</span> <span class="s2">"batcher"</span>
+    <span class="n">BATCH_SAMPLER</span> <span class="o">=</span> <span class="s2">"batch_sampler"</span>
+    <span class="n">FEATURIZER</span> <span class="o">=</span> <span class="s2">"featurizer"</span>
+    <span class="n">TRAINER</span> <span class="o">=</span> <span class="s2">"trainer"</span>
+    <span class="n">LOSS</span> <span class="o">=</span> <span class="s2">"loss"</span>
+    <span class="n">OPTIMIZER</span> <span class="o">=</span> <span class="s2">"optimizer"</span>
+    <span class="n">SCHEDULER</span> <span class="o">=</span> <span class="s2">"scheduler"</span>
+    <span class="n">MODEL</span> <span class="o">=</span> <span class="s2">"model"</span>
+    <span class="n">MODEL2</span> <span class="o">=</span> <span class="s2">"model2"</span>
+    <span class="n">MODULE</span> <span class="o">=</span> <span class="s2">"module"</span>
+    <span class="n">PREDICTOR</span> <span class="o">=</span> <span class="s2">"predictor"</span>
+    <span class="n">EXPORTER</span> <span class="o">=</span> <span class="s2">"exporter"</span>
+    <span class="n">METRIC_REPORTER</span> <span class="o">=</span> <span class="s2">"metric_reporter"</span>
+    <span class="n">SPARSIFIER</span> <span class="o">=</span> <span class="s2">"sparsifier"</span></div>
+
+
+<div class="viewcode-block" id="RegistryError"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.RegistryError">[docs]</a><span class="k">class</span> <span class="nc">RegistryError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Registry"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Registry">[docs]</a><span class="k">class</span> <span class="nc">Registry</span><span class="p">:</span>
+    <span class="n">_registered_components</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ComponentType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">,</span> <span class="n">Type</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="Registry.add"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Registry.add">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">cls_to_add</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">config_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">):</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">config_cls</span> <span class="ow">in</span> <span class="n">component</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RegistryError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"Cannot add {cls_to_add} to {component_type} "</span>
+                <span class="n">f</span><span class="s2">"for task_config type {config_cls}; "</span>
+                <span class="n">f</span><span class="s2">"it's already registered for {component[config_cls]}"</span>
+            <span class="p">)</span>
+        <span class="n">component</span><span class="p">[</span><span class="n">config_cls</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_to_add</span></div>
+
+<div class="viewcode-block" id="Registry.get"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Registry.get">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">config_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">component_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RegistryError</span><span class="p">(</span><span class="n">f</span><span class="s2">"type {component_type} doesn't exist"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">config_cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">RegistryError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">"unregistered config class {config_cls.__name__} for {component_type}"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">][</span><span class="n">config_cls</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Registry.values"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Registry.values">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">ComponentType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">component_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RegistryError</span><span class="p">(</span><span class="n">f</span><span class="s2">"type {component_type} doesn't exist"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Registry.configs"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Registry.configs">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">ComponentType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">component_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RegistryError</span><span class="p">(</span><span class="n">f</span><span class="s2">"type {component_type} doesn't exist"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_registered_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Registry.subconfigs"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Registry.subconfigs">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">subconfigs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">sub_cls</span>
+            <span class="k">for</span> <span class="n">sub_cls</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">configs</span><span class="p">(</span><span class="n">config_cls</span><span class="o">.</span><span class="n">__COMPONENT_TYPE__</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">sub_cls</span><span class="o">.</span><span class="n">__COMPONENT__</span><span class="p">,</span> <span class="n">config_cls</span><span class="o">.</span><span class="n">__COMPONENT__</span><span class="p">)</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ComponentMeta"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.ComponentMeta">[docs]</a><span class="k">class</span> <span class="nc">ComponentMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="n">metacls</span><span class="p">,</span> <span class="n">typename</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">"Config"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">namespace</span><span class="p">:</span>
+            <span class="c1"># We need to dynamically create a new Config class per</span>
+            <span class="c1"># instance rather than inheriting a single empty config class</span>
+            <span class="c1"># because components are registered uniquely by config class.</span>
+            <span class="c1"># If a parent class specifies a config class, inherit from it.</span>
+            <span class="n">parent_config</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">Config</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">bases</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"Config"</span><span class="p">)),</span> <span class="bp">None</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">parent_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+
+                <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">parent_config</span><span class="p">):</span>
+                    <span class="k">pass</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+                    <span class="k">pass</span>
+
+            <span class="n">namespace</span><span class="p">[</span><span class="s2">"Config"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Config</span>
+
+        <span class="n">component_type</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">base</span><span class="o">.</span><span class="n">__COMPONENT_TYPE__</span>
+                <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">bases</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"__COMPONENT_TYPE__"</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="n">namespace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"__COMPONENT_TYPE__"</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">new_cls</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">metacls</span><span class="p">,</span> <span class="n">typename</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+
+        <span class="n">new_cls</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">__COMPONENT_TYPE__</span> <span class="o">=</span> <span class="n">component_type</span>
+        <span class="n">new_cls</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">f</span><span class="s2">"{typename}.Config"</span>
+        <span class="n">new_cls</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">__COMPONENT__</span> <span class="o">=</span> <span class="n">new_cls</span>
+        <span class="n">new_cls</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">__EXPANSIBLE__</span> <span class="o">=</span> <span class="n">namespace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"__EXPANSIBLE__"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">component_type</span><span class="p">:</span>
+            <span class="n">Registry</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">component_type</span><span class="p">,</span> <span class="n">new_cls</span><span class="p">,</span> <span class="n">new_cls</span><span class="o">.</span><span class="n">Config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_cls</span>
+
+    <span class="k">def</span> <span class="nf">__dir__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">"""Jit doesnt allow scripting of attributes whose classname includes "."</span>
+
+<span class="sd">        Example Repro:</span>
+
+<span class="sd">        class OldModule(Module):</span>
+<span class="sd">            class Config(ConfigBase):</span>
+<span class="sd">                a: int = 5</span>
+
+<span class="sd">            @classmethod</span>
+<span class="sd">            def from_config(cls, config: Config):</span>
+<span class="sd">                return cls(config.a)</span>
+
+<span class="sd">            def __init__(self, a):</span>
+<span class="sd">                super().__init__()</span>
+<span class="sd">                self.a = a</span>
+
+<span class="sd">            def forward(self, b: int) -&gt; int:</span>
+<span class="sd">                return b + self.a</span>
+
+<span class="sd">        m = OldModule.from_config(OldModule.Config())</span>
+<span class="sd">        jit.script(m)</span>
+
+<span class="sd">            &gt; RuntimeError: Could not get qualified name for class 'OldModule.Config':</span>
+<span class="sd">        'OldModule.Config' is not a valid identifier</span>
+
+<span class="sd">        print(m.Config.__name__)</span>
+<span class="sd">            &gt; OldModule.Config</span>
+
+<span class="sd">        At the sametime, we dont need to script the config classes because they</span>
+<span class="sd">        are not needed during inference time. Hence in this workaround we skip</span>
+<span class="sd">        the config classes.</span>
+
+<span class="sd">        Ideal solution is that when building models they should be inheriting</span>
+<span class="sd">        from nn.Module only and not Component. This requires significant changes</span>
+<span class="sd">        to the way models are created in PyText.</span>
+
+<span class="sd">        """</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__dir__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">r</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span> <span class="nb">type</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span> <span class="n">ConfigBase</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Component"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Component">[docs]</a><span class="k">class</span> <span class="nc">Component</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ComponentMeta</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Component.from_config"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.Component.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="register_tasks"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.register_tasks">[docs]</a><span class="k">def</span> <span class="nf">register_tasks</span><span class="p">(</span><span class="n">task_cls</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">]]):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Task classes are already added to registry during declaration, pass them</span>
+<span class="sd">        as parameters here just to make sure they're imported</span>
+<span class="sd">    """</span>
+    <span class="nb">vars</span><span class="p">(</span><span class="n">PyTextConfig</span><span class="p">)[</span><span class="s2">"__annotations__"</span><span class="p">][</span><span class="s2">"task"</span><span class="p">]</span><span class="o">.</span><span class="n">__args__</span> <span class="o">=</span> <span class="n">Registry</span><span class="o">.</span><span class="n">configs</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">TASK</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_component"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_component">[docs]</a><span class="k">def</span> <span class="nf">create_component</span><span class="p">(</span><span class="n">component_type</span><span class="p">:</span> <span class="n">ComponentType</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">config_cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="n">Registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">component_type</span><span class="p">,</span> <span class="n">config_cls</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s2">"Can't create component {cls}: {str(e)}"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_data_handler"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_data_handler">[docs]</a><span class="k">def</span> <span class="nf">create_data_handler</span><span class="p">(</span><span class="n">data_handler_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">DATA_HANDLER</span><span class="p">,</span> <span class="n">data_handler_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_featurizer"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_featurizer">[docs]</a><span class="k">def</span> <span class="nf">create_featurizer</span><span class="p">(</span><span class="n">featurizer_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">FEATURIZER</span><span class="p">,</span> <span class="n">featurizer_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_trainer"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_trainer">[docs]</a><span class="k">def</span> <span class="nf">create_trainer</span><span class="p">(</span><span class="n">trainer_config</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">TRAINER</span><span class="p">,</span> <span class="n">trainer_config</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_model"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_model">[docs]</a><span class="k">def</span> <span class="nf">create_model</span><span class="p">(</span><span class="n">model_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">MODEL</span><span class="p">,</span> <span class="n">model_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_optimizer"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_optimizer">[docs]</a><span class="k">def</span> <span class="nf">create_optimizer</span><span class="p">(</span><span class="n">optimizer_config</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">OPTIMIZER</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_scheduler"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_scheduler">[docs]</a><span class="k">def</span> <span class="nf">create_scheduler</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="s2">"fp32_optimizer"</span><span class="p">):</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">fp32_optimizer</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">SCHEDULER</span><span class="p">,</span> <span class="n">scheduler_config</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_sparsifier"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_sparsifier">[docs]</a><span class="k">def</span> <span class="nf">create_sparsifier</span><span class="p">(</span><span class="n">sparsifier_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">SPARSIFIER</span><span class="p">,</span> <span class="n">sparsifier_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_predictor"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_predictor">[docs]</a><span class="k">def</span> <span class="nf">create_predictor</span><span class="p">(</span><span class="n">predictor_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">PREDICTOR</span><span class="p">,</span> <span class="n">predictor_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_exporter"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_exporter">[docs]</a><span class="k">def</span> <span class="nf">create_exporter</span><span class="p">(</span><span class="n">exporter_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">EXPORTER</span><span class="p">,</span> <span class="n">exporter_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_loss"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_loss">[docs]</a><span class="k">def</span> <span class="nf">create_loss</span><span class="p">(</span><span class="n">loss_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">LOSS</span><span class="p">,</span> <span class="n">loss_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_metric_reporter"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.create_metric_reporter">[docs]</a><span class="k">def</span> <span class="nf">create_metric_reporter</span><span class="p">(</span><span class="n">module_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">create_component</span><span class="p">(</span>
+        <span class="n">ComponentType</span><span class="o">.</span><span class="n">METRIC_REPORTER</span><span class="p">,</span> <span class="n">module_config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_component_name"><a class="viewcode-back" href="../../../modules/pytext.config.html#pytext.config.component.get_component_name">[docs]</a><span class="k">def</span> <span class="nf">get_component_name</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">        Return the human-readable name of the class of `obj`.</span>
+<span class="sd">        Document the type of a config field and can be used as a Union value</span>
+<span class="sd">        in a json config.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"__module__"</span><span class="p">):</span>  <span class="c1"># builtins</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">==</span> <span class="s2">"typing"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)[</span><span class="mi">7</span><span class="p">:]</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">):</span>  <span class="c1"># Class name unaltered by meta</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__qualname__</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".Config"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">__COMPONENT__</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+</pre></div>
+</div>
+</div>
+</div>
+<div aria-label="main navigation" class="sphinxsidebar" role="navigation">
+<div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyText</a></h1>
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train_your_first_model.html">Train your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../execute_your_first_model.html">Execute your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualize_your_model.html">Visualize Model Training with TensorBoard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pytext_models_in_your_app.html">Use PyText models in your app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serving_models_in_production.html">Serve Models in Production</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_files.html">Config Files Explained</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config_commands.html">Config Commands</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Training More Advanced Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../atis_tutorial.html">Train Intent-Slot model on ATIS Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hierarchical_intent_slot_tutorial.html">Hierarchical intent and slot filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../disjoint_multitask_tutorial.html">Multitask training with disjoint datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributed_training_tutorial.html">Data Parallel Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../xlm_r.html">XLM-RoBERTa</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Extending PyText</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasource_tutorial.html">Custom Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tensorizer.html">Custom Tensorizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dense.html">Using External Dense Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../create_new_model.html">Creating A New Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking_pytext.html">Hacking PyText</a></li>
+</ul>
+<p class="caption"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../configs/pytext.html">pytext</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/pytext.html">pytext package</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+<li><a href="../../../index.html">Documentation overview</a><ul>
+<li><a href="../../index.html">Module code</a><ul>
+<li><a href="../../pytext.html">pytext</a><ul>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="searchbox" role="search" style="display: none">
+<h3 id="searchlabel">Quick search</h3>
+<div class="searchformwrapper">
+<form action="../../../search.html" class="search" method="get">
+<input aria-labelledby="searchlabel" name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+</div>
+</div>
+<div class="clearer"></div>
+</div></div>

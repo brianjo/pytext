@@ -1,0 +1,33 @@
+ExponentialLR.Config
+====================
+
+
+
+**Component:** :class:`ExponentialLR  <pytext.optimizer.scheduler.ExponentialLR>`\ 
+
+
+.. py:currentmodule:: pytext.optimizer.scheduler
+.. py:class:: ExponentialLR.Config
+  :noindex:
+
+  **Bases:** :class:`Scheduler.Config <pytext.optimizer.scheduler.Scheduler.Config>`\ 
+
+  
+
+**All Attributes (including base classes)**
+
+  **gamma**: float = ``0.1``
+    Multiplicative factor of learning rate decay.
+    
+
+
+
+**Default JSON**
+
+
+.. code-block:: json
+
+
+  {
+      "gamma": 0.1
+  }
